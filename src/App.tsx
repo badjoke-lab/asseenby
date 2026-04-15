@@ -48,10 +48,7 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const categoryModes = useMemo(() => MODES.filter((mode) => mode.category === category), [category]);
-  const currentMode = useMemo(
-    () => MODES.find((mode) => mode.key === modeKey) ?? MODES[0],
-    [modeKey],
-  );
+  const currentMode = useMemo(() => MODES.find((mode) => mode.key === modeKey) ?? MODES[0], [modeKey]);
 
   useEffect(() => {
     if (!categoryModes.some((mode) => mode.key === modeKey)) {
@@ -196,8 +193,7 @@ function Hero() {
 
       <div className="hero-copy">
         <p>
-          AsSeenBy is a research-based viewer that simulates how an image may appear under different visual
-          conditions and in the eyes of other species.
+          AsSeenBy is a research-based viewer that simulates how an image may appear under different visual conditions and in the eyes of other species.
           <span> Not a diagnostic tool—an instrument for understanding.</span>
         </p>
       </div>
@@ -229,6 +225,14 @@ function CompareStage({
   setDivider: (value: number) => void;
   isBusy: boolean;
 }) {
+  const effectiveDivider = compareMode === "split" ? 50 : divider;
+  const isInteractiveSlider = compareMode === "slider";
+  const toolbarNote = compareMode === "slider"
+    ? "Move the balance control to compare"
+    : compareMode === "split"
+      ? "Fixed 50 / 50 midpoint comparison"
+      : "Original and transformed shown together";
+
   return (
     <section className="compare-card">
       <div className={compareMode === "side-by-side" ? "compare-stage compare-stage--side" : "compare-stage"}>
@@ -240,13 +244,18 @@ function CompareStage({
         ) : (
           <div className="compare-overlay">
             <img src={originalUrl} alt="Original" className="compare-image" />
-            <div className="compare-overlay-layer" style={{ width: `${divider}%` }}>
-              <img src={transformedUrl} alt="Simulated" className="compare-image" style={{ width: `${100 / (divider / 100)}%`, maxWidth: "none" }} />
+            <div className="compare-overlay-layer" style={{ width: `${effectiveDivider}%` }}>
+              <img
+                src={transformedUrl}
+                alt="Simulated"
+                className="compare-image"
+                style={{ width: `${100 / (effectiveDivider / 100)}%`, maxWidth: "none" }}
+              />
             </div>
             <LabelPill className="image-label image-label--left">Original</LabelPill>
             <LabelPill className="image-label image-label--right">Simulated</LabelPill>
-            <div className="divider-line" style={{ left: `${divider}%` }} />
-            <div className="divider-handle" style={{ left: `${divider}%` }}>↔</div>
+            <div className="divider-line" style={{ left: `${effectiveDivider}%` }} />
+            {isInteractiveSlider ? <div className="divider-handle" style={{ left: `${effectiveDivider}%` }}>↔</div> : null}
             {isBusy ? <div className="loading-badge" /> : null}
           </div>
         )}
@@ -260,10 +269,10 @@ function CompareStage({
             <ComparePill active={compareMode === "split"} onClick={() => setCompareMode("split")}>Split</ComparePill>
             <ComparePill active={compareMode === "side-by-side"} onClick={() => setCompareMode("side-by-side")}>Side by side</ComparePill>
           </div>
-          <div className="toolbar-note">{compareMode !== "side-by-side" ? "Move the slider to compare" : "Original and transformed shown together"}</div>
+          <div className="toolbar-note">{toolbarNote}</div>
         </div>
 
-        {compareMode !== "side-by-side" ? (
+        {isInteractiveSlider ? (
           <div className="balance-row">
             <span className="toolbar-label">Balance</span>
             <input type="range" min={20} max={80} value={divider} onChange={(event) => setDivider(Number(event.target.value))} />
@@ -365,7 +374,7 @@ function ComparePill({ children, active, onClick }: { children: React.ReactNode;
   return <button onClick={onClick} className={active ? "pill pill--active" : "pill"}>{children}</button>;
 }
 
-function LabelPill({ children, className }: { children: React.ReactNode; className?: string; }) {
+function LabelPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
 
