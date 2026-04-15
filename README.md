@@ -67,7 +67,8 @@ Not included:
 - `docs/mvp-spec.md` — MVP scope and included features
 - `docs/ui-spec.md` — visual and layout direction
 - `docs/modes.md` — mode groups and confidence classes
-- `docs/methodology.md` — methodology and limitations
+- `docs/methodology.md` — methodology and framing
+- `docs/compare-modes.md` — compare behavior notes for slider, split, and side-by-side
 
 ## Local development
 
@@ -83,14 +84,14 @@ npm run build
 npm run preview
 ```
 
-## Notes and limitations
+## Notes
 
-- AsSeenBy is **not** a diagnostic or medical tool.
+- AsSeenBy is not a medical tool.
 - Human, animal, and reference outputs are research-based approximations.
 - Animal modes are visible-range approximations only.
-- UV, polarization, and full species-specific perception are **not** reproduced in v0.1.
+- UV, polarization, and full species-specific perception are not reproduced in v0.1.
 - Reference modes are averaged profiles only and should not be treated as individual-level predictions.
 
 ## Product positioning
 
-AsSeenBy should feel closer to a field guide or visual reference plate than a dark startup dashboard. The app is meant to support comparison, understanding, and discussion—not exact biological or medical claims.
+AsSeenBy should feel closer to a field guide or visual reference plate than a dark startup dashboard. The app is meant to support comparison, understanding, and discussion rather than exact biological or medical claims.
