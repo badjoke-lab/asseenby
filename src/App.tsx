@@ -1,36 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
+import { getModeEvidence } from "./modeEvidence";
+import { CompareMode, ModeCategory, ModeDef, MODES, Confidence } from "./modes";
 
-type ModeCategory = "Human" | "Animal" | "Reference";
-type Confidence = "Strong" | "Estimated" | "Reference";
-type CompareMode = "slider" | "split" | "side-by-side";
-
-type ModeDef = {
-  key: string;
-  label: string;
+type ControlRailProps = {
   category: ModeCategory;
-  confidence: Confidence;
-  note: string;
+  setCategory: (category: ModeCategory) => void;
+  categoryModes: ModeDef[];
+  modeKey: string;
+  setModeKey: (modeKey: string) => void;
+  strength: number;
+  setStrength: (value: number) => void;
+  currentMode: ModeDef;
+  onUploadClick: () => void;
+  onUseSample: () => void;
+  error: string;
 };
-
-const MODES: ModeDef[] = [
-  { key: "protan", label: "Protan-like", category: "Human", confidence: "Strong", note: "Reduced red-channel discrimination approximation." },
-  { key: "deutan", label: "Deutan-like", category: "Human", confidence: "Strong", note: "Reduced green-channel discrimination approximation." },
-  { key: "tritan", label: "Tritan-like", category: "Human", confidence: "Strong", note: "Blue-yellow discrimination shift approximation." },
-  { key: "blur", label: "Blur", category: "Human", confidence: "Strong", note: "Lower visual sharpness approximation." },
-  { key: "low_contrast", label: "Low Contrast", category: "Human", confidence: "Strong", note: "Reduced contrast sensitivity approximation." },
-  { key: "cataract", label: "Cataract-like", category: "Human", confidence: "Strong", note: "Hazy, lower-contrast, yellowed viewing approximation." },
-  { key: "tunnel", label: "Tunnel Vision", category: "Human", confidence: "Strong", note: "Peripheral field loss approximation." },
-  { key: "central_loss", label: "Central Loss", category: "Human", confidence: "Strong", note: "Central field loss approximation." },
-  { key: "night", label: "Night / Low Light", category: "Human", confidence: "Estimated", note: "Low-light viewing approximation." },
-  { key: "fatigue", label: "Fatigue-like", category: "Human", confidence: "Estimated", note: "Fatigue-related viewing softness approximation." },
-  { key: "dry_eye", label: "Dry-eye-like", category: "Human", confidence: "Estimated", note: "Uneven blur and glare approximation." },
-  { key: "dog", label: "Dog", category: "Animal", confidence: "Estimated", note: "Dog-like visible-range approximation." },
-  { key: "cat", label: "Cat", category: "Animal", confidence: "Estimated", note: "Cat-like visible-range approximation." },
-  { key: "bee", label: "Bee", category: "Animal", confidence: "Estimated", note: "Bee-like visible-range approximation. UV not included." },
-  { key: "bird", label: "Bird-like", category: "Animal", confidence: "Estimated", note: "Bird-like visible-range approximation. UV not included." },
-  { key: "age", label: "Age Profile", category: "Reference", confidence: "Reference", note: "Age-related viewing profile approximation." },
-  { key: "sex", label: "Sex-difference Profile", category: "Reference", confidence: "Reference", note: "Average-profile reference mode." },
-];
 
 const SAMPLE_IMAGE = createSampleImage();
 
@@ -49,6 +34,7 @@ export default function App() {
 
   const categoryModes = useMemo(() => MODES.filter((mode) => mode.category === category), [category]);
   const currentMode = useMemo(() => MODES.find((mode) => mode.key === modeKey) ?? MODES[0], [modeKey]);
+  const currentModeEvidence = useMemo(() => getModeEvidence(modeKey), [modeKey]);
 
   useEffect(() => {
     if (!categoryModes.some((mode) => mode.key === modeKey)) {
@@ -112,6 +98,7 @@ export default function App() {
               onUploadClick={() => fileInputRef.current?.click()}
               onUseSample={() => setImageSrc(SAMPLE_IMAGE)}
               error={error}
+              currentModeEvidence={currentModeEvidence}
             />
           </section>
 
@@ -293,19 +280,7 @@ function ImagePanel({ src, label, borderLeft = false }: { src: string; label: st
   );
 }
 
-function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey, strength, setStrength, currentMode, onUploadClick, onUseSample, error }: {
-  category: ModeCategory;
-  setCategory: (category: ModeCategory) => void;
-  categoryModes: ModeDef[];
-  modeKey: string;
-  setModeKey: (modeKey: string) => void;
-  strength: number;
-  setStrength: (value: number) => void;
-  currentMode: ModeDef;
-  onUploadClick: () => void;
-  onUseSample: () => void;
-  error: string;
-}) {
+function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey, strength, setStrength, currentMode, onUploadClick, onUseSample, error, currentModeEvidence }: ControlRailProps & { currentModeEvidence: ReturnType<typeof getModeEvidence> }) {
   return (
     <aside className="control-rail">
       <div className="control-block">
@@ -340,6 +315,8 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
         <p className="control-note">Research-based approximation. Not a diagnostic tool.</p>
         {error ? <p className="error-text">{error}</p> : null}
       </div>
+
+      <ModeEvidencePanel mode={currentMode} evidence={currentModeEvidence} />
     </aside>
   );
 }
