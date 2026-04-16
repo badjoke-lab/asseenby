@@ -75,6 +75,14 @@ Each mode can expose:
 
 When many links exist, only a subset should appear by default, with the remainder behind an expandable list.
 
+Supporting sources should be shown in a stable priority order:
+1. review
+2. paper
+3. organization
+4. reference
+
+This keeps the panel readable and makes the supporting list less dependent on raw input order.
+
 ## What the badges do not mean
 The badge system does not claim:
 - medical validation
