@@ -385,8 +385,70 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: REVIEWED_ON,
   },
-  age: pendingModeEvidence("Reference profile based on broad age-related viewing tendencies rather than individual prediction."),
-  sex: pendingModeEvidence("Reference profile based on averaged population framing rather than personal prediction."),
+  age: {
+    summary: "Averaged reference profile for age-related visual change, centered on reduced contrast, increased glare sensitivity, and lower clarity under challenging conditions.",
+    evidenceScore: "B",
+    modelScore: "C",
+    basisNote: "Age-related changes in vision are real and well documented, especially for contrast sensitivity, glare sensitivity, and near focusing. However, the pattern varies widely across individuals and ocular conditions.",
+    modelNote: "The current age profile is a broad reference preset built from lower contrast, mild warming, and general softening tendencies. It is intentionally an averaged framing device rather than a validated aging-vision model.",
+    caveat: "This mode should not be read as a prediction of what any specific older person sees. Normal aging, cataract, presbyopia, retinal disease, and glare sensitivity can diverge substantially.",
+    primarySource: {
+      title: "National Eye Institute — Everyone’s Vision Can Change With Age",
+      url: "https://www.nei.nih.gov/learn-about-eye-health/outreach-resources/outreach-materials/everyones-vision-can-change-age",
+      kind: "organization",
+      note: "Official public-facing overview that vision commonly changes with age and that both normal aging and age-related eye disease affect viewing quality.",
+    },
+    supportingSources: [
+      {
+        title: "Adult age differences in visual acuity, stereopsis, and contrast sensitivity",
+        url: "https://pubmed.ncbi.nlm.nih.gov/3688177/",
+        kind: "paper",
+        note: "Classic evidence that contrast sensitivity is a useful measure for age-related changes in visual function.",
+      },
+      {
+        title: "Age-related effects of glare on luminance and color contrast sensitivity",
+        url: "https://pubmed.ncbi.nlm.nih.gov/7898887/",
+        kind: "paper",
+        note: "Shows that glare-related reductions in sensitivity increase with age, supporting the glare component of the reference profile.",
+      },
+    ],
+    lastReviewed: REVIEWED_ON,
+  },
+  sex: {
+    summary: "Averaged reference profile for sex-related visual differences, kept intentionally weak because reported differences are small, task-specific, and heterogeneous.",
+    evidenceScore: "C",
+    modelScore: "D",
+    basisNote: "Some studies report small sex-related differences in parts of color appearance or visual perception, while other tasks show little or no difference. The literature is not strong enough to justify a broad perceptual profile as a firm claim.",
+    modelNote: "The current sex-difference profile is only a placeholder framing tool with very light image adjustments. It does not represent a validated male-versus-female visual model and should be treated as provisional.",
+    caveat: "Do not read this mode as a statement about what all men or all women see. Reported differences are generally modest, task-dependent, and not suitable for a strong generalized simulation.",
+    primarySource: {
+      title: "Sex-related differences in peripheral human color vision: a color matching study",
+      url: "https://pubmed.ncbi.nlm.nih.gov/22275467/",
+      kind: "paper",
+      note: "Example of a reported sex-related difference in peripheral color appearance, useful as a limited basis rather than a universal rule.",
+    },
+    supportingSources: [
+      {
+        title: "Sex and vision II: color appearance of monochromatic lights",
+        url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3483194/",
+        kind: "paper",
+        note: "Reports small but measurable sex-related differences in hue appearance under tightly controlled laboratory conditions.",
+      },
+      {
+        title: "Sex-related differences in vision are heterogeneous",
+        url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC5951855/",
+        kind: "paper",
+        note: "Large study showing that sex effects across visual tasks are mixed and do not support a single simple visual-difference story.",
+      },
+      {
+        title: "Natural variation in female reproductive hormones does not affect contrast sensitivity",
+        url: "https://pubmed.ncbi.nlm.nih.gov/29515869/",
+        kind: "paper",
+        note: "Useful counterweight showing no sex difference in contrast sensitivity in that study, which supports keeping this reference mode conservative.",
+      },
+    ],
+    lastReviewed: REVIEWED_ON,
+  },
 };
 
 export function getModeEvidence(modeKey: string): ModeEvidence {
