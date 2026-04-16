@@ -12,6 +12,7 @@ export function ModeEvidencePanel({
 }) {
   const visibleSupporting = evidence.supportingSources.slice(0, 3);
   const hiddenSupporting = evidence.supportingSources.slice(3);
+  const readerNote = buildReaderNote(mode.confidence, evidence.modelScore);
 
   return (
     <section className="evidence-card">
@@ -28,6 +29,13 @@ export function ModeEvidencePanel({
       </div>
 
       <p className="evidence-summary">{evidence.summary}</p>
+
+      {readerNote ? (
+        <div className="evidence-reader-note">
+          <div className="evidence-reader-note__label">How to read this mode</div>
+          <p className="evidence-reader-note__text">{readerNote}</p>
+        </div>
+      ) : null}
 
       {evidence.caveat ? (
         <div className="evidence-block">
@@ -108,11 +116,27 @@ function classConfidence(confidence: Confidence) {
   return "evidence-badge evidence-badge--reference";
 }
 
-function classScore(score: ModeEvidence["evidenceScore"]) {
+function classScore(score: ModeEvidence["evidenceScore"] | ModeEvidence["modelScore"]) {
   if (score === "A") return "evidence-badge evidence-badge--score-a";
   if (score === "B") return "evidence-badge evidence-badge--score-b";
   if (score === "C") return "evidence-badge evidence-badge--score-c";
   return "evidence-badge evidence-badge--score-d";
+}
+
+function buildReaderNote(confidence: Confidence, modelScore: ModeEvidence["modelScore"]) {
+  if (confidence === "Reference" && modelScore === "D") {
+    return "This is an averaged framing device with a very weak implementation claim. Read it as a cautious reference view, not as a population truth.";
+  }
+  if (confidence === "Reference") {
+    return "This is an averaged framing device rather than an individual simulation. Use it to compare tendencies, not to infer what a specific person sees.";
+  }
+  if (modelScore === "D") {
+    return "The underlying phenomenon may be well supported, but the current image transform is still very limited. Treat this as a rough visual proxy only.";
+  }
+  if (modelScore === "C") {
+    return "The current transform expresses a tendency rather than a strong simulation. Use it as an explanatory aid, not as an exact reproduction.";
+  }
+  return "";
 }
 
 function formatKind(kind: string) {
