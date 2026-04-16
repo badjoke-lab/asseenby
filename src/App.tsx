@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
 import { getModeEvidence } from "./modeEvidence";
 import { CompareMode, ModeCategory, ModeDef, MODES, Confidence } from "./modes";
+import { applyTransform as applyImageTransform } from "./transformEngine";
 
 type ControlRailProps = {
   category: ModeCategory;
@@ -103,27 +104,9 @@ export default function App() {
           </section>
 
           <section className="category-grid">
-            <CategoryPanel
-              title="Human"
-              subtitle="Visual conditions and perceptual differences."
-              items={humanModes.map((mode) => mode.label)}
-              icon={<EyeSketch className="mini-plate" />}
-              onClick={() => setCategory("Human")}
-            />
-            <CategoryPanel
-              title="Animal"
-              subtitle="How other species may see the world."
-              items={animalModes.map((mode) => mode.label)}
-              icon={<BirdSketch className="mini-plate" />}
-              onClick={() => setCategory("Animal")}
-            />
-            <CategoryPanel
-              title="Reference"
-              subtitle="Profiles based on research and averages."
-              items={referenceModes.map((mode) => mode.label)}
-              icon={<ChartSketch className="mini-plate" />}
-              onClick={() => setCategory("Reference")}
-            />
+            <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
+            <CategoryPanel title="Animal" subtitle="How other species may see the world." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
+            <CategoryPanel title="Reference" subtitle="Profiles based on research and averages." items={referenceModes.map((mode) => mode.label)} icon={<ChartSketch className="mini-plate" />} onClick={() => setCategory("Reference")} />
           </section>
 
           <footer className="footer-strip">
@@ -173,37 +156,23 @@ function Hero() {
   return (
     <section className="hero-grid">
       <div>
-        <h1 className="hero-title">
-          See the same image through different <span>ways of seeing.</span>
-        </h1>
+        <h1 className="hero-title">See the same image through different <span>ways of seeing.</span></h1>
       </div>
-
       <div className="hero-copy">
         <p>
           AsSeenBy is a research-based viewer that simulates how an image may appear under different visual conditions and in the eyes of other species.
           <span> Not a diagnostic tool—an instrument for understanding.</span>
         </p>
       </div>
-
       <div className="eye-plate-card">
         <div className="plate-title">Fig. I. The Human Eye</div>
-        <div>
-          <EyePlate className="plate-eye" />
-        </div>
+        <div><EyePlate className="plate-eye" /></div>
       </div>
     </section>
   );
 }
 
-function CompareStage({
-  originalUrl,
-  transformedUrl,
-  compareMode,
-  setCompareMode,
-  divider,
-  setDivider,
-  isBusy,
-}: {
+function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode, divider, setDivider, isBusy }: {
   originalUrl: string;
   transformedUrl: string;
   compareMode: CompareMode;
@@ -232,12 +201,7 @@ function CompareStage({
           <div className="compare-overlay">
             <img src={originalUrl} alt="Original" className="compare-image" />
             <div className="compare-overlay-layer" style={{ width: `${effectiveDivider}%` }}>
-              <img
-                src={transformedUrl}
-                alt="Simulated"
-                className="compare-image"
-                style={{ width: `${100 / (effectiveDivider / 100)}%`, maxWidth: "none" }}
-              />
+              <img src={transformedUrl} alt="Simulated" className="compare-image" style={{ width: `${100 / (effectiveDivider / 100)}%`, maxWidth: "none" }} />
             </div>
             <LabelPill className="image-label image-label--left">Original</LabelPill>
             <LabelPill className="image-label image-label--right">Simulated</LabelPill>
@@ -247,7 +211,6 @@ function CompareStage({
           </div>
         )}
       </div>
-
       <div className="compare-toolbar">
         <div className="compare-toolbar-top">
           <div className="pill-row">
@@ -258,7 +221,6 @@ function CompareStage({
           </div>
           <div className="toolbar-note">{toolbarNote}</div>
         </div>
-
         {isInteractiveSlider ? (
           <div className="balance-row">
             <span className="toolbar-label">Balance</span>
@@ -287,13 +249,11 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
         <label className="control-label">Category</label>
         <SelectLike value={category} options={["Human", "Animal", "Reference"]} onChange={(value) => setCategory(value as ModeCategory)} />
       </div>
-
       <div className="control-block">
         <label className="control-label">Mode</label>
         <SelectLike value={modeKey} options={categoryModes.map((mode) => mode.key)} onChange={setModeKey} labels={Object.fromEntries(categoryModes.map((m) => [m.key, m.label]))} />
         <p className="control-note">{currentMode.note}</p>
       </div>
-
       <div className="control-block">
         <label className="control-label">Strength</label>
         <div className="strength-row">
@@ -301,12 +261,10 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
           <span>{strength}%</span>
         </div>
       </div>
-
       <div className="button-stack">
         <button className="primary-button" onClick={onUploadClick}>Upload image</button>
         <button className="secondary-button" onClick={onUseSample}>Use sample image</button>
       </div>
-
       <div className="class-box">
         <div className="class-row">
           <span className="control-label">Class</span>
@@ -315,7 +273,6 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
         <p className="control-note">Research-based approximation. Not a diagnostic tool.</p>
         {error ? <p className="error-text">{error}</p> : null}
       </div>
-
       <ModeEvidencePanel mode={currentMode} evidence={currentModeEvidence} />
     </aside>
   );
@@ -375,263 +332,12 @@ async function prepareImages(source: string, modeKey: string, amount: number) {
   const transformedCanvas = document.createElement("canvas");
   transformedCanvas.width = width;
   transformedCanvas.height = height;
-  const transformedCtx = transformedCanvas.getContext("2d");
-  if (!transformedCtx) throw new Error("Canvas is not available.");
-  transformedCtx.drawImage(baseCanvas, 0, 0);
-
-  applyTransform(baseCanvas, transformedCanvas, modeKey, amount);
+  applyImageTransform(baseCanvas, transformedCanvas, modeKey, amount);
 
   return {
     originalUrl: baseCanvas.toDataURL("image/jpeg", 0.94),
     transformedUrl: transformedCanvas.toDataURL("image/jpeg", 0.94),
   };
-}
-
-function applyTransform(baseCanvas: HTMLCanvasElement, outCanvas: HTMLCanvasElement, modeKey: string, amount: number) {
-  const width = baseCanvas.width;
-  const height = baseCanvas.height;
-  const ctx = outCanvas.getContext("2d");
-  if (!ctx) return;
-
-  if (modeKey === "blur") {
-    const blurCanvas = document.createElement("canvas");
-    blurCanvas.width = width;
-    blurCanvas.height = height;
-    const blurCtx = blurCanvas.getContext("2d");
-    if (!blurCtx) return;
-    blurCtx.filter = `blur(${1 + amount * 8}px)`;
-    blurCtx.drawImage(baseCanvas, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(blurCanvas, 0, 0);
-    return;
-  }
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.drawImage(baseCanvas, 0, 0);
-
-  if (modeKey === "tunnel") {
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = Math.max(width, height) * (0.6 - amount * 0.26);
-    const outer = Math.max(width, height) * 0.9;
-    const gradient = ctx.createRadialGradient(cx, cy, radius, cx, cy, outer);
-    gradient.addColorStop(0, "rgba(0,0,0,0)");
-    gradient.addColorStop(0.75, `rgba(28,22,18,${0.1 + amount * 0.2})`);
-    gradient.addColorStop(1, `rgba(18,14,12,${0.55 + amount * 0.28})`);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    return;
-  }
-
-  if (modeKey === "central_loss") {
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = Math.min(width, height) * (0.08 + amount * 0.14);
-    const gradient = ctx.createRadialGradient(cx, cy, radius * 0.15, cx, cy, radius);
-    gradient.addColorStop(0, `rgba(38,33,30,${0.55 + amount * 0.25})`);
-    gradient.addColorStop(0.6, `rgba(75,66,58,${0.32 + amount * 0.12})`);
-    gradient.addColorStop(1, "rgba(75,66,58,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    return;
-  }
-
-  if (modeKey === "cataract") {
-    const hazeCanvas = document.createElement("canvas");
-    hazeCanvas.width = width;
-    hazeCanvas.height = height;
-    const hazeCtx = hazeCanvas.getContext("2d");
-    if (!hazeCtx) return;
-    hazeCtx.filter = `blur(${1 + amount * 4}px)`;
-    hazeCtx.drawImage(baseCanvas, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(hazeCanvas, 0, 0);
-    ctx.fillStyle = `rgba(255,245,220,${0.1 + amount * 0.18})`;
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = `rgba(201,170,100,${0.04 + amount * 0.08})`;
-    ctx.fillRect(0, 0, width, height);
-    const imageData = ctx.getImageData(0, 0, width, height);
-    applyLowContrastToData(imageData.data, 0.18 + amount * 0.22);
-    ctx.putImageData(imageData, 0, 0);
-    return;
-  }
-
-  if (modeKey === "night") {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i] / 255;
-      let g = data[i + 1] / 255;
-      let b = data[i + 2] / 255;
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      const dark = 0.42 + amount * 0.35;
-      r = mix(r, luma, 0.5 + amount * 0.35) * (1 - dark * 0.4);
-      g = mix(g, luma, 0.45 + amount * 0.3) * (1 - dark * 0.28);
-      b = mix(b, luma, 0.38 + amount * 0.25) * (1 - dark * 0.1);
-      data[i] = clamp255(r * 255);
-      data[i + 1] = clamp255(g * 255);
-      data[i + 2] = clamp255(b * 255);
-    }
-    ctx.putImageData(imageData, 0, 0);
-    return;
-  }
-
-  if (modeKey === "fatigue") {
-    const fatigueCanvas = document.createElement("canvas");
-    fatigueCanvas.width = width;
-    fatigueCanvas.height = height;
-    const fatigueCtx = fatigueCanvas.getContext("2d");
-    if (!fatigueCtx) return;
-    fatigueCtx.filter = `blur(${0.6 + amount * 3.2}px)`;
-    fatigueCtx.drawImage(baseCanvas, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(fatigueCanvas, 0, 0);
-    const imageData = ctx.getImageData(0, 0, width, height);
-    applyLowContrastToData(imageData.data, 0.08 + amount * 0.12);
-    ctx.putImageData(imageData, 0, 0);
-    return;
-  }
-
-  if (modeKey === "dry_eye") {
-    const dryCanvas = document.createElement("canvas");
-    dryCanvas.width = width;
-    dryCanvas.height = height;
-    const dryCtx = dryCanvas.getContext("2d");
-    if (!dryCtx) return;
-    dryCtx.filter = `blur(${0.4 + amount * 2.1}px)`;
-    dryCtx.drawImage(baseCanvas, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(dryCanvas, 0, 0);
-    addDryEyeOverlay(ctx, width, height, amount);
-    return;
-  }
-
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-
-  if (modeKey === "low_contrast") {
-    applyLowContrastToData(data, amount * 0.55);
-  } else if (modeKey === "protan") {
-    applyColorDeficiency(data, amount, [[0.567, 0.433, 0], [0.558, 0.442, 0], [0, 0.242, 0.758]]);
-  } else if (modeKey === "deutan") {
-    applyColorDeficiency(data, amount, [[0.625, 0.375, 0], [0.7, 0.3, 0], [0, 0.3, 0.7]]);
-  } else if (modeKey === "tritan") {
-    applyColorDeficiency(data, amount, [[0.95, 0.05, 0], [0, 0.433, 0.567], [0, 0.475, 0.525]]);
-  } else if (modeKey === "dog") {
-    applyColorDeficiency(data, amount * 0.85, [[0.62, 0.38, 0], [0.22, 0.78, 0], [0, 0.32, 0.68]]);
-    applyLowContrastToData(data, amount * 0.12);
-  } else if (modeKey === "cat") {
-    applyColorDeficiency(data, amount * 0.7, [[0.7, 0.3, 0], [0.25, 0.75, 0], [0.05, 0.25, 0.7]]);
-    desaturateData(data, 0.14 + amount * 0.12);
-  } else if (modeKey === "bee") {
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const nr = mix(r, g * 0.55, amount * 0.7);
-      const ng = mix(g, clamp255(g * 1.06 + b * 0.06), amount * 0.4);
-      const nb = mix(b, clamp255(b * 1.12 + g * 0.08), amount * 0.45);
-      data[i] = clamp255(nr);
-      data[i + 1] = clamp255(ng);
-      data[i + 2] = clamp255(nb);
-    }
-  } else if (modeKey === "bird") {
-    saturateData(data, 0.08 + amount * 0.18);
-    boostMicroContrast(data, 0.02 + amount * 0.05);
-  } else if (modeKey === "age") {
-    applyLowContrastToData(data, 0.12 + amount * 0.16);
-    warmTintData(data, 0.04 + amount * 0.08);
-  } else if (modeKey === "sex") {
-    saturateData(data, amount * 0.04);
-    boostMicroContrast(data, amount * 0.015);
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-
-  if (modeKey === "dog" || modeKey === "cat") {
-    const softCanvas = document.createElement("canvas");
-    softCanvas.width = width;
-    softCanvas.height = height;
-    const softCtx = softCanvas.getContext("2d");
-    if (!softCtx) return;
-    softCtx.filter = `blur(${0.6 + amount * 2}px)`;
-    softCtx.drawImage(outCanvas, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(softCanvas, 0, 0);
-  }
-}
-
-function applyColorDeficiency(data: Uint8ClampedArray, amount: number, matrix: number[][]) {
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const tr = clamp255(r * matrix[0][0] + g * matrix[0][1] + b * matrix[0][2]);
-    const tg = clamp255(r * matrix[1][0] + g * matrix[1][1] + b * matrix[1][2]);
-    const tb = clamp255(r * matrix[2][0] + g * matrix[2][1] + b * matrix[2][2]);
-    data[i] = clamp255(mix(r, tr, amount));
-    data[i + 1] = clamp255(mix(g, tg, amount));
-    data[i + 2] = clamp255(mix(b, tb, amount));
-  }
-}
-
-function applyLowContrastToData(data: Uint8ClampedArray, amount: number) {
-  const midpoint = 127.5;
-  const factor = 1 - amount;
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = clamp255(midpoint + (data[i] - midpoint) * factor);
-    data[i + 1] = clamp255(midpoint + (data[i + 1] - midpoint) * factor);
-    data[i + 2] = clamp255(midpoint + (data[i + 2] - midpoint) * factor);
-  }
-}
-
-function desaturateData(data: Uint8ClampedArray, amount: number) {
-  for (let i = 0; i < data.length; i += 4) {
-    const luma = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    data[i] = clamp255(mix(data[i], luma, amount));
-    data[i + 1] = clamp255(mix(data[i + 1], luma, amount));
-    data[i + 2] = clamp255(mix(data[i + 2], luma, amount));
-  }
-}
-
-function saturateData(data: Uint8ClampedArray, amount: number) {
-  for (let i = 0; i < data.length; i += 4) {
-    const luma = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    data[i] = clamp255(mix(luma, data[i], 1 + amount));
-    data[i + 1] = clamp255(mix(luma, data[i + 1], 1 + amount));
-    data[i + 2] = clamp255(mix(luma, data[i + 2], 1 + amount));
-  }
-}
-
-function warmTintData(data: Uint8ClampedArray, amount: number) {
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = clamp255(data[i] + 255 * amount * 0.45);
-    data[i + 1] = clamp255(data[i + 1] + 255 * amount * 0.18);
-    data[i + 2] = clamp255(data[i + 2] - 255 * amount * 0.12);
-  }
-}
-
-function boostMicroContrast(data: Uint8ClampedArray, amount: number) {
-  if (amount <= 0) return;
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = clamp255(data[i] + (data[i] - 127.5) * amount);
-    data[i + 1] = clamp255(data[i + 1] + (data[i + 1] - 127.5) * amount);
-    data[i + 2] = clamp255(data[i + 2] + (data[i + 2] - 127.5) * amount);
-  }
-}
-
-function addDryEyeOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, amount: number) {
-  const spots = 6;
-  for (let i = 0; i < spots; i += 1) {
-    const x = width * ((i * 0.17 + 0.12) % 1);
-    const y = height * ((i * 0.21 + 0.18) % 1);
-    const radius = Math.min(width, height) * (0.06 + 0.03 * i * amount);
-    const gradient = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius);
-    gradient.addColorStop(0, `rgba(255,250,235,${0.08 + amount * 0.12})`);
-    gradient.addColorStop(1, "rgba(255,250,235,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-  }
 }
 
 function fitWithin(width: number, height: number, maxWidth: number, maxHeight: number) {
@@ -646,14 +352,6 @@ function loadImage(src: string) {
     img.onerror = () => reject(new Error("Image could not be loaded."));
     img.src = src;
   });
-}
-
-function mix(a: number, b: number, amount: number) {
-  return a + (b - a) * amount;
-}
-
-function clamp255(value: number) {
-  return Math.max(0, Math.min(255, value));
 }
 
 function createSampleImage() {
