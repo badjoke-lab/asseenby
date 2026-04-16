@@ -80,6 +80,29 @@
   line-height: 1.65;
 }
 
+.evidence-reader-note {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #ddd0bf;
+  border-radius: 4px;
+  background: #f8f3ea;
+}
+
+.evidence-reader-note__label {
+  margin-bottom: 6px;
+  color: #7a7063;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+}
+
+.evidence-reader-note__text {
+  margin: 0;
+  color: #4f463c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .evidence-block {
   margin-top: 14px;
 }
