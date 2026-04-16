@@ -41,27 +41,38 @@ export function applyTransform(
   }
 
   if (modeKey === "tunnel") {
-    mixBlurredCopy(ctx, baseCanvas, width, height, 1.2 + amount * 2.2, 0.06 + amount * 0.1);
+    const edgeMask = createMaskCanvas(width, height, 0.44 - amount * 0.14, 0.84 - amount * 0.05, false);
+    const edgeBlur = blurCanvas(baseCanvas, 2 + amount * 6.2);
+    const edgeGray = grayscaleCanvas(baseCanvas);
+    overlayMaskedCanvas(ctx, edgeBlur, edgeMask, 0.58 + amount * 0.16);
+    overlayMaskedCanvas(ctx, edgeGray, edgeMask, 0.08 + amount * 0.1);
     addTunnelMask(ctx, width, height, amount);
     return;
   }
 
   if (modeKey === "central_loss") {
-    mixBlurredCopy(ctx, baseCanvas, width, height, 0.8 + amount * 1.6, 0.05 + amount * 0.08);
+    const centerMask = createMaskCanvas(width, height, 0.02 + amount * 0.03, 0.1 + amount * 0.16, true);
+    const centerBlur = blurCanvas(baseCanvas, 2.8 + amount * 6.8);
+    const centerGray = grayscaleCanvas(baseCanvas);
+    overlayMaskedCanvas(ctx, centerBlur, centerMask, 0.82);
+    overlayMaskedCanvas(ctx, centerGray, centerMask, 0.1 + amount * 0.1);
     addCentralLossMask(ctx, width, height, amount);
     return;
   }
 
   if (modeKey === "cataract") {
-    renderBlurred(ctx, baseCanvas, width, height, 1.4 + amount * 4.8);
+    renderBlurred(ctx, baseCanvas, width, height, 1.8 + amount * 5.4);
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
-    applyLowContrastToData(data, 0.22 + amount * 0.32);
-    desaturateData(data, 0.06 + amount * 0.1);
-    warmTintData(data, 0.06 + amount * 0.12);
+    applyLowContrastToData(data, 0.26 + amount * 0.3);
+    desaturateData(data, 0.08 + amount * 0.12);
+    warmTintData(data, 0.06 + amount * 0.14);
+    softenHighlights(data, 0.74, 0.18 + amount * 0.18);
     ctx.putImageData(imageData, 0, 0);
-    drawWarmVeil(ctx, width, height, 0.08 + amount * 0.1);
-    drawHighlightBloom(ctx, baseCanvas, 176, 10 + amount * 14, 0.14 + amount * 0.2, 0.35);
+    drawWarmVeil(ctx, width, height, 0.08 + amount * 0.12);
+    const edgeMask = createMaskCanvas(width, height, 0.58, 0.94, false);
+    overlayMaskedCanvas(ctx, blurCanvas(baseCanvas, 1.4 + amount * 4.2), edgeMask, 0.06 + amount * 0.08);
+    drawHighlightBloom(ctx, baseCanvas, 172, 10 + amount * 16, 0.14 + amount * 0.24, 0.38);
     return;
   }
 
@@ -103,14 +114,21 @@ export function applyTransform(
   const data = imageData.data;
 
   if (modeKey === "low_contrast") {
-    applyLowContrastToData(data, 0.22 + amount * 0.38);
-    desaturateData(data, 0.03 + amount * 0.05);
+    applyLowContrastToData(data, 0.24 + amount * 0.34);
+    desaturateData(data, 0.04 + amount * 0.07);
+    softenHighlights(data, 0.82, 0.06 + amount * 0.08);
   } else if (modeKey === "protan") {
-    applyColorMatrixLinear(data, amount, PROTAN_MATRIX, 0.42);
+    const severity = curveAmount(amount, 1.2);
+    applyColorMatrixLinear(data, severity, PROTAN_MATRIX, 0.44);
+    compressRedGreenAxis(data, 0.08 + severity * 0.18);
   } else if (modeKey === "deutan") {
-    applyColorMatrixLinear(data, amount, DEUTAN_MATRIX, 0.42);
+    const severity = curveAmount(amount, 1.16);
+    applyColorMatrixLinear(data, severity, DEUTAN_MATRIX, 0.44);
+    compressRedGreenAxis(data, 0.06 + severity * 0.16);
   } else if (modeKey === "tritan") {
-    applyColorMatrixLinear(data, amount, TRITAN_MATRIX, 0.36);
+    const severity = curveAmount(amount, 1.12);
+    applyColorMatrixLinear(data, severity, TRITAN_MATRIX, 0.38);
+    compressBlueYellowAxis(data, 0.07 + severity * 0.18);
   } else if (modeKey === "dog") {
     applyColorDeficiency(data, amount * 0.85, [[0.62, 0.38, 0], [0.22, 0.78, 0], [0, 0.32, 0.68]]);
     applyLowContrastToData(data, amount * 0.12);
@@ -168,10 +186,56 @@ function mixBlurredCopy(ctx: CanvasRenderingContext2D, source: HTMLCanvasElement
   ctx.restore();
 }
 
+function overlayMaskedCanvas(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLCanvasElement,
+  mask: HTMLCanvasElement,
+  alpha: number,
+) {
+  const masked = createCanvas(source.width, source.height);
+  const maskedCtx = masked.getContext("2d");
+  if (!maskedCtx) return;
+  maskedCtx.drawImage(source, 0, 0);
+  maskedCtx.globalCompositeOperation = "destination-in";
+  maskedCtx.drawImage(mask, 0, 0);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(masked, 0, 0);
+  ctx.restore();
+}
+
+function createMaskCanvas(
+  width: number,
+  height: number,
+  innerRatio: number,
+  outerRatio: number,
+  invert: boolean,
+) {
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  const cx = width / 2;
+  const cy = height / 2;
+  const base = Math.min(width, height) * 0.5;
+  const inner = Math.max(0, base * innerRatio);
+  const outer = Math.max(inner + 1, base * outerRatio);
+  const gradient = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+  if (invert) {
+    gradient.addColorStop(0, "rgba(0,0,0,1)");
+    gradient.addColorStop(0.65, "rgba(0,0,0,1)");
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+  } else {
+    gradient.addColorStop(0, "rgba(0,0,0,0)");
+    gradient.addColorStop(0.65, "rgba(0,0,0,0)");
+    gradient.addColorStop(1, "rgba(0,0,0,1)");
+  }
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  return canvas;
+}
+
 function blurCanvas(source: HTMLCanvasElement, blurPx: number) {
-  const canvas = document.createElement("canvas");
-  canvas.width = source.width;
-  canvas.height = source.height;
+  const canvas = createCanvas(source.width, source.height);
   const ctx = canvas.getContext("2d");
   if (!ctx) return canvas;
   ctx.filter = `blur(${blurPx}px)`;
@@ -180,14 +244,36 @@ function blurCanvas(source: HTMLCanvasElement, blurPx: number) {
   return canvas;
 }
 
-function drawHighlightBloom(ctx: CanvasRenderingContext2D, source: HTMLCanvasElement, threshold: number, blurPx: number, alpha: number, warmth: number) {
+function grayscaleCanvas(source: HTMLCanvasElement) {
+  const canvas = createCanvas(source.width, source.height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  ctx.drawImage(source, 0, 0);
+  const imageData = ctx.getImageData(0, 0, source.width, source.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const luma = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    data[i] = luma;
+    data[i + 1] = luma;
+    data[i + 2] = luma;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+function drawHighlightBloom(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLCanvasElement,
+  threshold: number,
+  blurPx: number,
+  alpha: number,
+  warmth: number,
+) {
   const width = source.width;
   const height = source.height;
   const sourceCtx = source.getContext("2d");
   if (!sourceCtx) return;
-  const bloomBase = document.createElement("canvas");
-  bloomBase.width = width;
-  bloomBase.height = height;
+  const bloomBase = createCanvas(width, height);
   const bloomCtx = bloomBase.getContext("2d");
   if (!bloomCtx) return;
   const imageData = sourceCtx.getImageData(0, 0, width, height);
@@ -249,7 +335,12 @@ function addCentralLossMask(ctx: CanvasRenderingContext2D, width: number, height
   ctx.restore();
 }
 
-function applyColorMatrixLinear(data: Uint8ClampedArray, amount: number, matrix: Matrix3x3, luminancePreserve: number) {
+function applyColorMatrixLinear(
+  data: Uint8ClampedArray,
+  amount: number,
+  matrix: Matrix3x3,
+  luminancePreserve: number,
+) {
   for (let i = 0; i < data.length; i += 4) {
     const sr = srgbToLinear(data[i]);
     const sg = srgbToLinear(data[i + 1]);
@@ -285,6 +376,24 @@ function applyColorDeficiency(data: Uint8ClampedArray, amount: number, matrix: n
     data[i] = clamp255(mix(r, tr, amount));
     data[i + 1] = clamp255(mix(g, tg, amount));
     data[i + 2] = clamp255(mix(b, tb, amount));
+  }
+}
+
+function compressRedGreenAxis(data: Uint8ClampedArray, amount: number) {
+  for (let i = 0; i < data.length; i += 4) {
+    const mean = (data[i] + data[i + 1]) * 0.5;
+    data[i] = clamp255(mix(data[i], mean, amount));
+    data[i + 1] = clamp255(mix(data[i + 1], mean, amount));
+  }
+}
+
+function compressBlueYellowAxis(data: Uint8ClampedArray, amount: number) {
+  for (let i = 0; i < data.length; i += 4) {
+    const yellow = (data[i] + data[i + 1]) * 0.5;
+    const blue = data[i + 2];
+    data[i + 2] = clamp255(mix(blue, yellow, amount));
+    data[i] = clamp255(mix(data[i], yellow * 0.9 + blue * 0.1, amount * 0.14));
+    data[i + 1] = clamp255(mix(data[i + 1], yellow * 0.94 + blue * 0.06, amount * 0.1));
   }
 }
 
@@ -324,6 +433,18 @@ function warmTintData(data: Uint8ClampedArray, amount: number) {
   }
 }
 
+function softenHighlights(data: Uint8ClampedArray, threshold: number, amount: number) {
+  const cutoff = threshold * 255;
+  for (let i = 0; i < data.length; i += 4) {
+    for (let c = 0; c < 3; c += 1) {
+      const value = data[i + c];
+      if (value <= cutoff) continue;
+      const extra = value - cutoff;
+      data[i + c] = clamp255(cutoff + extra * (1 - amount));
+    }
+  }
+}
+
 function boostMicroContrast(data: Uint8ClampedArray, amount: number) {
   if (amount <= 0) return;
   for (let i = 0; i < data.length; i += 4) {
@@ -359,6 +480,10 @@ function linearToSrgb255(value: number) {
   return encoded * 255;
 }
 
+function curveAmount(value: number, power: number) {
+  return clamp01(value) ** power;
+}
+
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
 }
@@ -369,4 +494,11 @@ function mix(a: number, b: number, amount: number) {
 
 function clamp255(value: number) {
   return Math.max(0, Math.min(255, value));
+}
+
+function createCanvas(width: number, height: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
 }
