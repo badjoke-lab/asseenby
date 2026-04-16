@@ -1,6 +1,6 @@
 import type { ModeEvidence } from "./evidenceTypes";
 
-const REVIEWED_ON = "2026-04-15";
+const REVIEWED_ON = "2026-04-16";
 
 function pendingModeEvidence(summary: string): ModeEvidence {
   return {
@@ -21,7 +21,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Red-green color-vision differences are well described in vision science and public clinical resources.",
-    modelNote: "The current output uses an RGB image-space simulation informed by established color-deficiency simulation work, but it is still a screen-space approximation rather than a patient-specific model.",
+    modelNote: "The current output uses a linear-RGB deficiency transform with additional red-green axis compression. It is stronger than a naive RGB mix, but still remains a screen-space approximation rather than a patient-specific perceptual model.",
     caveat: "This mode represents a viewing proxy for comparison. It does not reproduce an individual person's exact perception.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
@@ -50,7 +50,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Deutan-type differences are among the best-described color-vision-deficiency categories.",
-    modelNote: "The transform is guided by established simulation literature, but the present implementation is still constrained by RGB source images and display conditions.",
+    modelNote: "The transform now combines a linear-RGB deficiency mapping with additional red-green axis compression. This improves the visible comparison behavior, but it is still constrained by source-image gamut and display conditions.",
     caveat: "Use this output to compare tendencies, not to infer exact lived perception.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
@@ -79,7 +79,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Blue-yellow color-vision differences are clinically recognized and described in reference material alongside red-green differences.",
-    modelNote: "The current transform uses a simplified screen-space mapping that aims to express the direction of change rather than exact perceptual reconstruction.",
+    modelNote: "The current transform uses a linear-RGB deficiency mapping plus blue-yellow axis compression. It is a stronger comparison aid than a simple tint shift, but still not a full spectral or observer-specific simulation.",
     caveat: "This is an image transform for comparison. It does not model all spectral or individual differences.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
@@ -125,7 +125,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "B",
     modelScore: "B",
     basisNote: "Contrast sensitivity is a recognized component of visual function and differs from high-contrast acuity alone.",
-    modelNote: "Lowering image contrast is a reasonable first-pass way to show the direction of reduced contrast sensitivity, but it does not model the full spatial-frequency behavior of human vision.",
+    modelNote: "The transform now combines contrast reduction, slight desaturation, and mild highlight softening. That makes it a better first-pass comparison aid, but it still does not model the full spatial-frequency behavior of human contrast sensitivity.",
     caveat: "This is a broad proxy. Real contrast-sensitivity loss can vary with spatial frequency, light level, and ocular condition.",
     primarySource: {
       title: "PubMed / StatPearls — Contrast Sensitivity",
@@ -148,7 +148,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Cataracts are well described clinically as causing blurry or hazy vision, faded colors, light sensitivity, and trouble seeing at night.",
-    modelNote: "The current transform combines blur, lowered contrast, and a warm veil to express the common direction of cataract-related changes, but it is not a full optical lens model.",
+    modelNote: "The current transform combines blur, contrast loss, desaturation, warm veil, softened highlights, and bloom. This is a stronger screen-space communication model than blur alone, but it is still not a physical lens-scatter simulation.",
     caveat: "Cataract symptoms vary with type and severity. This mode is a visual proxy for comparison rather than a patient-specific simulation.",
     primarySource: {
       title: "National Eye Institute — Cataracts",
@@ -156,7 +156,14 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
       kind: "organization",
       note: "Public clinical overview of cataract symptoms including blurry vision, faded colors, light sensitivity, and night-vision difficulty.",
     },
-    supportingSources: [],
+    supportingSources: [
+      {
+        title: "MedlinePlus — Cataract",
+        url: "https://medlineplus.gov/cataract.html",
+        kind: "organization",
+        note: "Additional public clinical summary describing cloudy vision and glare-related complaints.",
+      },
+    ],
     lastReviewed: REVIEWED_ON,
   },
   tunnel: {
@@ -164,7 +171,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Peripheral vision loss is a standard clinical description in glaucoma and related visual-field conditions.",
-    modelNote: "A radial field mask is a reasonable way to communicate the direction of peripheral field restriction, but it cannot represent a real patient's measured field exactly.",
+    modelNote: "The current output now combines radial masking with peripheral blur and desaturation tendencies. It communicates peripheral field restriction more convincingly than a black vignette alone, but it still cannot represent a measured patient field exactly.",
     caveat: "Real visual-field loss is often irregular rather than perfectly circular. This mode is a simplified communication tool.",
     primarySource: {
       title: "National Eye Institute — Glaucoma",
@@ -172,7 +179,14 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
       kind: "organization",
       note: "Clinical reference describing loss of side or peripheral vision as a later symptom.",
     },
-    supportingSources: [],
+    supportingSources: [
+      {
+        title: "Merck Manual Consumer Version — Glaucoma",
+        url: "https://www.merckmanuals.com/home/eye-disorders/glaucoma/glaucoma",
+        kind: "organization",
+        note: "General clinical description of peripheral field loss progression and tunnel-vision-like outcomes.",
+      },
+    ],
     lastReviewed: REVIEWED_ON,
   },
   central_loss: {
@@ -180,7 +194,7 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Central vision loss is a standard clinical description in macular disease, including age-related macular degeneration.",
-    modelNote: "A central obscuration mask expresses the main viewing consequence, but it does not reproduce the many shapes and progressions that real central scotomas can take.",
+    modelNote: "The current output now combines central masking with localized blur and partial desaturation. It better conveys degraded central detail, but it still simplifies the irregular forms and progressions of real central scotomas.",
     caveat: "This mode simplifies a broad group of central-vision problems into one visual comparison proxy.",
     primarySource: {
       title: "National Eye Institute — Age-Related Macular Degeneration (AMD)",
@@ -188,7 +202,14 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
       kind: "organization",
       note: "Clinical overview describing blurry or blank areas in the center of vision and loss of sharp straight-ahead detail.",
     },
-    supportingSources: [],
+    supportingSources: [
+      {
+        title: "MedlinePlus — Macular Degeneration",
+        url: "https://medlineplus.gov/maculardegeneration.html",
+        kind: "organization",
+        note: "Public clinical summary describing central-vision difficulty in everyday tasks.",
+      },
+    ],
     lastReviewed: REVIEWED_ON,
   },
   night: {
