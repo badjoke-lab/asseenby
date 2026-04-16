@@ -36,6 +36,15 @@ Examples:
 Reference modes are averaged profiles, not individual predictions.
 They are intended as framing tools for comparison.
 
+## Evidence-badge limitation
+The evidence panel helps communicate claim strength and implementation maturity.
+It does not convert the product into a validated medical or perceptual instrument.
+
+Important reading rule:
+- a higher evidence score does not mean the visual output is exact
+- a higher model score does not mean patient-level accuracy
+- lower scores may reflect unfinished review rather than a false phenomenon
+
 ## Strength control limitation
 The strength slider changes degree within the current approximation model.
 It does not map to a validated real-world scale.
