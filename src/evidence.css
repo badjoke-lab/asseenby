@@ -1,0 +1,173 @@
+.evidence-card {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #ddd3c3;
+  border-radius: 4px;
+  background: #f6f1e8;
+}
+
+.evidence-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evidence-card__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #352d26;
+}
+
+.evidence-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #d8cebe;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.evidence-badge--strong {
+  background: #e8dcc2;
+  color: #8b6c32;
+}
+
+.evidence-badge--estimated {
+  background: #e6e1d5;
+  color: #62594d;
+}
+
+.evidence-badge--reference {
+  background: #ebe8e0;
+  color: #6c6257;
+}
+
+.evidence-badge--score-a {
+  background: #e3e0d1;
+  color: #4f5a38;
+}
+
+.evidence-badge--score-b {
+  background: #ece6d7;
+  color: #6f643e;
+}
+
+.evidence-badge--score-c {
+  background: #efe5dc;
+  color: #7a5b3f;
+}
+
+.evidence-badge--score-d {
+  background: #eee7e1;
+  color: #75655a;
+}
+
+.evidence-summary {
+  margin: 12px 0 0;
+  color: #433b32;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.evidence-block {
+  margin-top: 14px;
+}
+
+.evidence-block__label {
+  margin-bottom: 6px;
+  color: #7a7063;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10px;
+}
+
+.evidence-block__text {
+  margin: 0;
+  color: #544b40;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.source-list--nested {
+  margin-top: 10px;
+}
+
+.source-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #ddd3c3;
+  border-radius: 4px;
+  background: #f8f4ec;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.source-link:hover {
+  border-color: #c8b58c;
+  background: #faf6ee;
+}
+
+.source-link__title {
+  color: #312921;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.source-link__meta {
+  color: #7b725f;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.source-link__note {
+  color: #5b5247;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.source-details {
+  margin-top: 2px;
+}
+
+.source-details summary {
+  cursor: pointer;
+  color: #6a5f52;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.evidence-reviewed {
+  margin-top: 14px;
+  color: #7b725f;
+  font-size: 11px;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .evidence-card__header {
+    gap: 8px;
+  }
+
+  .evidence-badge-row {
+    gap: 6px;
+  }
+}
