@@ -27,6 +27,17 @@ The user can compare them through:
 
 The strength control changes the degree of transformation applied.
 
+## Evidence display model
+Each mode can expose a mode-level evidence panel in the UI.
+That panel is intended to show what kind of claim is being made and how mature the current approximation is.
+
+The panel uses three axes:
+- **Class** — Strong / Estimated / Reference
+- **Evidence** — A / B / C / D for the underlying phenomenon or viewing basis
+- **Model** — A / B / C / D for the current implementation maturity
+
+This means a mode can have strong evidence for the underlying phenomenon while still having only moderate confidence in the current browser-side transform.
+
 ## Human modes
 Human modes are divided into two groups.
 
@@ -78,6 +89,7 @@ These should not be interpreted as personal diagnosis or exact individual simula
 - no server-side image transformation
 - no stored uploads
 - static-image only
+- per-mode evidence metadata attached in the UI layer
 
 This keeps the product lightweight and privacy-friendly for the initial release.
 
