@@ -1,3 +1,4 @@
+import "../evidence.css";
 import type { ReactNode } from "react";
 import type { EvidenceLink, ModeEvidence } from "../evidenceTypes";
 import type { Confidence, ModeDef } from "../modes";
