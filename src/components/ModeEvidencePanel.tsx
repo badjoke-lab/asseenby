@@ -72,7 +72,7 @@ export function ModeEvidencePanel({
       </div>
 
       <div className="evidence-block">
-        <div className="evidence-block__label">Supporting sources</div>
+        <div className="evidence-block__label">Supporting sources ({sortedSupporting.length})</div>
         {visibleSupporting.length > 0 ? (
           <div className="source-list">
             {visibleSupporting.map((source) => (
@@ -108,7 +108,10 @@ function SourceLink({ source }: { source: EvidenceLink }) {
       className="source-link"
     >
       <span className="source-link__title">{source.title}</span>
-      <span className="source-link__meta">{formatKind(source.kind)}</span>
+      <span className="source-link__meta-row">
+        <span className="source-link__kind">{formatKind(source.kind)}</span>
+        <span className="source-link__domain">{formatHost(source.url)}</span>
+      </span>
       <span className="source-link__note">{source.note}</span>
     </a>
   );
@@ -158,4 +161,12 @@ function formatKind(kind: SourceKind) {
   if (kind === "paper") return "Paper";
   if (kind === "organization") return "Organization";
   return "Reference";
+}
+
+function formatHost(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "source";
+  }
 }
