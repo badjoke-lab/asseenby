@@ -214,18 +214,24 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
   },
   night: {
     summary: "Approximation of low-light viewing, with reduced color separation, lower contrast, and increased difficulty seeing detail.",
-    evidenceScore: "C",
+    evidenceScore: "B",
     modelScore: "C",
-    basisNote: "Low-light complaints are clinically real, but the present mode blends multiple tendencies into one simplified viewing proxy.",
-    modelNote: "The current transform is heuristic and should be treated as a first-pass communication aid rather than a validated low-light vision model.",
+    basisNote: "Difficulty seeing in low light or at night is a recognized clinical complaint, but this mode deliberately compresses multiple possible causes into one simplified viewing proxy.",
+    modelNote: "The current transform darkens, desaturates, and softens detail to express low-light difficulty. It is useful as a communication aid, but it remains heuristic rather than a validated scotopic vision model.",
     caveat: "Night viewing changes with adaptation state, glare, ocular health, and scene luminance. This mode is intentionally conservative in its claim strength.",
     primarySource: {
-      title: "National Eye Institute — Cataracts",
-      url: "https://www.nei.nih.gov/index.php/learn-about-eye-health/eye-conditions-and-diseases/cataracts",
+      title: "National Eye Institute — Low Vision",
+      url: "https://www.nei.nih.gov/eye-health-information/eye-conditions-and-diseases/low-vision",
       kind: "organization",
-      note: "Includes night-vision difficulty among common cataract-related viewing complaints.",
+      note: "Lists night blindness and low-light difficulty as a recognized low-vision type.",
     },
     supportingSources: [
+      {
+        title: "National Eye Institute — Cataracts",
+        url: "https://www.nei.nih.gov/index.php/learn-about-eye-health/eye-conditions-and-diseases/cataracts",
+        kind: "organization",
+        note: "Includes trouble seeing at night among common cataract-related complaints.",
+      },
       {
         title: "National Eye Institute — Age-Related Macular Degeneration (AMD)",
         url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/age-related-macular-degeneration",
@@ -235,7 +241,29 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: REVIEWED_ON,
   },
-  fatigue: pendingModeEvidence("Exploratory proxy for visual softness and reduced clarity associated with visual fatigue or prolonged strain."),
+  fatigue: {
+    summary: "Approximation of visual softness and reduced comfort associated with sustained visual effort or digital eye strain.",
+    evidenceScore: "B",
+    modelScore: "C",
+    basisNote: "Digital eye strain and sustained near-work discomfort are widely described as causing eyestrain, blur, headaches, and reduced comfort during prolonged screen use.",
+    modelNote: "The current transform uses mild blur and contrast reduction to express the general tendency toward tired, less crisp viewing. It is a communication proxy rather than a validated fatigue-specific visual model.",
+    caveat: "Visual fatigue is influenced by screen distance, glare, refractive error, dryness, posture, and task duration. This mode compresses those contributors into one simplified output.",
+    primarySource: {
+      title: "American Optometric Association — Computer Vision Syndrome",
+      url: "https://www.aoa.org/healthy-eyes/eye-and-vision-conditions/computer-vision-syndrome?sso=y",
+      kind: "organization",
+      note: "Public clinical overview of digital eye strain symptoms including eyestrain, blurred vision, dry eyes, and headaches.",
+    },
+    supportingSources: [
+      {
+        title: "National Eye Institute — Refractive Errors",
+        url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/refractive-errors",
+        kind: "organization",
+        note: "Lists eye strain and trouble focusing while reading or using a computer among common vision complaints.",
+      },
+    ],
+    lastReviewed: REVIEWED_ON,
+  },
   dry_eye: {
     summary: "Approximation of irregular blur and visual discomfort tendencies associated with dry eye symptoms.",
     evidenceScore: "B",
@@ -249,7 +277,14 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
       kind: "organization",
       note: "Clinical reference describing blurry vision among common dry-eye symptoms.",
     },
-    supportingSources: [],
+    supportingSources: [
+      {
+        title: "National Eye Institute — Causes of Dry Eye",
+        url: "https://www.nei.nih.gov/eye-health-information/eye-conditions-and-diseases/dry-eye/causes-dry-eye",
+        kind: "organization",
+        note: "Adds context on how dry eye can lead to discomfort and vision problems, and why symptoms fluctuate.",
+      },
+    ],
     lastReviewed: REVIEWED_ON,
   },
   dog: pendingModeEvidence("Visible-range approximation inspired by common descriptions of canine dichromatic vision."),
