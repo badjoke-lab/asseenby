@@ -1,4 +1,5 @@
-import type { ModeEvidence } from "../evidenceTypes";
+import type { ReactNode } from "react";
+import type { EvidenceLink, ModeEvidence } from "../evidenceTypes";
 import type { Confidence, ModeDef } from "../modes";
 
 export function ModeEvidencePanel({
@@ -81,7 +82,7 @@ export function ModeEvidencePanel({
   );
 }
 
-function SourceLink({ source }: { source: ModeEvidence["primarySource"] extends infer T ? Exclude<T, undefined> : never }) {
+function SourceLink({ source }: { source: EvidenceLink }) {
   return (
     <a
       href={source.url}
@@ -96,7 +97,7 @@ function SourceLink({ source }: { source: ModeEvidence["primarySource"] extends 
   );
 }
 
-function Badge({ children, className }: { children: React.ReactNode; className: string }) {
+function Badge({ children, className }: { children: ReactNode; className: string }) {
   return <span className={className}>{children}</span>;
 }
 
