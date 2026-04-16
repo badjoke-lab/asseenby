@@ -1,7 +1,14 @@
 import "../evidence.css";
 import type { ReactNode } from "react";
-import type { EvidenceLink, ModeEvidence } from "../evidenceTypes";
+import type { EvidenceLink, ModeEvidence, SourceKind } from "../evidenceTypes";
 import type { Confidence, ModeDef } from "../modes";
+
+const SOURCE_KIND_PRIORITY: Record<SourceKind, number> = {
+  review: 0,
+  paper: 1,
+  organization: 2,
+  reference: 3,
+};
 
 export function ModeEvidencePanel({
   mode,
@@ -10,8 +17,9 @@ export function ModeEvidencePanel({
   mode: ModeDef;
   evidence: ModeEvidence;
 }) {
-  const visibleSupporting = evidence.supportingSources.slice(0, 3);
-  const hiddenSupporting = evidence.supportingSources.slice(3);
+  const sortedSupporting = [...evidence.supportingSources].sort(compareSources);
+  const visibleSupporting = sortedSupporting.slice(0, 3);
+  const hiddenSupporting = sortedSupporting.slice(3);
   const readerNote = buildReaderNote(mode.confidence, evidence.modelScore);
 
   return (
@@ -72,7 +80,7 @@ export function ModeEvidencePanel({
             ))}
             {hiddenSupporting.length > 0 ? (
               <details className="source-details">
-                <summary>All sources ({evidence.supportingSources.length})</summary>
+                <summary>More sources ({hiddenSupporting.length})</summary>
                 <div className="source-list source-list--nested">
                   {hiddenSupporting.map((source) => (
                     <SourceLink key={source.url} source={source} />
@@ -139,9 +147,15 @@ function buildReaderNote(confidence: Confidence, modelScore: ModeEvidence["model
   return "";
 }
 
-function formatKind(kind: string) {
+function compareSources(a: EvidenceLink, b: EvidenceLink) {
+  const byKind = SOURCE_KIND_PRIORITY[a.kind] - SOURCE_KIND_PRIORITY[b.kind];
+  if (byKind !== 0) return byKind;
+  return a.title.localeCompare(b.title);
+}
+
+function formatKind(kind: SourceKind) {
+  if (kind === "review") return "Review";
   if (kind === "paper") return "Paper";
   if (kind === "organization") return "Organization";
-  if (kind === "review") return "Review";
   return "Reference";
 }
