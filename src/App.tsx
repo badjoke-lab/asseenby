@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
 import { getModeEvidence } from "./modeEvidence";
+import type { ModeEvidence } from "./evidenceTypes";
 import { CompareMode, ModeCategory, ModeDef, MODES, Confidence } from "./modes";
 import { applyTransform as applyImageTransform } from "./transformEngine";
 
@@ -86,6 +87,8 @@ export default function App() {
               divider={divider}
               setDivider={setDivider}
               isBusy={isBusy}
+              currentMode={currentMode}
+              currentModeEvidence={currentModeEvidence}
             />
             <ControlRail
               category={category}
@@ -172,7 +175,7 @@ function Hero() {
   );
 }
 
-function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode, divider, setDivider, isBusy }: {
+function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode, divider, setDivider, isBusy, currentMode, currentModeEvidence }: {
   originalUrl: string;
   transformedUrl: string;
   compareMode: CompareMode;
@@ -180,6 +183,8 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
   divider: number;
   setDivider: (value: number) => void;
   isBusy: boolean;
+  currentMode: ModeDef;
+  currentModeEvidence: ModeEvidence;
 }) {
   const effectiveDivider = compareMode === "split" ? 50 : divider;
   const isInteractiveSlider = compareMode === "slider";
@@ -188,6 +193,7 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
     : compareMode === "split"
       ? "Fixed 50 / 50 midpoint comparison"
       : "Original and transformed shown together";
+  const compareGuidance = buildCompareGuidance(currentMode, currentModeEvidence);
 
   return (
     <section className="compare-card">
@@ -226,6 +232,12 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
             <span className="toolbar-label">Balance</span>
             <input type="range" min={20} max={80} value={divider} onChange={(event) => setDivider(Number(event.target.value))} />
             <span className="balance-value">{divider}%</span>
+          </div>
+        ) : null}
+        {compareGuidance ? (
+          <div className="compare-guidance">
+            <div className="compare-guidance__label">Current mode notice</div>
+            <p className="compare-guidance__text">{compareGuidance}</p>
           </div>
         ) : null}
       </div>
@@ -316,6 +328,22 @@ function confidenceClassName(confidence: Confidence) {
   if (confidence === "Strong") return "confidence confidence--strong";
   if (confidence === "Estimated") return "confidence confidence--estimated";
   return "confidence confidence--reference";
+}
+
+function buildCompareGuidance(mode: ModeDef, evidence: ModeEvidence) {
+  if (mode.confidence === "Reference" && evidence.modelScore === "D") {
+    return `${mode.label} is a weak reference profile. Read it as an averaged framing view, not as a truth about a whole population.`;
+  }
+  if (mode.confidence === "Reference") {
+    return `${mode.label} is an averaged reference profile, not an individual simulation.`;
+  }
+  if (evidence.modelScore === "D") {
+    return `${mode.label} is shown as a rough visual proxy only. The phenomenon may be supported, but the current transform is still very limited.`;
+  }
+  if (evidence.modelScore === "C") {
+    return `${mode.label} expresses a tendency rather than a strong simulation. Use it as an explanatory comparison aid, not as an exact reproduction.`;
+  }
+  return "";
 }
 
 async function prepareImages(source: string, modeKey: string, amount: number) {
