@@ -78,7 +78,7 @@ export default function App() {
         <main className="content-area">
           <Hero />
 
-          <section className="workspace-grid">
+          <section id="workspace" className="workspace-grid">
             <CompareStage
               originalUrl={originalUrl}
               transformedUrl={transformedUrl}
@@ -106,7 +106,7 @@ export default function App() {
             />
           </section>
 
-          <section className="category-grid">
+          <section id="modes" className="category-grid">
             <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
             <CategoryPanel title="Animal" subtitle="How other species may see the world." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
             <CategoryPanel title="Reference" subtitle="Profiles based on research and averages." items={referenceModes.map((mode) => mode.label)} icon={<ChartSketch className="mini-plate" />} onClick={() => setCategory("Reference")} />
@@ -114,7 +114,7 @@ export default function App() {
 
           <footer className="footer-strip">
             <div className="footer-line" />
-            <p>Approximations only. See Methodology and Limitations for details.</p>
+            <p>Approximations only. See the mode notes and evidence panel for methodology and limitations.</p>
             <div className="footer-line" />
           </footer>
         </main>
@@ -143,21 +143,20 @@ export default function App() {
 function Header() {
   return (
     <header className="topbar">
-      <div className="brand">AsSeenBy</div>
+      <a href="#about" className="brand">AsSeenBy</a>
       <nav className="topnav">
-        <a href="#">About</a>
-        <a href="#">Modes</a>
-        <a href="#">Methodology</a>
-        <a href="#">Limitations</a>
+        <a href="#about">About</a>
+        <a href="#workspace">Compare</a>
+        <a href="#modes">Modes</a>
       </nav>
-      <button className="ghost-button">About this project</button>
+      <a href="#workspace" className="ghost-button">Open viewer</a>
     </header>
   );
 }
 
 function Hero() {
   return (
-    <section className="hero-grid">
+    <section id="about" className="hero-grid">
       <div>
         <h1 className="hero-title">See the same image through different <span>ways of seeing.</span></h1>
       </div>
