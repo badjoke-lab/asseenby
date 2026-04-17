@@ -150,6 +150,7 @@ input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 16px;
+  align-items: start;
 }
 
 .compare-card,
@@ -158,6 +159,11 @@ input {
   border: 1px solid #d9d0c2;
   border-radius: 6px;
   background: #f8f4ec;
+}
+
+.compare-card,
+.control-rail {
+  align-self: start;
 }
 
 .compare-stage {
@@ -352,6 +358,10 @@ input {
 
 .control-rail {
   padding: 16px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
 }
 
 .control-block + .control-block,
@@ -634,5 +644,15 @@ input {
 
   .category-items {
     grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 960px) {
+  .control-rail {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow: visible;
   }
 }
