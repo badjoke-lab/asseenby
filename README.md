@@ -2,7 +2,18 @@
 
 AsSeenBy is a research-based visual comparison tool for exploring how the same image may appear under different human visual conditions, animal approximations, and reference profiles.
 
+**Site:** [https://asseenby.pages.dev/](https://asseenby.pages.dev/)  
+**Support:** [Support AsSeenBy](https://buy.stripe.com/6oUcMY4cD3Zm6FdcNdcIE02?utm_source=github&utm_medium=repo&utm_campaign=support)
+
+Support is optional and helps cover maintenance, hosting, and future improvements.
+
+## Project direction
+
 The product direction is editorial rather than SaaS-like: off-white background, serif-led typography, and a quiet encyclopedia / atlas / research-book tone.
+
+## Status
+
+v0.1 is intentionally narrow and focused on a browser-based MVP.
 
 ## Current stack
 
@@ -13,9 +24,8 @@ The product direction is editorial rather than SaaS-like: off-white background, 
 
 ## MVP scope
 
-v0.1 is intentionally narrow.
+### Included in v0.1
 
-Included:
 - static image upload
 - sample image loading
 - compare stage with slider / split / side-by-side modes
@@ -25,7 +35,8 @@ Included:
 - mode-level evidence panel with badges and sources
 - no server-side image storage
 
-Not included:
+### Not included in v0.1
+
 - video processing
 - live camera mode
 - user accounts
@@ -37,6 +48,7 @@ Not included:
 ## Current mode groups
 
 ### Human
+
 - Protan-like
 - Deutan-like
 - Tritan-like
@@ -50,12 +62,14 @@ Not included:
 - Dry-eye-like
 
 ### Animal
+
 - Dog
 - Cat
 - Bee
 - Bird-like
 
 ### Reference
+
 - Age Profile
 - Sex-difference Profile
 
@@ -84,7 +98,7 @@ Not included:
 ```bash
 npm install
 npm run dev
-```
+````
 
 ## Production build
 
@@ -93,14 +107,14 @@ npm run build
 npm run preview
 ```
 
-## Notes
+## Notes and limitations
 
-- AsSeenBy is not a medical tool.
-- Human, animal, and reference outputs are research-based approximations.
-- Animal modes are visible-range approximations only.
-- UV, polarization, and full species-specific perception are not reproduced in v0.1.
-- Reference modes are averaged profiles only and should not be treated as individual-level predictions.
-- Evidence and model badges help communicate claim strength and implementation maturity, not certainty.
+* AsSeenBy is not a medical tool.
+* Human, animal, and reference outputs are research-based approximations.
+* Animal modes are visible-range approximations only.
+* UV, polarization, and full species-specific perception are not reproduced in v0.1.
+* Reference modes are averaged profiles only and should not be treated as individual-level predictions.
+* Evidence and model badges help communicate claim strength and implementation maturity, not certainty.
 
 ## Product positioning
 
