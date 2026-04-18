@@ -148,6 +148,7 @@ function Header() {
         <a href="#about">About</a>
         <a href="#workspace">Compare</a>
         <a href="#modes">Modes</a>
+        <a href="/support/">Support</a>
       </nav>
       <a href="#workspace" className="ghost-button">Open viewer</a>
     </header>
