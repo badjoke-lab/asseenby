@@ -20,8 +20,17 @@ type ControlRailProps = {
 };
 
 const SAMPLE_IMAGE = createSampleImage();
+const SUPPORT_URL = "https://buy.stripe.com/6oUcMY4cD3Zm6FdcNdcIE02?utm_source=asseenby&utm_medium=site&utm_campaign=support";
 
 export default function App() {
+  const pathname = typeof window !== "undefined" ? window.location.pathname.replace(/\/+$/, "") || "/" : "/";
+  if (pathname === "/support") {
+    return <SupportPage />;
+  }
+  return <HomePage />;
+}
+
+function HomePage() {
   const [category, setCategory] = useState<ModeCategory>("Human");
   const [modeKey, setModeKey] = useState<string>("protan");
   const [strength, setStrength] = useState(65);
@@ -136,6 +145,67 @@ export default function App() {
           event.currentTarget.value = "";
         }}
       />
+    </div>
+  );
+}
+
+function SupportPage() {
+  return (
+    <div className="page-shell">
+      <div className="page-frame support-frame">
+        <header className="topbar">
+          <a href="/" className="brand">AsSeenBy</a>
+          <nav className="topnav">
+            <a href="/">Home</a>
+            <a href="/support/" aria-current="page">Support</a>
+          </nav>
+          <a href="/" className="ghost-button">Open viewer</a>
+        </header>
+
+        <main className="content-area support-content">
+          <section className="support-hero">
+            <p className="support-kicker">Independent project support</p>
+            <h1 className="support-title">Support AsSeenBy</h1>
+            <p className="support-lead">
+              AsSeenBy is an independent project focused on visual perception, accessibility, and research-oriented visual comparison.
+            </p>
+          </section>
+
+          <section className="support-grid">
+            <article className="support-card">
+              <h2>Why support the project</h2>
+              <p>
+                If AsSeenBy is useful to you, you can support ongoing maintenance, hosting, research, and future improvements.
+              </p>
+              <p>
+                Support is completely optional. Every contribution helps keep the project online and makes continued development easier.
+              </p>
+            </article>
+
+            <aside className="support-card support-card--action">
+              <div className="support-rule" />
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="primary-button support-button"
+              >
+                Support AsSeenBy
+              </a>
+              <p className="support-note">One-time support via Stripe in USD.</p>
+            </aside>
+          </section>
+
+          <section className="support-card support-card--quiet">
+            <h2>What support helps cover</h2>
+            <ul className="support-list">
+              <li>site maintenance and hosting</li>
+              <li>continued research and evidence updates</li>
+              <li>future comparison modes and improvements</li>
+            </ul>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
