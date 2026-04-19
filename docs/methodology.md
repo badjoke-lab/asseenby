@@ -1,8 +1,8 @@
 # AsSeenBy — Methodology
 
 ## Positioning
-AsSeenBy is a research-based approximation tool.
-It compares an original image with a transformed version that represents a plausible viewing profile.
+AsSeenBy is a research-based comparison and approximation tool.
+It compares an original image with a transformed version that translates commonly described visual characteristics into a plausible viewing profile.
 
 It does not claim exact perceptual reproduction.
 It is not a diagnostic or medical product.
@@ -65,9 +65,9 @@ Animal modes in v0.1 are visible-range approximations only.
 They are included for comparison and education, not as claims of full species reproduction.
 
 Included animal modes:
-- dog
-- cat
-- bee
+- dog-like
+- cat-like
+- bee-like
 - bird-like
 
 Important note:
