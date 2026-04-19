@@ -1,6 +1,8 @@
 # AsSeenBy
 
-AsSeenBy is a research-based visual comparison tool for exploring how the same image may appear under different human visual conditions, animal approximations, and reference profiles.
+AsSeenBy is a research-based visual comparison tool for translating commonly described visual differences into image-based comparison views across human visual conditions, animal-inspired approximations, and reference profiles.
+
+It is designed for comparison, illustration, and discussion rather than exact perceptual reproduction, diagnosis, or medical judgment.
 
 **Site:** [https://asseenby.pages.dev/](https://asseenby.pages.dev/)  
 **Support:** [Support AsSeenBy](https://buy.stripe.com/6oUcMY4cD3Zm6FdcNdcIE02?utm_source=github&utm_medium=repo&utm_campaign=support)
@@ -63,9 +65,9 @@ v0.1 is intentionally narrow and focused on a browser-based MVP.
 
 ### Animal
 
-- Dog
-- Cat
-- Bee
+- Dog-like
+- Cat-like
+- Bee-like
 - Bird-like
 
 ### Reference
