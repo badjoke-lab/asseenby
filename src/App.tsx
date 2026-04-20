@@ -117,7 +117,7 @@ function HomePage() {
 
           <section id="modes" className="category-grid">
             <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
-            <CategoryPanel title="Animal" subtitle="How other species may see the world." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
+            <CategoryPanel title="Animal" subtitle="Animal-inspired comparison profiles." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
             <CategoryPanel title="Reference" subtitle="Profiles based on research and averages." items={referenceModes.map((mode) => mode.label)} icon={<ChartSketch className="mini-plate" />} onClick={() => setCategory("Reference")} />
           </section>
 
@@ -233,7 +233,7 @@ function Hero() {
       </div>
       <div className="hero-copy">
         <p>
-          AsSeenBy is a research-based viewer that simulates how an image may appear under different visual conditions and in the eyes of other species.
+          AsSeenBy is a research-based comparison viewer that translates commonly described visual differences into image-based approximations across human conditions, animal-inspired modes, and reference profiles.
           <span> Not a diagnostic tool—an instrument for understanding.</span>
         </p>
       </div>
@@ -271,16 +271,16 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
         {compareMode === "side-by-side" ? (
           <>
             <ImagePanel src={originalUrl} label="Original" />
-            <ImagePanel src={transformedUrl} label="Simulated" borderLeft />
+            <ImagePanel src={transformedUrl} label="Approximation" borderLeft />
           </>
         ) : (
           <div className="compare-overlay">
             <img src={originalUrl} alt="Original" className="compare-image" />
             <div className="compare-overlay-layer" style={{ width: `${effectiveDivider}%` }}>
-              <img src={transformedUrl} alt="Simulated" className="compare-image" style={{ width: `${100 / (effectiveDivider / 100)}%`, maxWidth: "none" }} />
+              <img src={transformedUrl} alt="Approximation" className="compare-image" style={{ width: `${100 / (effectiveDivider / 100)}%`, maxWidth: "none" }} />
             </div>
             <LabelPill className="image-label image-label--left">Original</LabelPill>
-            <LabelPill className="image-label image-label--right">Simulated</LabelPill>
+            <LabelPill className="image-label image-label--right">Approximation</LabelPill>
             <div className="divider-line" style={{ left: `${effectiveDivider}%` }} />
             {isInteractiveSlider ? <div className="divider-handle" style={{ left: `${effectiveDivider}%` }}>↔</div> : null}
             {isBusy ? <div className="loading-badge" /> : null}
