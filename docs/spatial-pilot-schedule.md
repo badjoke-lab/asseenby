@@ -12,14 +12,14 @@ Current implementation state:
 - slider / split / side-by-side image comparison remains in place;
 - `src/transformEngine.ts` remains the 2D image transform engine;
 - Three.js and TypeScript definitions are declared for the spatial track;
-- `Explore 3D` opens through the existing main index using `?view=spatial`;
+- `Explore 3D` opens through the existing main entry;
 - one controlled night-street scene exists;
 - the camera stays at one physical position and supports pointer/touch drag plus keyboard look-around;
 - Normal, Tunnel Vision, and Cataract-like are switchable without recreating or moving the camera;
 - Tunnel Vision is a live view-relative post-process;
-- Cataract-like uses live scene bright-pass bloom plus softness / contrast / warmth / veil processing;
+- Cataract-like now uses a rendered-image high-luminance gate plus local light spread, softness, contrast loss, warmth, and veil processing; the earlier broad bloom version was rejected after screenshot review because it washed out the scene;
 - spatial renderer-specific evidence notes are separate from the existing 2D model notes;
-- latest checked PR head build (run 61) passed dependency install, TypeScript checking, and Vite build.
+- dependency lockfile is synchronized with `three` and `@types/three`.
 
 ## Execution rule
 At the start of every step below, implementation work must re-read:
@@ -51,7 +51,7 @@ Completed:
 - CI build passed.
 
 ## Step 2 — Controlled night-street scene
-Status: **implementation complete; runtime visual validation pending Step 7**
+Status: **implementation complete; runtime visual validation in Step 7**
 
 Implemented scene targets:
 - red / green signal lenses;
@@ -68,7 +68,7 @@ Implemented scene targets:
 The scene uses procedural / primitive geometry and browser-generated text textures; no photorealistic asset pipeline was added.
 
 ## Step 3 — Camera and comparison invariants
-Status: **implementation complete; runtime interaction validation pending Step 7**
+Status: **implementation complete; browser interaction validation passed once and will be repeated after the cataract correction**
 
 Implemented:
 - pointer drag look-around;
@@ -79,7 +79,7 @@ Implemented:
 - perception mode changes toggle renderer passes without recreating the camera.
 
 ## Step 4 — Tunnel Vision spatial simulation
-Status: **implementation complete; visual validation pending Step 7 / 8**
+Status: **implementation complete; first rendered review passed**
 
 Implemented:
 - live post-processing shader;
@@ -88,23 +88,33 @@ Implemented:
 - mask is screen/view-relative;
 - same camera state is preserved across Normal <-> Tunnel Vision.
 
+Rendered review finding:
+- desktop Normal / Tunnel screenshots and look-around screenshot showed a clear view-relative peripheral-loss effect while retaining the center;
+- mobile touch validation also passed in the first browser run.
+
 Scientific boundary:
 - generic circular field-loss profile;
 - not individual perimetry reconstruction.
 
 ## Step 5 — Cataract-like scene-dependent simulation
-Status: **implementation complete; visual validation pending Step 7 / 8**
+Status: **corrected implementation; second rendered review required**
 
-Implemented:
-- `UnrealBloomPass` bright-pass response to rendered scene luminance;
-- high-emissive headlights / streetlights / signals provide actual bright scene sources;
-- post-process softness;
-- reduced contrast;
-- desaturation / warming;
-- veil / haze component;
-- same camera state is preserved across Normal <-> Cataract-like.
+First rendered review finding:
+- the initial broad bloom implementation was rejected because the scene became excessively washed out / gray and lost useful spatial information;
+- it was not accepted merely because the code built or the effect was technically scene-dependent.
 
-The glare component is not a fixed overlay: it depends on which bright rendered sources are currently in view.
+Correction applied:
+- broad `UnrealBloomPass` contribution is disabled for Cataract-like output;
+- the post-process now samples the live rendered frame and gates glare contribution by actual high luminance;
+- nearby and wider bright-sample offsets spread only bright rendered sources;
+- dark regions retain substantially more scene information;
+- modest optical softness, contrast loss, desaturation, warmth, and veil remain;
+- the same camera state is preserved across Normal <-> Cataract-like.
+
+Required next check:
+- regenerate desktop/mobile screenshots from the corrected implementation;
+- confirm headlights / streetlights create local glare while darker regions remain legible;
+- confirm turning the camera changes the glare response because the bright sources entering the rendered view change.
 
 Scientific boundary:
 - generic scene-dependent optical-impairment model;
@@ -123,7 +133,7 @@ Implemented:
 ## Step 7 — Responsive, accessibility, dependency, and performance pass
 Status: **in progress**
 
-Already implemented:
+Already implemented / verified:
 - responsive spatial layout;
 - 44px mode controls;
 - keyboard-focus styling;
@@ -135,13 +145,14 @@ Already implemented:
 - scene/material/texture cleanup;
 - composer/pass cleanup;
 - graceful renderer failure path;
-- latest build passes.
+- package lock synchronized;
+- first Chromium run passed desktop interaction, 390px mobile touch interaction, mode switching, horizontal-overflow checks, and console/page-error checks;
+- first screenshots established that Tunnel Vision was visually coherent but the first Cataract-like rendering was not, leading to the correction above.
 
-Still to verify / resolve before calling Step 7 complete:
-- dependency lockfile consistency after adding Three.js packages;
-- actual desktop browser rendering / interaction;
-- actual mobile/touch browser rendering / interaction;
-- subjective scene readability and performance on real hardware.
+Still to verify before calling Step 7 complete:
+- repeat Chromium desktop/mobile validation on the corrected Cataract-like implementation;
+- inspect the new screenshots visually;
+- confirm corrected glare remains scene-dependent and does not wash out the whole scene.
 
 ## Step 8 — Pilot acceptance gate
 Status: **not started**
@@ -174,4 +185,4 @@ If fail:
 Keep the image tool and remove or leave the spatial work experimental. Do not expand 3D because it merely looks impressive.
 
 ## Current next action
-Finish Step 7 dependency consistency and obtain an actual rendered desktop/mobile review before deciding Step 8 or merging the pilot into `main`.
+Run the second Chromium desktop/mobile validation on the corrected Cataract-like implementation, inspect the screenshots, then decide Step 7 completion and begin Step 8 only if the rendered result passes.
