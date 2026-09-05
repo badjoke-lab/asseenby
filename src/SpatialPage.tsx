@@ -9,7 +9,7 @@ export default function SpatialPage() {
           <a href="/" className="brand">AsSeenBy</a>
           <nav className="topnav" aria-label="Spatial navigation">
             <a href="/">Compare image</a>
-            <a href="/spatial/" aria-current="page">Explore 3D</a>
+            <a href="/?view=spatial" aria-current="page">Explore 3D</a>
             <a href="/support/">Support</a>
           </nav>
           <a href="/" className="ghost-button">Back to image</a>
