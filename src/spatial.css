@@ -1,0 +1,264 @@
+.experience-switch {
+  width: min(1180px, calc(100% - 40px));
+  margin: 14px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+}
+
+.experience-switch__label {
+  color: #746f64;
+  margin-right: 4px;
+}
+
+.experience-switch__link {
+  color: #3a3935;
+  text-decoration: none;
+  border: 1px solid #c8c1b4;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #f4f0e7;
+}
+
+.experience-switch__link--active {
+  background: #2d2d2a;
+  color: #f7f3e9;
+  border-color: #2d2d2a;
+}
+
+.spatial-frame {
+  min-width: 0;
+}
+
+.spatial-content {
+  display: grid;
+  gap: 24px;
+}
+
+.spatial-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 28px;
+  align-items: end;
+}
+
+.spatial-kicker {
+  grid-column: 1 / -1;
+  margin: 0 0 -12px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #777166;
+}
+
+.spatial-title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 5vw, 4.8rem);
+  line-height: 0.98;
+  font-weight: 500;
+  color: #22211e;
+}
+
+.spatial-lead {
+  margin: 0;
+  line-height: 1.65;
+  color: #5f5a51;
+}
+
+.spatial-card {
+  border: 1px solid #cfc8ba;
+  background: #f7f3e9;
+}
+
+.spatial-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #d8d1c5;
+}
+
+.spatial-card__header h2 {
+  margin: 4px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.spatial-status {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid #bdb5a7;
+  border-radius: 999px;
+  color: #5c574e;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.spatial-mode-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d8d1c5;
+  background: #eee8dc;
+}
+
+.spatial-mode-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #aaa294;
+  border-radius: 999px;
+  background: #f7f3e9;
+  color: #35332f;
+  font: inherit;
+  cursor: pointer;
+}
+
+.spatial-mode-button--active {
+  background: #2d2d2a;
+  color: #f7f3e9;
+  border-color: #2d2d2a;
+}
+
+.spatial-mode-button:focus-visible {
+  outline: 3px solid #7f786b;
+  outline-offset: 2px;
+}
+
+.spatial-mode-description {
+  margin: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d8d1c5;
+  color: #5d584f;
+  line-height: 1.5;
+  background: #f7f3e9;
+}
+
+.spatial-render-host {
+  width: 100%;
+  min-height: 280px;
+  background: #171817;
+  overflow: hidden;
+}
+
+.spatial-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+
+.spatial-canvas:active {
+  cursor: grabbing;
+}
+
+.spatial-canvas:focus-visible {
+  outline: 3px solid #6e695f;
+  outline-offset: -3px;
+}
+
+.spatial-caption,
+.spatial-note {
+  padding: 14px 18px;
+  color: #655f55;
+  line-height: 1.55;
+  font-size: 0.9rem;
+}
+
+.spatial-caption {
+  border-top: 1px solid #d8d1c5;
+}
+
+.spatial-note {
+  border-left: 3px solid #8e8779;
+  background: #eee8dc;
+}
+
+.spatial-evidence {
+  display: grid;
+  gap: 12px;
+}
+
+.spatial-evidence__intro,
+.spatial-baseline-note {
+  border-top: 1px solid #cfc8ba;
+  border-bottom: 1px solid #cfc8ba;
+  padding: 15px 18px;
+  background: #f4efe5;
+  color: #5f594f;
+}
+
+.spatial-evidence__intro p,
+.spatial-baseline-note p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+}
+
+.spatial-error {
+  border: 1px solid #bcae9e;
+  background: #f4eee3;
+  padding: 22px;
+  color: #4f4941;
+}
+
+.spatial-error h2 {
+  margin-top: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.spatial-error a {
+  color: inherit;
+}
+
+@media (max-width: 760px) {
+  .experience-switch {
+    width: min(100% - 24px, 1180px);
+    justify-content: flex-start;
+  }
+
+  .spatial-intro {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .spatial-kicker {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  .spatial-title {
+    font-size: clamp(2rem, 12vw, 3.3rem);
+  }
+
+  .spatial-card__header {
+    align-items: center;
+  }
+
+  .spatial-mode-bar {
+    padding: 10px 12px;
+  }
+
+  .spatial-mode-button {
+    flex: 1 1 132px;
+  }
+
+  .spatial-mode-description {
+    padding: 11px 12px;
+  }
+
+  .spatial-render-host {
+    min-height: 240px;
+  }
+}

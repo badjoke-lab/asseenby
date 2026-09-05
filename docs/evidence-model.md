@@ -1,7 +1,7 @@
 # AsSeenBy — Evidence Model
 
 ## Why this exists
-AsSeenBy now exposes mode-level evidence metadata inside the UI.
+AsSeenBy exposes mode-level evidence metadata inside the UI.
 That means each mode can show:
 - a class badge
 - an evidence badge
@@ -21,8 +21,8 @@ Class describes the claim type of the mode itself.
 It is not a judgment about link quality.
 
 - **Strong**
-  - the mode has a comparatively clear justification for image-space approximation
-  - examples: color-deficiency-like transforms, blur, low contrast, field masks, cataract-like viewing
+  - the mode has a comparatively clear justification for visual comparison / simulation
+  - examples: color-deficiency-like transforms, blur, low contrast, field-loss models, cataract-like viewing
 
 - **Estimated**
   - the mode is useful, but more interpretive
@@ -33,7 +33,7 @@ It is not a judgment about link quality.
 
 ### 2. Evidence
 Evidence describes how strong the basis is for the underlying visual phenomenon or viewing tendency.
-It does **not** automatically mean the current image output is exact.
+It does **not** automatically mean the current rendered output is exact.
 
 - **A**
   - strong primary or organization-level support
@@ -46,8 +46,8 @@ It does **not** automatically mean the current image output is exact.
   - review still pending or evidence not yet organized for public display
 
 ### 3. Model
-Model describes how strong the current implementation is as a screen-space approximation.
-This is about the transform logic, not just the existence of sources.
+Model describes how strong the current implementation is for the renderer being used.
+This is about the actual simulation logic, not just the existence of sources.
 
 - **A**
   - the implementation is a comparatively direct fit for the visual effect being shown
@@ -58,13 +58,27 @@ This is about the transform logic, not just the existence of sources.
 - **D**
   - provisional implementation or source review still pending
 
+## Renderer-specific model confidence
+The same named mode can have different implementation maturity in different renderer tracks.
+
+For example:
+- the current 2D Tunnel Vision image transform is a simplified screen-space mask;
+- a future spatial Tunnel Vision implementation may use a live view-relative field model;
+- the underlying phenomenon evidence can remain the same while the `Model` assessment differs between the image and spatial implementations.
+
+Likewise, a spatial Cataract-like renderer that reacts to live scene luminance should not automatically inherit the model grade of the existing static-image transform. Its implementation must be reviewed on its own behavior.
+
+Therefore the spatial pilot must distinguish, in metadata or implementation notes, which renderer a model assessment refers to whenever there is a meaningful difference.
+
 ## Reading rule
 A mode can have:
 - strong evidence for the phenomenon
-- but only medium confidence in the current transform
+- but only medium confidence in the current renderer implementation
 
 That is normal.
-For example, a condition may be well established clinically while the browser-side image model remains a simplified proxy.
+For example, a condition may be well established clinically while a browser-side visual model remains a simplified proxy.
+
+A dynamic or visually sophisticated 3D result is not automatically more scientifically exact.
 
 ## Source display rules
 Each mode can expose:
@@ -93,11 +107,11 @@ The badge system does not claim:
 The badges are there to help users distinguish:
 - what kind of claim is being made
 - how strong the basis is
-- how mature the current transform is
+- how mature the current renderer implementation is
 
 ## Operational rule
-If a mode has not yet completed source review, it should stay conservative:
-- lower evidence score
-- lower model score
+If a mode or renderer implementation has not yet completed source / model review, it should stay conservative:
+- lower evidence score where evidence review is incomplete
+- lower model score where implementation maturity is incomplete
 - explicit caveat
 - no exaggerated wording
