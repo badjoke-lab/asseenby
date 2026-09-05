@@ -5,6 +5,9 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
+import { MODES } from "./modes";
+import { getSpatialModeEvidence } from "./spatialEvidence";
 
 type SpatialMode = "normal" | "tunnel" | "cataract";
 
@@ -85,6 +88,10 @@ const CATARACT_SHADER = {
 };
 
 export default function SpatialPage() {
+  const [mode, setMode] = useState<SpatialMode>("normal");
+  const evidenceModeKey = mode === "normal" ? null : mode;
+  const evidenceMode = evidenceModeKey ? MODES.find((item) => item.key === evidenceModeKey) ?? null : null;
+
   return (
     <div className="page-shell">
       <div className="page-frame spatial-frame">
@@ -107,22 +114,38 @@ export default function SpatialPage() {
             </p>
           </section>
 
-          <SpatialRenderer />
+          <SpatialRenderer mode={mode} setMode={setMode} />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
             <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the street scene. Tunnel Vision is a generic field-loss model; Cataract-like is a generic scene-dependent glare and haze model, not an individual's measured visual reconstruction.
           </section>
+
+          {evidenceModeKey && evidenceMode ? (
+            <section className="spatial-evidence" aria-label="Spatial mode evidence">
+              <div className="spatial-evidence__intro">
+                <div className="control-label">Spatial implementation evidence</div>
+                <p>
+                  The phenomenon evidence is shared with the corresponding AsSeenBy mode, while the Model score and implementation note below refer specifically to this experimental 3D renderer.
+                </p>
+              </div>
+              <ModeEvidencePanel mode={evidenceMode} evidence={getSpatialModeEvidence(evidenceModeKey)} />
+            </section>
+          ) : (
+            <section className="spatial-baseline-note" aria-label="Normal mode information">
+              <div className="control-label">Normal baseline</div>
+              <p>No perception simulation is applied. Use this view as the reference before switching to a spatial mode.</p>
+            </section>
+          )}
         </main>
       </div>
     </div>
   );
 }
 
-function SpatialRenderer() {
+function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode: SpatialMode) => void }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<SpatialController | null>(null);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<SpatialMode>("normal");
 
   useEffect(() => {
     controllerRef.current?.setMode(mode);
@@ -325,7 +348,7 @@ function SpatialRenderer() {
           <div className="control-label">Explore 3D</div>
           <h2>Controlled night-street scene</h2>
         </div>
-        <span className="spatial-status">Step 5</span>
+        <span className="spatial-status">Pilot</span>
       </div>
 
       <div className="spatial-mode-bar" role="group" aria-label="Spatial perception mode">
