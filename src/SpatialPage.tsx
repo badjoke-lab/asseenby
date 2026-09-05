@@ -1,5 +1,48 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+
+type SpatialMode = "normal" | "tunnel";
+
+type SpatialController = {
+  setMode: (mode: SpatialMode) => void;
+  render: () => void;
+};
+
+const TUNNEL_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 source = texture2D(tDiffuse, vUv);
+      vec2 centered = vUv - 0.5;
+      centered.x *= resolution.x / max(resolution.y, 1.0);
+      float radius = length(centered);
+      float visibility = 1.0 - smoothstep(0.22, 0.56, radius);
+      float edgeDesaturation = smoothstep(0.13, 0.48, radius);
+      float luma = dot(source.rgb, vec3(0.2126, 0.7152, 0.0722));
+      vec3 muted = mix(source.rgb, vec3(luma), edgeDesaturation * 0.55);
+      vec3 obscured = vec3(0.012, 0.014, 0.016);
+      gl_FragColor = vec4(mix(obscured, muted, visibility), source.a);
+    }
+  `,
+};
 
 export default function SpatialPage() {
   return (
@@ -27,7 +70,7 @@ export default function SpatialPage() {
           <SpatialRenderer />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Comparison rule:</strong> the camera stays in one physical position. Looking around changes only view direction, so later perception-mode switches compare the same place instead of moving the viewer.
+            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the street scene. Tunnel Vision is a generic view-relative field-loss model, not a reconstruction of an individual's measured visual field.
           </section>
         </main>
       </div>
@@ -37,15 +80,22 @@ export default function SpatialPage() {
 
 function SpatialRenderer() {
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const controllerRef = useRef<SpatialController | null>(null);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<SpatialMode>("normal");
+
+  useEffect(() => {
+    controllerRef.current?.setMode(mode);
+  }, [mode]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
+    let composer: EffectComposer | null = null;
+    let tunnelPass: ShaderPass | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    let renderScene = () => {};
 
     try {
       const scene = new THREE.Scene();
@@ -82,18 +132,36 @@ function SpatialRenderer() {
 
       createNightStreetScene(scene);
 
-      renderScene = () => {
-        if (!renderer) return;
-        renderer.render(scene, camera);
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      tunnelPass = new ShaderPass(TUNNEL_SHADER);
+      tunnelPass.enabled = false;
+      composer.addPass(tunnelPass);
+      composer.addPass(new OutputPass());
+
+      const renderScene = () => {
+        composer?.render();
+      };
+
+      const applyMode = (nextMode: SpatialMode) => {
+        if (tunnelPass) tunnelPass.enabled = nextMode === "tunnel";
+        renderScene();
+      };
+
+      controllerRef.current = {
+        setMode: applyMode,
+        render: renderScene,
       };
 
       const resize = () => {
-        if (!renderer) return;
+        if (!renderer || !composer || !tunnelPass) return;
         const width = Math.max(1, host.clientWidth);
         const height = Math.max(300, Math.round(width * 0.58));
         renderer.setSize(width, height, false);
+        composer.setSize(width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        (tunnelPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         renderScene();
       };
 
@@ -148,14 +216,18 @@ function SpatialRenderer() {
       resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(host);
       resize();
+      applyMode(mode);
 
       return () => {
+        controllerRef.current = null;
         canvas.removeEventListener("pointerdown", onPointerDown);
         canvas.removeEventListener("pointermove", onPointerMove);
         canvas.removeEventListener("pointerup", stopPointer);
         canvas.removeEventListener("pointercancel", stopPointer);
         canvas.removeEventListener("keydown", onKeyDown);
         resizeObserver?.disconnect();
+        tunnelPass?.material.dispose();
+        composer?.dispose();
         disposeScene(scene, host, renderer);
       };
     } catch (cause) {
@@ -163,10 +235,11 @@ function SpatialRenderer() {
     }
 
     return () => {
+      controllerRef.current = null;
       resizeObserver?.disconnect();
-      if (renderer) {
-        disposeScene(null, host, renderer);
-      }
+      tunnelPass?.material.dispose();
+      composer?.dispose();
+      if (renderer) disposeScene(null, host, renderer);
     };
   }, []);
 
@@ -187,11 +260,17 @@ function SpatialRenderer() {
           <div className="control-label">Explore 3D</div>
           <h2>Controlled night-street scene</h2>
         </div>
-        <span className="spatial-status">Step 3</span>
+        <span className="spatial-status">Step 4</span>
       </div>
+
+      <div className="spatial-mode-bar" role="group" aria-label="Spatial perception mode">
+        <button type="button" className={mode === "normal" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "normal"} onClick={() => setMode("normal")}>Normal</button>
+        <button type="button" className={mode === "tunnel" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "tunnel"} onClick={() => setMode("tunnel")}>Tunnel Vision</button>
+      </div>
+
       <div ref={hostRef} className="spatial-render-host" />
       <div className="spatial-caption">
-        Drag on the scene to look around. On a focused scene, arrow keys also change view direction. The viewpoint itself does not walk or teleport.
+        Drag on the scene to look around. Tunnel Vision stays centered on the live view while the camera remains at the same physical location. Arrow keys work when the scene has keyboard focus.
       </div>
     </section>
   );
