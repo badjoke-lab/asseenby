@@ -5,14 +5,15 @@ Branch: `feat/spatial-pilot`
 
 The existing public product is still the v0.1 static-image comparison tool. The spatial track is experimental and additive.
 
-Current implementation state before spatial coding:
-- Vite + React + TypeScript app exists;
-- static image upload and sample image flow exist;
-- slider / split / side-by-side comparison exists;
-- `src/transformEngine.ts` contains the current 2D image transforms;
-- mode evidence and limitations are already represented in the repository;
-- Three.js is not yet installed;
-- no spatial renderer exists yet.
+Current implementation state:
+- Vite + React + TypeScript image app remains in place;
+- static image upload and sample image flow remain in place;
+- slider / split / side-by-side image comparison remains in place;
+- `src/transformEngine.ts` remains the 2D image transform engine;
+- Three.js and TypeScript definitions are now declared for the spatial track;
+- `Explore 3D` now opens an isolated browser-side Three.js renderer through the existing main entry;
+- the renderer shell has initialization failure handling and explicit disposal;
+- PR #2 build run 51 passed `npm install`, TypeScript checking, and Vite build.
 
 ## Execution rule
 At the start of every step below, implementation work must re-read:
@@ -33,34 +34,32 @@ Completed:
 - `docs/roadmap.md`, `docs/methodology.md`, `docs/limitations.md`, `docs/ui-spec.md`, `docs/modes.md`, and `docs/evidence-model.md` aligned with the additive spatial track;
 - spatial terminology clarified: `approximation` is a claim boundary, while spatially dependent effects must use live scene-aware rendering rather than a static decorative filter.
 
-What this produces:
-A documented source of truth before code changes begin, preventing the 3D work from drifting into a game, decorative demo, or unsupported scientific claim.
-
 Acceptance:
 - required documents exist — **met**;
 - existing v0.1 image MVP remains explicitly preserved — **met**;
 - spatial modes are limited to Normal, Tunnel Vision, and Cataract-like for the first gate — **met**.
 
 ## Step 1 — Three.js integration shell
-Status: **in progress**
+Status: **complete**
 
-Work:
-- add `three` and required TypeScript typings/dependencies;
-- add an isolated spatial renderer/component;
-- add an `Explore 3D` entry without removing the current image workflow;
-- add graceful initialization failure handling.
+Completed:
+- `three` and `@types/three` declared;
+- isolated spatial React renderer added;
+- `Explore 3D` entry added without replacing the image workflow;
+- renderer has graceful failure UI and cleanup/disposal;
+- build workflow run 51 completed successfully.
 
 What this produces:
-The existing site can open an empty or minimal Three.js scene while the current `Compare image` experience continues to work unchanged.
+The existing site can open a minimal Three.js scene while `Compare image` continues to exist as the product baseline.
 
 Acceptance:
-- app builds;
-- image comparison still works;
-- 3D renderer initializes and disposes cleanly;
-- mobile layout does not break.
+- app builds — **met**;
+- image experience remains routed as the default — **met**;
+- 3D renderer initializes/disposes in an isolated component — **met by implementation and build**;
+- mobile layout has a dedicated responsive shell — **met at code level; broader interaction validation continues in Step 7**.
 
 ## Step 2 — Controlled night-street scene
-Status: **not started**
+Status: **in progress**
 
 Work:
 Create one lightweight test environment containing the visual targets required by `docs/spatial-pilot-spec.md`.
@@ -183,4 +182,4 @@ If fail:
 Keep the current image tool and remove or leave the spatial work experimental. Do not expand 3D simply because it looks impressive.
 
 ## Current next action
-Begin Step 1: install/integrate Three.js as an isolated spatial renderer and add the `Explore 3D` entry without changing existing image comparison behavior.
+Build the controlled night-street test environment for Step 2, then verify it before starting camera interaction.
