@@ -27,7 +27,7 @@ export default function SpatialPage() {
           <SpatialRenderer />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Current step:</strong> controlled scene baseline. Perception modes will be added only after the scene and camera comparison rules are stable.
+            <strong>Comparison rule:</strong> the camera stays in one physical position. Looking around changes only view direction, so later perception-mode switches compare the same place instead of moving the viewer.
           </section>
         </main>
       </div>
@@ -45,6 +45,7 @@ function SpatialRenderer() {
 
     let renderer: THREE.WebGLRenderer | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let renderScene = () => {};
 
     try {
       const scene = new THREE.Scene();
@@ -53,7 +54,19 @@ function SpatialRenderer() {
 
       const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 100);
       camera.position.set(0, 1.65, 7.4);
-      camera.lookAt(0, 1.5, -8);
+      camera.rotation.order = "YXZ";
+
+      let yaw = 0;
+      let pitch = -0.01;
+      let activePointer: number | null = null;
+      let lastX = 0;
+      let lastY = 0;
+
+      const applyCameraRotation = () => {
+        camera.rotation.y = yaw;
+        camera.rotation.x = pitch;
+      };
+      applyCameraRotation();
 
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -62,31 +75,98 @@ function SpatialRenderer() {
       renderer.toneMappingExposure = 1.05;
       renderer.shadowMap.enabled = false;
       renderer.domElement.className = "spatial-canvas";
-      renderer.domElement.setAttribute("aria-label", "Controlled three-dimensional night street scene");
+      renderer.domElement.tabIndex = 0;
+      renderer.domElement.setAttribute("role", "application");
+      renderer.domElement.setAttribute("aria-label", "Controlled night street scene. Drag or use arrow keys to look around.");
       host.appendChild(renderer.domElement);
 
       createNightStreetScene(scene);
 
-      const render = () => {
+      renderScene = () => {
+        if (!renderer) return;
+        renderer.render(scene, camera);
+      };
+
+      const resize = () => {
         if (!renderer) return;
         const width = Math.max(1, host.clientWidth);
         const height = Math.max(300, Math.round(width * 0.58));
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        renderer.render(scene, camera);
+        renderScene();
       };
 
-      resizeObserver = new ResizeObserver(render);
+      const canvas = renderer.domElement;
+      const onPointerDown = (event: PointerEvent) => {
+        if (activePointer !== null) return;
+        activePointer = event.pointerId;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        canvas.setPointerCapture(event.pointerId);
+        canvas.focus({ preventScroll: true });
+      };
+
+      const onPointerMove = (event: PointerEvent) => {
+        if (activePointer !== event.pointerId) return;
+        const dx = event.clientX - lastX;
+        const dy = event.clientY - lastY;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        yaw -= dx * 0.0042;
+        pitch = THREE.MathUtils.clamp(pitch - dy * 0.0036, -1.08, 1.08);
+        applyCameraRotation();
+        renderScene();
+      };
+
+      const stopPointer = (event: PointerEvent) => {
+        if (activePointer !== event.pointerId) return;
+        if (canvas.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
+        }
+        activePointer = null;
+      };
+
+      const onKeyDown = (event: KeyboardEvent) => {
+        const step = event.shiftKey ? 0.14 : 0.07;
+        if (event.key === "ArrowLeft") yaw += step;
+        else if (event.key === "ArrowRight") yaw -= step;
+        else if (event.key === "ArrowUp") pitch = THREE.MathUtils.clamp(pitch + step, -1.08, 1.08);
+        else if (event.key === "ArrowDown") pitch = THREE.MathUtils.clamp(pitch - step, -1.08, 1.08);
+        else return;
+        event.preventDefault();
+        applyCameraRotation();
+        renderScene();
+      };
+
+      canvas.addEventListener("pointerdown", onPointerDown);
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerup", stopPointer);
+      canvas.addEventListener("pointercancel", stopPointer);
+      canvas.addEventListener("keydown", onKeyDown);
+
+      resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(host);
-      render();
+      resize();
+
+      return () => {
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerup", stopPointer);
+        canvas.removeEventListener("pointercancel", stopPointer);
+        canvas.removeEventListener("keydown", onKeyDown);
+        resizeObserver?.disconnect();
+        disposeScene(scene, host, renderer);
+      };
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The 3D renderer could not start in this browser.");
     }
 
     return () => {
       resizeObserver?.disconnect();
-      disposeScene(host, renderer);
+      if (renderer) {
+        disposeScene(null, host, renderer);
+      }
     };
   }, []);
 
@@ -107,11 +187,11 @@ function SpatialRenderer() {
           <div className="control-label">Explore 3D</div>
           <h2>Controlled night-street scene</h2>
         </div>
-        <span className="spatial-status">Step 2</span>
+        <span className="spatial-status">Step 3</span>
       </div>
       <div ref={hostRef} className="spatial-render-host" />
       <div className="spatial-caption">
-        Scene targets include traffic signals, readable signage, a pedestrian, vehicle headlights, street lighting, crosswalk markings, storefront light, near/mid/far buildings, and a deliberately darker side region.
+        Drag on the scene to look around. On a focused scene, arrow keys also change view direction. The viewpoint itself does not walk or teleport.
       </div>
     </section>
   );
@@ -330,9 +410,21 @@ function addBox(
   return mesh;
 }
 
-function disposeScene(host: HTMLDivElement, renderer: THREE.WebGLRenderer | null) {
-  if (!renderer) return;
+function disposeScene(scene: THREE.Scene | null, host: HTMLDivElement, renderer: THREE.WebGLRenderer | null) {
+  if (scene) {
+    scene.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      mesh.geometry?.dispose?.();
+      const material = mesh.material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(material)) {
+        material.forEach((item) => disposeMaterial(item));
+      } else if (material) {
+        disposeMaterial(material);
+      }
+    });
+  }
 
+  if (!renderer) return;
   renderer.domElement.remove();
   renderer.dispose();
   renderer.forceContextLoss();
@@ -340,4 +432,10 @@ function disposeScene(host: HTMLDivElement, renderer: THREE.WebGLRenderer | null
   while (host.firstChild) {
     host.removeChild(host.firstChild);
   }
+}
+
+function disposeMaterial(material: THREE.Material) {
+  const withMap = material as THREE.Material & { map?: THREE.Texture };
+  withMap.map?.dispose();
+  material.dispose();
 }
