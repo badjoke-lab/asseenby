@@ -6,8 +6,11 @@ export default function ExperienceRoot() {
   const pathname = typeof window !== "undefined"
     ? window.location.pathname.replace(/\/+$/, "") || "/"
     : "/";
+  const view = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("view")
+    : null;
 
-  if (pathname === "/spatial") {
+  if (pathname === "/" && view === "spatial") {
     return <SpatialPage />;
   }
 
@@ -22,7 +25,7 @@ export default function ExperienceRoot() {
         <a className="experience-switch__link experience-switch__link--active" href="/" aria-current="page">
           Compare image
         </a>
-        <a className="experience-switch__link" href="/spatial/">
+        <a className="experience-switch__link" href="/?view=spatial">
           Explore 3D
         </a>
       </nav>
