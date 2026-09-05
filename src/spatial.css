@@ -113,6 +113,18 @@
   width: 100%;
   height: auto;
   display: block;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+
+.spatial-canvas:active {
+  cursor: grabbing;
+}
+
+.spatial-canvas:focus-visible {
+  outline: 3px solid #6e695f;
+  outline-offset: -3px;
 }
 
 .spatial-caption,
