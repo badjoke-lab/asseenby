@@ -45,12 +45,28 @@ async function dragCanvas(page, canvas, dx, dy) {
   return true;
 }
 
+async function checkImageExperience(page, label) {
+  await attachDiagnostics(page, label);
+  await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: /See the same image through different ways of seeing/i }).waitFor({ state: "visible" });
+  await page.getByRole("button", { name: "Upload image", exact: true }).waitFor({ state: "visible" });
+  await page.getByText("Original", { exact: true }).first().waitFor({ state: "visible" });
+  await page.getByText("Approximation", { exact: true }).first().waitFor({ state: "visible" });
+  await assertNoHorizontalOverflow(page, label);
+}
+
+// Existing image comparison is part of the spatial pilot acceptance gate and must not regress.
+const imageDesktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+await checkImageExperience(imageDesktop, "image-desktop");
+await imageDesktop.screenshot({ path: `${outDir}/desktop-image-baseline.png`, fullPage: true });
+await imageDesktop.close();
+
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
-await attachDiagnostics(desktop, "desktop");
+await attachDiagnostics(desktop, "spatial-desktop");
 await desktop.goto("http://127.0.0.1:4173/?view=spatial", { waitUntil: "networkidle" });
 const desktopCanvas = desktop.locator("canvas.spatial-canvas");
 await desktopCanvas.waitFor({ state: "visible" });
-await assertNoHorizontalOverflow(desktop, "desktop");
+await assertNoHorizontalOverflow(desktop, "spatial-desktop");
 
 // Forward-view comparison: same camera, only the perception renderer changes.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
@@ -62,7 +78,7 @@ await assertMode(desktop, "Normal");
 await assertMode(desktop, "Tunnel Vision");
 await desktop.screenshot({ path: `${outDir}/desktop-tunnel-forward.png`, fullPage: true });
 if (!(await dragCanvas(desktop, desktopCanvas, 250, -45))) {
-  failures.push("desktop: canvas has no bounding box");
+  failures.push("spatial-desktop: canvas has no bounding box");
 } else {
   await desktop.screenshot({ path: `${outDir}/desktop-tunnel-turned.png`, fullPage: true });
 }
@@ -79,12 +95,18 @@ const mobileContext = await browser.newContext({
   isMobile: true,
   hasTouch: true,
 });
+
+const imageMobile = await mobileContext.newPage();
+await checkImageExperience(imageMobile, "image-mobile");
+await imageMobile.screenshot({ path: `${outDir}/mobile-image-baseline.png`, fullPage: true });
+await imageMobile.close();
+
 const mobile = await mobileContext.newPage();
-await attachDiagnostics(mobile, "mobile");
+await attachDiagnostics(mobile, "spatial-mobile");
 await mobile.goto("http://127.0.0.1:4173/?view=spatial", { waitUntil: "networkidle" });
 const mobileCanvas = mobile.locator("canvas.spatial-canvas");
 await mobileCanvas.waitFor({ state: "visible" });
-await assertNoHorizontalOverflow(mobile, "mobile");
+await assertNoHorizontalOverflow(mobile, "spatial-mobile");
 
 await mobile.screenshot({ path: `${outDir}/mobile-normal-forward.png`, fullPage: true });
 await assertMode(mobile, "Cataract-like");
@@ -93,7 +115,7 @@ await assertMode(mobile, "Tunnel Vision");
 
 const mobileBox = await mobileCanvas.boundingBox();
 if (!mobileBox) {
-  failures.push("mobile: canvas has no bounding box");
+  failures.push("spatial-mobile: canvas has no bounding box");
 } else {
   const session = await mobileContext.newCDPSession(mobile);
   const startX = mobileBox.x + mobileBox.width * 0.52;
