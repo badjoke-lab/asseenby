@@ -24,24 +24,25 @@ At the start of every step below, implementation work must re-read:
 A step is not complete until its acceptance condition is satisfied. Update this file when status changes.
 
 ## Step 0 — Documentation baseline
-Status: **in progress**
+Status: **complete**
 
-Work:
-- add repository-level `AGENTS.md`;
-- add spatial pilot specification;
-- add this execution schedule;
-- align roadmap, methodology, limitations, and UI documentation with the additive spatial track.
+Completed:
+- repository-level `AGENTS.md` added;
+- `docs/spatial-pilot-spec.md` added;
+- this execution schedule added;
+- `docs/roadmap.md`, `docs/methodology.md`, `docs/limitations.md`, `docs/ui-spec.md`, `docs/modes.md`, and `docs/evidence-model.md` aligned with the additive spatial track;
+- spatial terminology clarified: `approximation` is a claim boundary, while spatially dependent effects must use live scene-aware rendering rather than a static decorative filter.
 
 What this produces:
-A single documented source of truth before code changes begin, preventing the 3D work from drifting into a game, decorative demo, or unsupported scientific claim.
+A documented source of truth before code changes begin, preventing the 3D work from drifting into a game, decorative demo, or unsupported scientific claim.
 
 Acceptance:
-- required documents exist;
-- the existing v0.1 image MVP remains explicitly preserved;
-- spatial modes are limited to Normal, Tunnel Vision, and Cataract-like for the first gate.
+- required documents exist — **met**;
+- existing v0.1 image MVP remains explicitly preserved — **met**;
+- spatial modes are limited to Normal, Tunnel Vision, and Cataract-like for the first gate — **met**.
 
 ## Step 1 — Three.js integration shell
-Status: **not started**
+Status: **in progress**
 
 Work:
 - add `three` and required TypeScript typings/dependencies;
@@ -182,4 +183,4 @@ If fail:
 Keep the current image tool and remove or leave the spatial work experimental. Do not expand 3D simply because it looks impressive.
 
 ## Current next action
-Finish Step 0 document alignment, then begin Step 1 Three.js integration shell.
+Begin Step 1: install/integrate Three.js as an isolated spatial renderer and add the `Explore 3D` entry without changing existing image comparison behavior.
