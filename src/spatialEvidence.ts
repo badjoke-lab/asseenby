@@ -19,7 +19,7 @@ export function getSpatialModeEvidence(modeKey: "tunnel" | "cataract"): ModeEvid
   return {
     ...base,
     modelScore: "C",
-    modelNote: "The spatial pilot combines live bright-pass bloom from rendered scene luminance with optical softness, lower contrast, warming, and a veil pass. Headlights and streetlights therefore create stronger glare when they enter the view instead of receiving a fixed decorative glow. This is still a generic browser model rather than a validated lens-scatter reconstruction.",
+    modelNote: "The spatial pilot samples the live rendered frame, gates light spread by actual high-luminance scene pixels, and combines that view-dependent glare with optical softness, lower contrast, slight desaturation, warming, and a veil component. Headlights, streetlights, and signals therefore spread more strongly when they are actually in view, while dark directions do not receive the same glare. This remains a generic browser model rather than a validated lens-scatter reconstruction.",
     caveat: "Cataract type, density, scatter, glare, contrast loss, and color shift vary substantially between individuals. This spatial output is an educational scene-dependent simulation, not a patient-specific optical measurement.",
     lastReviewed: SPATIAL_REVIEWED_ON,
   };
