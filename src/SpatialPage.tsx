@@ -4,8 +4,9 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
-type SpatialMode = "normal" | "tunnel";
+type SpatialMode = "normal" | "tunnel" | "cataract";
 
 type SpatialController = {
   setMode: (mode: SpatialMode) => void;
@@ -44,6 +45,45 @@ const TUNNEL_SHADER = {
   `,
 };
 
+const CATARACT_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    void main() {
+      vec2 px = 1.0 / max(resolution, vec2(1.0));
+      vec3 soft = texture2D(tDiffuse, vUv).rgb * 0.30;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb * 0.11;
+      soft += texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb * 0.11;
+      soft += texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb * 0.11;
+      soft += texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb * 0.11;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x, px.y)).rgb * 0.065;
+      soft += texture2D(tDiffuse, vUv + vec2(-px.x, px.y)).rgb * 0.065;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x, -px.y)).rgb * 0.065;
+      soft += texture2D(tDiffuse, vUv + vec2(-px.x, -px.y)).rgb * 0.065;
+
+      float luma = dot(soft, vec3(0.2126, 0.7152, 0.0722));
+      vec3 desaturated = mix(vec3(luma), soft, 0.78);
+      vec3 lowerContrast = mix(vec3(0.40), desaturated, 0.72);
+      vec3 warmed = lowerContrast * vec3(1.07, 1.015, 0.90);
+      vec3 veiled = mix(warmed, vec3(0.64, 0.58, 0.45), 0.085);
+      gl_FragColor = vec4(veiled, 1.0);
+    }
+  `,
+};
+
 export default function SpatialPage() {
   return (
     <div className="page-shell">
@@ -70,7 +110,7 @@ export default function SpatialPage() {
           <SpatialRenderer />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the street scene. Tunnel Vision is a generic view-relative field-loss model, not a reconstruction of an individual's measured visual field.
+            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the street scene. Tunnel Vision is a generic field-loss model; Cataract-like is a generic scene-dependent glare and haze model, not an individual's measured visual reconstruction.
           </section>
         </main>
       </div>
@@ -95,6 +135,8 @@ function SpatialRenderer() {
     let renderer: THREE.WebGLRenderer | null = null;
     let composer: EffectComposer | null = null;
     let tunnelPass: ShaderPass | null = null;
+    let cataractPass: ShaderPass | null = null;
+    let bloomPass: UnrealBloomPass | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
     try {
@@ -134,9 +176,19 @@ function SpatialRenderer() {
 
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
+
+      bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 1.3, 0.78, 0.62);
+      bloomPass.enabled = false;
+      composer.addPass(bloomPass);
+
+      cataractPass = new ShaderPass(CATARACT_SHADER);
+      cataractPass.enabled = false;
+      composer.addPass(cataractPass);
+
       tunnelPass = new ShaderPass(TUNNEL_SHADER);
       tunnelPass.enabled = false;
       composer.addPass(tunnelPass);
+
       composer.addPass(new OutputPass());
 
       const renderScene = () => {
@@ -144,6 +196,8 @@ function SpatialRenderer() {
       };
 
       const applyMode = (nextMode: SpatialMode) => {
+        if (bloomPass) bloomPass.enabled = nextMode === "cataract";
+        if (cataractPass) cataractPass.enabled = nextMode === "cataract";
         if (tunnelPass) tunnelPass.enabled = nextMode === "tunnel";
         renderScene();
       };
@@ -154,7 +208,7 @@ function SpatialRenderer() {
       };
 
       const resize = () => {
-        if (!renderer || !composer || !tunnelPass) return;
+        if (!renderer || !composer || !tunnelPass || !cataractPass) return;
         const width = Math.max(1, host.clientWidth);
         const height = Math.max(300, Math.round(width * 0.58));
         renderer.setSize(width, height, false);
@@ -162,6 +216,7 @@ function SpatialRenderer() {
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         (tunnelPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
+        (cataractPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         renderScene();
       };
 
@@ -227,6 +282,8 @@ function SpatialRenderer() {
         canvas.removeEventListener("keydown", onKeyDown);
         resizeObserver?.disconnect();
         tunnelPass?.material.dispose();
+        cataractPass?.material.dispose();
+        bloomPass?.dispose();
         composer?.dispose();
         disposeScene(scene, host, renderer);
       };
@@ -238,10 +295,18 @@ function SpatialRenderer() {
       controllerRef.current = null;
       resizeObserver?.disconnect();
       tunnelPass?.material.dispose();
+      cataractPass?.material.dispose();
+      bloomPass?.dispose();
       composer?.dispose();
       if (renderer) disposeScene(null, host, renderer);
     };
   }, []);
+
+  const modeDescription = mode === "normal"
+    ? "Baseline scene with no perception simulation."
+    : mode === "tunnel"
+      ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."
+      : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward headlights or streetlights, then toward a dark area to compare.";
 
   if (error) {
     return (
@@ -260,17 +325,19 @@ function SpatialRenderer() {
           <div className="control-label">Explore 3D</div>
           <h2>Controlled night-street scene</h2>
         </div>
-        <span className="spatial-status">Step 4</span>
+        <span className="spatial-status">Step 5</span>
       </div>
 
       <div className="spatial-mode-bar" role="group" aria-label="Spatial perception mode">
         <button type="button" className={mode === "normal" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "normal"} onClick={() => setMode("normal")}>Normal</button>
         <button type="button" className={mode === "tunnel" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "tunnel"} onClick={() => setMode("tunnel")}>Tunnel Vision</button>
+        <button type="button" className={mode === "cataract" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "cataract"} onClick={() => setMode("cataract")}>Cataract-like</button>
       </div>
 
+      <p className="spatial-mode-description" aria-live="polite">{modeDescription}</p>
       <div ref={hostRef} className="spatial-render-host" />
       <div className="spatial-caption">
-        Drag on the scene to look around. Tunnel Vision stays centered on the live view while the camera remains at the same physical location. Arrow keys work when the scene has keyboard focus.
+        Drag on the scene to look around. Mode switching keeps the same camera position and direction. Arrow keys work when the scene has keyboard focus.
       </div>
     </section>
   );
