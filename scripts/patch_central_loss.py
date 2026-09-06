@@ -110,13 +110,13 @@ replace_once(
     "resolution uniforms",
 )
 
-# There are two cleanup paths; update both.
+cleanup_count = text.count("tunnelPass?.material.dispose();")
+if cleanup_count != 2:
+    raise SystemExit(f"expected two tunnel cleanup anchors, found {cleanup_count}")
 text = text.replace(
-    "        tunnelPass?.material.dispose();\n        cataractPass?.material.dispose();",
-    "        tunnelPass?.material.dispose();\n        centralLossPass?.material.dispose();\n        cataractPass?.material.dispose();",
+    "tunnelPass?.material.dispose();",
+    "tunnelPass?.material.dispose();\n        centralLossPass?.material.dispose();",
 )
-if text.count("centralLossPass?.material.dispose();") != 2:
-    raise SystemExit("expected Central Loss disposal in both cleanup paths")
 
 replace_once(
     '  const modeDescription = mode === "normal"\n    ? "Baseline scene with no perception simulation."\n    : mode === "tunnel"\n      ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."\n      : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward headlights or streetlights, then toward a dark area to compare.";',
