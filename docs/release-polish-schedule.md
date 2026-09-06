@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R9 PASS / evidence accuracy validated / R8 production-polished**
+Status: **Step R10 ACTIVE / Strength semantics correction / R9 evidence accuracy validated**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -595,5 +595,30 @@ Validation:
 - dependency check confirmed `src/spatialEvidence.ts` calls `getModeEvidence("night")`, so deleting that base entry would incorrectly downgrade the spatial Night evidence to pending D;
 - corrected evidence-accuracy build + full browser validation `34046158078` — **success** (this commit is emitted only after all validation gates pass).
 
+## Step R10 — Strength semantics
+Status: **ACTIVE — implementation / validation**
+
+Finding:
+- the public image Strength control exposes 0–100%, and methodology defines it as the degree of transformation;
+- retained-Human output audit `34046781290` passed 24 controlled outputs at Strength 40/70/100 with no monotonicity or field-direction finding;
+- a dedicated Strength-0 audit `34046907994` then showed that 0% still applied substantial fixed effects: JPEG-roundtrip baseline mean delta was 0.731, while Blur was 8.63, Low Contrast 21.08, Cataract-like 30.38, and Tunnel Vision 6.66;
+- source inspection confirmed fixed nonzero terms at `amount=0` across multiple transforms, so the 0% label did not match renderer behavior.
+
+Implementation:
+- at Strength 0, use the Original source directly as Approximation rather than transform/JPEG-reencode it;
+- scale each transform's effect components continuously from identity to its existing 100% endpoint;
+- apply the same semantics to Dog-like because the Strength control is shared across all public image modes;
+- add permanent production-smoke coverage that checks exact Original/Approximation source identity at 0% for all 8 Human modes plus Dog-like;
+- document 0%=Original, 100%=full configured transform, with intermediate values explicitly non-clinical.
+
+Acceptance:
+- every public image mode is exact Original at Strength 0;
+- Strength 1 produces only a small departure from Original rather than the former fixed minimum effect;
+- controlled output delta increases monotonically through 1/40/70/100 for every public image mode;
+- Tunnel Vision remains edge-dominant and Central Loss remains center-dominant;
+- each mode's 100% configured endpoint is preserved;
+- full desktop/390px image + spatial regression remains green;
+- after merge, matching main build and production smoke must pass before R10 is marked production verified.
+
 ## Current next action
-Continue the roadmap's retained-mode transform/evidence-quality audit without reopening removed modes. Prioritize the remaining public image renderers by implementation maturity and evidence/model fit, while keeping the accepted spatial set stable.
+Validate the corrected 0/1/40/70/100 output curves for all 9 public image modes, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.

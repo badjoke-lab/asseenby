@@ -77,6 +77,15 @@ function HomePage() {
           baseCanvasRef.current = prepared;
         }
 
+        if (renderStrength <= 0) {
+          if (transformedObjectUrlRef.current) {
+            URL.revokeObjectURL(transformedObjectUrlRef.current);
+            transformedObjectUrlRef.current = null;
+          }
+          setTransformedUrl(imageSrc);
+          return;
+        }
+
         const transformedCanvas = document.createElement("canvas");
         transformedCanvas.width = prepared.canvas.width;
         transformedCanvas.height = prepared.canvas.height;

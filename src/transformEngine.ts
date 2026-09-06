@@ -36,43 +36,43 @@ export function applyTransform(
   drawBase(ctx, baseCanvas, width, height);
 
   if (modeKey === "blur") {
-    renderBlurred(ctx, baseCanvas, width, height, 1 + amount * 8);
+    renderBlurred(ctx, baseCanvas, width, height, amount * 9);
     return;
   }
 
   if (modeKey === "tunnel") {
     const edgeMask = createMaskCanvas(width, height, 0.44 - amount * 0.14, 0.84 - amount * 0.05, false);
-    const edgeBlur = blurCanvas(baseCanvas, 2 + amount * 6.2);
+    const edgeBlur = blurCanvas(baseCanvas, amount * 8.2);
     const edgeGray = grayscaleCanvas(baseCanvas);
-    overlayMaskedCanvas(ctx, edgeBlur, edgeMask, 0.58 + amount * 0.16);
-    overlayMaskedCanvas(ctx, edgeGray, edgeMask, 0.08 + amount * 0.1);
+    overlayMaskedCanvas(ctx, edgeBlur, edgeMask, amount * 0.74);
+    overlayMaskedCanvas(ctx, edgeGray, edgeMask, amount * 0.18);
     addTunnelMask(ctx, width, height, amount);
     return;
   }
 
   if (modeKey === "central_loss") {
     const centerMask = createMaskCanvas(width, height, 0.02 + amount * 0.03, 0.1 + amount * 0.16, true);
-    const centerBlur = blurCanvas(baseCanvas, 2.8 + amount * 6.8);
+    const centerBlur = blurCanvas(baseCanvas, amount * 9.6);
     const centerGray = grayscaleCanvas(baseCanvas);
-    overlayMaskedCanvas(ctx, centerBlur, centerMask, 0.82);
-    overlayMaskedCanvas(ctx, centerGray, centerMask, 0.1 + amount * 0.1);
+    overlayMaskedCanvas(ctx, centerBlur, centerMask, amount * 0.82);
+    overlayMaskedCanvas(ctx, centerGray, centerMask, amount * 0.2);
     addCentralLossMask(ctx, width, height, amount);
     return;
   }
 
   if (modeKey === "cataract") {
-    renderBlurred(ctx, baseCanvas, width, height, 1.8 + amount * 5.4);
+    renderBlurred(ctx, baseCanvas, width, height, amount * 7.2);
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
-    applyLowContrastToData(data, 0.26 + amount * 0.3);
-    desaturateData(data, 0.08 + amount * 0.12);
-    warmTintData(data, 0.06 + amount * 0.14);
-    softenHighlights(data, 0.74, 0.18 + amount * 0.18);
+    applyLowContrastToData(data, amount * 0.56);
+    desaturateData(data, amount * 0.2);
+    warmTintData(data, amount * 0.2);
+    softenHighlights(data, 0.74, amount * 0.36);
     ctx.putImageData(imageData, 0, 0);
-    drawWarmVeil(ctx, width, height, 0.08 + amount * 0.12);
+    drawWarmVeil(ctx, width, height, amount * 0.2);
     const edgeMask = createMaskCanvas(width, height, 0.58, 0.94, false);
-    overlayMaskedCanvas(ctx, blurCanvas(baseCanvas, 1.4 + amount * 4.2), edgeMask, 0.06 + amount * 0.08);
-    drawHighlightBloom(ctx, baseCanvas, 172, 10 + amount * 16, 0.14 + amount * 0.24, 0.38);
+    overlayMaskedCanvas(ctx, blurCanvas(baseCanvas, amount * 5.6), edgeMask, amount * 0.14);
+    drawHighlightBloom(ctx, baseCanvas, 172, amount * 26, amount * 0.38, 0.38);
     return;
   }
 
@@ -83,35 +83,35 @@ export function applyTransform(
   const data = imageData.data;
 
   if (modeKey === "low_contrast") {
-    applyLowContrastToData(data, 0.24 + amount * 0.34);
-    desaturateData(data, 0.04 + amount * 0.07);
-    softenHighlights(data, 0.82, 0.06 + amount * 0.08);
+    applyLowContrastToData(data, amount * 0.58);
+    desaturateData(data, amount * 0.11);
+    softenHighlights(data, 0.82, amount * 0.14);
   } else if (modeKey === "protan") {
     const severity = curveAmount(amount, 1.2);
     applyColorMatrixLinear(data, severity, PROTAN_MATRIX, 0.44);
-    compressRedGreenAxis(data, 0.08 + severity * 0.18);
+    compressRedGreenAxis(data, severity * 0.26);
   } else if (modeKey === "deutan") {
     const severity = curveAmount(amount, 1.16);
     applyColorMatrixLinear(data, severity, DEUTAN_MATRIX, 0.44);
-    compressRedGreenAxis(data, 0.06 + severity * 0.16);
+    compressRedGreenAxis(data, severity * 0.22);
   } else if (modeKey === "tritan") {
     const severity = curveAmount(amount, 1.12);
     applyColorMatrixLinear(data, severity, TRITAN_MATRIX, 0.38);
-    compressBlueYellowAxis(data, 0.07 + severity * 0.18);
+    compressBlueYellowAxis(data, severity * 0.25);
   } else if (modeKey === "dog") {
     const severity = curveAmount(amount, 1.08);
     // Human-display proxy: canine behavioral work supports a dichromatic pattern
     // broadly similar to human red-green deficiency, but this is not a canine
     // cone-catch reconstruction. Keep the chromatic and acuity changes restrained.
     applyColorMatrixLinear(data, severity * 0.82, DEUTAN_MATRIX, 0.34);
-    compressRedGreenAxis(data, 0.06 + severity * 0.12);
-    applyLowContrastToData(data, 0.035 + severity * 0.075);
+    compressRedGreenAxis(data, severity * 0.18);
+    applyLowContrastToData(data, severity * 0.11);
   }
 
   ctx.putImageData(imageData, 0, 0);
 
   if (modeKey === "dog") {
-    mixBlurredCopy(ctx, outCanvas, width, height, 0.45 + amount * 1.35, 0.52);
+    mixBlurredCopy(ctx, outCanvas, width, height, amount * 1.8, 0.52);
   }
 }
 
@@ -263,8 +263,8 @@ function addTunnelMask(ctx: CanvasRenderingContext2D, width: number, height: num
   const outer = Math.max(width, height) * 0.98;
   const gradient = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
   gradient.addColorStop(0, "rgba(0,0,0,0)");
-  gradient.addColorStop(0.7, `rgba(18,14,12,${0.08 + amount * 0.12})`);
-  gradient.addColorStop(1, `rgba(18,14,12,${0.58 + amount * 0.24})`);
+  gradient.addColorStop(0.7, `rgba(18,14,12,${amount * 0.2})`);
+  gradient.addColorStop(1, `rgba(18,14,12,${amount * 0.82})`);
   ctx.save();
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -276,8 +276,8 @@ function addCentralLossMask(ctx: CanvasRenderingContext2D, width: number, height
   const cy = height / 2;
   const radius = Math.min(width, height) * (0.08 + amount * 0.16);
   const gradient = ctx.createRadialGradient(cx, cy, radius * 0.18, cx, cy, radius);
-  gradient.addColorStop(0, `rgba(42, 36, 32, ${0.62 + amount * 0.18})`);
-  gradient.addColorStop(0.45, `rgba(64, 56, 50, ${0.34 + amount * 0.14})`);
+  gradient.addColorStop(0, `rgba(42, 36, 32, ${amount * 0.8})`);
+  gradient.addColorStop(0.45, `rgba(64, 56, 50, ${amount * 0.48})`);
   gradient.addColorStop(1, "rgba(64, 56, 50, 0)");
   ctx.save();
   ctx.fillStyle = gradient;

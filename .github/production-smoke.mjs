@@ -70,6 +70,44 @@ async function assertTouchTargets(locator, label) {
   }
 }
 
+async function setReactRangeValue(page, selector, value) {
+  const range = page.locator(selector);
+  await range.evaluate((element, nextValue) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    if (!setter) throw new Error("range value setter unavailable");
+    setter.call(element, String(nextValue));
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }, value);
+}
+
+async function assertImageStrengthZeroIdentity(page) {
+  await setReactRangeValue(page, "#strength-range", 0);
+  await page.waitForFunction(() => {
+    const original = document.querySelector('img[alt="Original"]')?.getAttribute("src");
+    const approximation = document.querySelector('img[alt="Approximation"]')?.getAttribute("src");
+    return document.querySelector("#strength-range")?.value === "0"
+      && document.querySelector(".compare-card")?.getAttribute("aria-busy") === "false"
+      && Boolean(original && approximation && original === approximation);
+  }, undefined, { timeout: 10_000 });
+
+  for (const [category, modes] of [["Human", expectedHumanImageModes], ["Animal", expectedAnimalImageModes]]) {
+    await page.locator("#category-select").selectOption(category);
+    for (const mode of modes) {
+      await page.locator("#mode-select").selectOption(mode);
+      await page.waitForTimeout(140);
+      await page.locator('.compare-card[aria-busy="false"]').waitFor({ timeout: 10_000 });
+      const original = await page.locator('img[alt="Original"]').first().getAttribute("src");
+      const approximation = await page.locator('img[alt="Approximation"]').first().getAttribute("src");
+      assert(original === approximation, `desktop image: Strength 0 is not Original for ${category}/${mode}`);
+    }
+  }
+  await page.locator("#category-select").selectOption("Human");
+  await page.locator("#mode-select").selectOption("protan");
+  await setReactRangeValue(page, "#strength-range", 65);
+  await page.waitForFunction(() => document.querySelector("#strength-range")?.value === "65" && document.querySelector(".compare-card")?.getAttribute("aria-busy") === "false", undefined, { timeout: 10_000 });
+}
+
 async function waitForCurrentProduction(page) {
   const file = {
     name: "production-smoke.svg",
@@ -157,6 +195,8 @@ async function desktopImageSmoke(browser) {
   assert(!humanBodyText.includes("Fatigue-like"), "desktop image: removed Fatigue-like mode is still visible");
   assert(!humanBodyText.includes("Dry-eye-like"), "desktop image: removed Dry-eye-like mode is still visible");
   assert(!humanBodyText.includes("Night / Low Light"), "desktop image: removed Night / Low Light image mode is still visible");
+
+  await assertImageStrengthZeroIdentity(page);
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();
