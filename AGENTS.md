@@ -8,13 +8,14 @@ Read these files before implementation and use them as the source of truth for s
 1. `README.md`
 2. `docs/roadmap.md`
 3. `docs/spatial-pilot-spec.md` when working on 3D / spatial features
-4. `docs/spatial-pilot-schedule.md` for current execution order and status
-5. `docs/methodology.md`
-6. `docs/limitations.md`
-7. `docs/ui-spec.md`
-8. `docs/modes.md` and `docs/evidence-model.md` when changing perception modes or evidence UI
+4. `docs/spatial-pilot-schedule.md` for spatial execution order and status
+5. `docs/release-polish-schedule.md` for image/release-polish execution order and production verification status
+6. `docs/methodology.md`
+7. `docs/limitations.md`
+8. `docs/ui-spec.md`
+9. `docs/modes.md` and `docs/evidence-model.md` when changing perception modes or evidence UI
 
-If code and documentation disagree, do not silently invent a new direction. Preserve the documented product boundary or update the relevant spec in the same change.
+If code and documentation disagree, do not silently invent a new direction. Preserve the documented product boundary or update the relevant spec/schedule in the same change.
 
 ## Product invariants
 - Keep the existing static-image comparison experience. The spatial experience is additive, not a replacement.
@@ -48,14 +49,17 @@ If code and documentation disagree, do not silently invent a new direction. Pres
 - Avoid unrelated refactors while a new spatial mode is being validated.
 - Keep desktop and mobile behavior usable.
 - Run `npm run build` before declaring an implementation step complete. The existing GitHub workflow runs the same typecheck + Vite build on pull requests and main.
+- For production-verification steps, preview/local success is not enough: test the public production URL and record stale/deployment-state failures separately from code failures.
 
 ## Progress discipline
-At the start of each implementation step, re-read `docs/spatial-pilot-schedule.md` and the relevant spec sections.
+At the start of each spatial implementation step, re-read `docs/spatial-pilot-schedule.md` and the relevant spec sections.
+
+At the start of each image/release-polish step, re-read `docs/release-polish-schedule.md` and `docs/roadmap.md`; if the step touches spatial behavior, also re-read the spatial spec/schedule.
 
 When a step is completed, blocked, rejected, or materially changed:
-- update `docs/spatial-pilot-schedule.md` in the same branch/PR;
-- update `docs/spatial-pilot-spec.md` if product behavior or acceptance criteria changed;
+- update the active schedule (`docs/spatial-pilot-schedule.md` or `docs/release-polish-schedule.md`) in the same branch/PR;
+- update `docs/spatial-pilot-spec.md` if spatial product behavior or acceptance criteria changed;
 - update `docs/methodology.md` / `docs/limitations.md` if the scientific or claim boundary changed;
 - keep renderer-specific Model notes separate from the existing 2D implementation assessment.
 
-Do not mark later spatial modes complete merely because scaffolding exists. Status is based on the acceptance criteria in the schedule, including actual rendered review and the scene-presentation quality gate.
+Do not mark a step complete merely because scaffolding exists. Status is based on the acceptance criteria in the active schedule, including actual rendered review where required and production verification where explicitly required.
