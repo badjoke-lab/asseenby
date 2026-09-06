@@ -4,6 +4,7 @@ import path from "node:path";
 
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
+const expectedAnimalImageModes = ["dog", "cat", "bird"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -70,21 +71,26 @@ async function waitForCurrentProduction(page) {
     const src = await page.locator('img[alt="Original"]').first().getAttribute("src");
 
     let currentReferenceSet = false;
+    let currentAnimalSet = false;
     try {
       await page.locator("#category-select").selectOption("Reference");
       const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
       currentReferenceSet = JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]);
+      await page.locator("#category-select").selectOption("Animal");
+      const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+      currentAnimalSet = JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes);
     } catch {
       currentReferenceSet = false;
+      currentAnimalSet = false;
     }
 
-    if (src?.startsWith("blob:") && currentReferenceSet) {
+    if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference exposes Age Profile only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like image mode absent`);
       return;
     }
 
-    result.notes.push(`attempt ${attempt}: production is stale for blob upload and/or Reference mode set`);
+    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Reference set, and/or Animal image set`);
     if (attempt < 12) await page.waitForTimeout(15_000);
   }
   throw new Error("Production did not reach the current blob-upload + Reference-mode release behavior within the retry window.");
@@ -107,6 +113,10 @@ async function desktopImageSmoke(browser) {
   const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
   assert(JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]), `desktop image: unexpected Reference modes ${JSON.stringify(referenceOptions)}`);
   assert(!(await page.locator("body").innerText()).includes("Sex-difference Profile"), "desktop image: removed Sex-difference Profile is still visible");
+  await page.locator("#category-select").selectOption("Animal");
+  const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+  assert(JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes), `desktop image: unexpected Animal image modes ${JSON.stringify(animalValues)}`);
+  assert(!(await page.locator("body").innerText()).includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");
   await page.locator("#category-select").selectOption("Human");
 
   const split = page.getByRole("button", { name: "Split" });

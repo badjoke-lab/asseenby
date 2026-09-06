@@ -24,7 +24,6 @@ export const MODES: ModeDef[] = [
   { key: "dry_eye", label: "Dry-eye-like", category: "Human", confidence: "Estimated", note: "Uneven blur and glare approximation." },
   { key: "dog", label: "Dog-like", category: "Animal", confidence: "Estimated", note: "Dog-like visible-range approximation based on commonly described canine characteristics." },
   { key: "cat", label: "Cat-like", category: "Animal", confidence: "Estimated", note: "Cat-like visible-range approximation based on commonly described feline characteristics." },
-  { key: "bee", label: "Bee-like", category: "Animal", confidence: "Estimated", note: "Bee-like visible-range approximation based on commonly described bee characteristics. UV not included." },
   { key: "bird", label: "Bird-like", category: "Animal", confidence: "Estimated", note: "Bird-like visible-range approximation based on commonly described avian characteristics. UV not included." },
   { key: "age", label: "Age Profile", category: "Reference", confidence: "Reference", note: "Age-related viewing profile approximation." },
 ];

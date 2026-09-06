@@ -33,12 +33,10 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 ## Animal modes
 - Dog
 - Cat
-- Bee
 - Bird-like
 
 ## Reference modes
 - Age Profile
-- Sex-difference Profile
 
 ## Not included in v0.1
 - video processing
