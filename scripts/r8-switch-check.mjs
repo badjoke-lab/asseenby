@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import { chromium } from "playwright";
 
-const preview = spawn("npm", ["run", "preview", "--", "--host", "127.0.0.1"], {
+const preview = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1"], {
   stdio: ["ignore", "pipe", "pipe"],
 });
 
@@ -21,6 +21,20 @@ async function waitForPreview() {
   throw new Error(`Preview did not start.\n${previewLog}`);
 }
 
+function stopPreview() {
+  return new Promise((resolve) => {
+    if (preview.exitCode !== null) return resolve();
+    const timer = setTimeout(() => {
+      preview.kill("SIGKILL");
+    }, 1500);
+    preview.once("exit", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    preview.kill("SIGTERM");
+  });
+}
+
 const failures = [];
 await fs.mkdir("r8-switch-check", { recursive: true });
 
@@ -35,7 +49,7 @@ try {
       if (message.type() === "error") failures.push(`${label} console: ${message.text()}`);
     });
 
-    await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+    await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded" });
     const nav = page.getByRole("navigation", { name: "AsSeenBy experience" });
     await nav.waitFor({ state: "visible" });
     const image = nav.getByRole("link", { name: "Compare image", exact: true });
@@ -52,7 +66,7 @@ try {
       display: getComputedStyle(element).display,
       background: getComputedStyle(element).backgroundColor,
     }));
-    if (!['flex', 'inline-flex'].includes(active.display)) failures.push(`${label}: switch is not styled as a control`);
+    if (!["flex", "inline-flex"].includes(active.display)) failures.push(`${label}: switch is not styled as a control`);
     if (active.background === "rgba(0, 0, 0, 0)" || active.background === "transparent") {
       failures.push(`${label}: active state has no visible background`);
     }
@@ -74,7 +88,7 @@ try {
   await check(390, 844, "mobile");
   await browser.close();
 } finally {
-  preview.kill("SIGTERM");
+  await stopPreview();
 }
 
 await fs.writeFile("r8-switch-check/result.json", JSON.stringify({ ok: failures.length === 0, failures }, null, 2));
