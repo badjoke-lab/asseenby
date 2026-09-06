@@ -253,29 +253,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  fatigue: {
-    summary: "Approximation of visual softness and reduced comfort associated with sustained visual effort or digital eye strain.",
-    evidenceScore: "B",
-    modelScore: "C",
-    basisNote: "Digital eye strain and sustained near-work discomfort are widely described as causing eyestrain, blur, headaches, and reduced comfort during prolonged screen use.",
-    modelNote: "The current transform uses mild blur and contrast reduction to express the general tendency toward tired, less crisp viewing. It is a communication proxy rather than a validated fatigue-specific visual model.",
-    caveat: "Visual fatigue is influenced by screen distance, glare, refractive error, dryness, posture, and task duration. This mode compresses those contributors into one simplified output.",
-    primarySource: {
-      title: "American Optometric Association — Computer Vision Syndrome",
-      url: "https://www.aoa.org/healthy-eyes/eye-and-vision-conditions/computer-vision-syndrome?sso=y",
-      kind: "organization",
-      note: "Public clinical overview of digital eye strain symptoms including eyestrain, blurred vision, dry eyes, and headaches.",
-    },
-    supportingSources: [
-      {
-        title: "National Eye Institute — Refractive Errors",
-        url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/refractive-errors",
-        kind: "organization",
-        note: "Lists eye strain and trouble focusing while reading or using a computer among common vision complaints.",
-      },
-    ],
-    lastReviewed: REVIEWED_ON,
-  },
   dry_eye: {
     summary: "Approximation of irregular blur and visual discomfort tendencies associated with dry eye symptoms.",
     evidenceScore: "B",

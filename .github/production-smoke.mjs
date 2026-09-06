@@ -5,6 +5,7 @@ import path from "node:path";
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
 const expectedAnimalImageModes = ["dog"];
+const expectedHumanImageModes = ["protan", "deutan", "tritan", "blur", "low_contrast", "cataract", "tunnel", "central_loss", "night", "dry_eye"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -72,6 +73,7 @@ async function waitForCurrentProduction(page) {
 
     let currentReferenceSet = false;
     let currentAnimalSet = false;
+    let currentHumanSet = false;
     try {
       await page.locator("#category-select").selectOption("Reference");
       const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
@@ -79,18 +81,22 @@ async function waitForCurrentProduction(page) {
       await page.locator("#category-select").selectOption("Animal");
       const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
       currentAnimalSet = JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes);
+      await page.locator("#category-select").selectOption("Human");
+      const humanValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+      currentHumanSet = JSON.stringify(humanValues) === JSON.stringify(expectedHumanImageModes);
     } catch {
       currentReferenceSet = false;
       currentAnimalSet = false;
+      currentHumanSet = false;
     }
 
-    if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet) {
+    if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet && currentHumanSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Animal image set=Dog-like only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Human set excludes Fatigue-like, Reference=Age only, Animal=Dog-like only`);
       return;
     }
 
-    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Reference set, and/or Animal image set`);
+    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Human set, Reference set, and/or Animal image set`);
     if (attempt < 12) await page.waitForTimeout(15_000);
   }
   throw new Error("Production did not reach the current blob-upload + Reference-mode release behavior within the retry window.");
@@ -121,6 +127,9 @@ async function desktopImageSmoke(browser) {
   assert(!animalBodyText.includes("Bird-like"), "desktop image: removed Bird-like image mode is still visible");
   assert(!animalBodyText.includes("Cat-like"), "desktop image: removed Cat-like image mode is still visible");
   await page.locator("#category-select").selectOption("Human");
+  const humanValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+  assert(JSON.stringify(humanValues) === JSON.stringify(expectedHumanImageModes), `desktop image: unexpected Human image modes ${JSON.stringify(humanValues)}`);
+  assert(!(await page.locator("body").innerText()).includes("Fatigue-like"), "desktop image: removed Fatigue-like mode is still visible");
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();

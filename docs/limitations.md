@@ -42,6 +42,7 @@ They are useful for comparative viewing, but they are not exact reconstructions 
 Examples:
 - color-deficiency-like image modes are matrix-based approximations;
 - image blur and contrast modes are image-space approximations;
+- Fatigue-like is no longer public because digital eye strain is a symptom cluster rather than one validated visual phenotype, and the former renderer only combined generic blur with contrast reduction;
 - current image tunnel and central-loss views are simplified transforms;
 - spatial Tunnel Vision remains generic unless future work accepts measured individual field data;
 - spatial Central Loss must not be interpreted as a patient's actual scotoma shape, size, opacity, severity, or perimetry result;

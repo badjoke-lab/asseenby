@@ -96,13 +96,6 @@ export function applyTransform(
     return;
   }
 
-  if (modeKey === "fatigue") {
-    renderBlurred(ctx, baseCanvas, width, height, 0.6 + amount * 3.2);
-    const imageData = ctx.getImageData(0, 0, width, height);
-    applyLowContrastToData(imageData.data, 0.08 + amount * 0.12);
-    ctx.putImageData(imageData, 0, 0);
-    return;
-  }
 
   if (modeKey === "dry_eye") {
     renderBlurred(ctx, baseCanvas, width, height, 0.4 + amount * 2.1);
