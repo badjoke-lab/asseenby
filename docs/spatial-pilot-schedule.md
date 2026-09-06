@@ -73,34 +73,39 @@ Functional validation already passed:
 - desktop and 390px mobile mode switching and view-relative behavior worked.
 
 Why this is still blocked:
-- user-visible screenshot review showed that the environment itself still reads as a crude prototype: bare dark building boxes, simplistic car geometry, mannequin-like pedestrian, sparse surface detail, and weak street composition;
+- user-visible screenshot review showed that the original environment read as a crude prototype: bare dark building boxes, simplistic car geometry, mannequin-like pedestrian, sparse surface detail, and weak street composition;
 - function correctness does not override presentation failure.
 
 ## Step 10A — Rebuild the night-street scene to presentation quality
-Status: **implementation complete / rendered review pending / blocking**
+Status: **second implementation complete / rendered review pending / blocking**
 
-Scene rebuild commit: `1ffd3dcfdfcf6497ae2059f42c354974350c1100`.
+First scene rebuild commit: `1ffd3dcfdfcf6497ae2059f42c354974350c1100`.
 Patch/build workflow `34006118735` passed, including `npm ci` and `npm run build`.
 
-Implemented rework:
-- facade layers with repeated lit/unlit windows, entrances, trim, storefront framing, awning, signage, and door detail;
-- road roughness/metalness changes plus patches, wet-looking areas, manhole, drainage grates, lane/crosswalk material improvement;
-- curb edges and repeated sidewalk seams;
-- vehicle rebuilt with body/cabin/windshield/rear glass/wheels/rims/bumper and directional headlights;
-- secondary parked vehicle;
-- pedestrian expanded into head/hair/shoulders/arms/legs/shoes rather than a capsule/box mannequin;
-- streetlight arms and fixtures plus improved traffic-signal housings;
-- bollards, utility cabinet, hydrant, planter, overhead utility wires;
-- denser near/mid/far building layers and distant windows/lights;
-- improved ambient/fill/night-light hierarchy while retaining bright/dark comparison zones.
+First rendered review result: **FAIL**.
+- forward view gained useful detail;
+- turned desktop view still became mostly empty/dark, exposing the scene as a forward-facing stage set rather than a convincing look-around environment.
 
-Acceptance questions still require rendered review:
+Second scene rebuild commit: `2ec9a883aae7c24a80d78e369643e294a3fc19e7`.
+Patch/build workflow `34006314644` passed, including `npm ci` and `npm run build`.
+
+Second-pass additions:
+- near-camera left/right architecture so turned views encounter actual facades instead of empty darkness;
+- a right-side `NIGHT MARKET` storefront, entrance/glass/awning/sign and practical light positioned for turned-view readability;
+- a left-side apartment entrance, canopy, number sign, bench and close-range detail;
+- a scooter and additional near-field geometry for depth cues;
+- more near-window variation on both sides of the camera;
+- generated CanvasTexture surfaces for asphalt, concrete, brick and plaster;
+- brighter but still night-appropriate ambient/fog baseline to preserve side-view structure;
+- the earlier vehicle/pedestrian/facade/street-furniture/distant-layer improvements remain in place.
+
+Acceptance questions still require a new rendered review:
 1. Does Normal mode immediately read as a believable night street rather than black boxes in a corridor?
 2. Are vehicle, pedestrian, storefront, road, sidewalk, signal, and light sources recognizable without explanation?
-3. Does looking left/right reveal additional useful visual structure rather than empty walls?
+3. Does looking left/right now reveal useful facade/storefront/street structure instead of an empty dark wall?
 4. Do bright/dark zones remain useful for Cataract-like and field-loss comparison?
 5. Does desktop remain responsive and does 390px mobile remain usable?
-6. Does the existing build/browser regression remain green on the rebuilt-scene head?
+6. Does the existing build/browser regression remain green on the second rebuilt-scene head?
 
 All six must pass before Central Loss acceptance resumes.
 
@@ -144,4 +149,4 @@ If fail:
 5. Bee-like only with additional UV-reflectance scene data.
 
 ## Current next action
-Run desktop and 390px Chromium capture on the rebuilt-scene head, inspect Normal / turned / perception-mode screenshots, and reject or accept Step 10A on visual quality before touching the next perception mode.
+Run desktop and 390px Chromium capture on the second rebuilt-scene head, inspect Normal forward/turned plus perception-mode screenshots, and reject or accept Step 10A on actual visual quality before touching the next perception mode.
