@@ -55,7 +55,6 @@ async function checkImageExperience(page, label) {
   await assertNoHorizontalOverflow(page, label);
 }
 
-// Existing image comparison must not regress.
 const imageDesktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 await checkImageExperience(imageDesktop, "image-desktop");
 await imageDesktop.screenshot({ path: `${outDir}/desktop-image-baseline.png`, fullPage: true });
@@ -94,6 +93,15 @@ await desktop.screenshot({ path: `${outDir}/desktop-central-turned.png`, fullPag
 await assertMode(desktop, "Normal");
 await assertMode(desktop, "Cataract-like");
 await desktop.screenshot({ path: `${outDir}/desktop-cataract-turned.png`, fullPage: true });
+
+// Scene-quality check: sweep through the original direction to the opposite side.
+// Both horizontal directions must contain meaningful street/facade information rather than an empty dark void.
+await assertMode(desktop, "Normal");
+if (!(await dragCanvas(desktop, desktopCanvas, -500, 45))) {
+  failures.push("spatial-desktop-opposite: canvas has no bounding box");
+} else {
+  await desktop.screenshot({ path: `${outDir}/desktop-normal-opposite.png`, fullPage: true });
+}
 
 const mobileContext = await browser.newContext({
   viewport: { width: 390, height: 844 },
@@ -139,7 +147,6 @@ if (!mobileBox) {
 }
 await mobile.screenshot({ path: `${outDir}/mobile-central-turned.png`, fullPage: true });
 
-// Same turned camera, compare baseline and accepted modes too.
 await assertMode(mobile, "Normal");
 await mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });
 await assertMode(mobile, "Tunnel Vision");
