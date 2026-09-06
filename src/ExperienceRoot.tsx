@@ -1,6 +1,8 @@
+import { lazy, Suspense } from "react";
 import App from "./App";
-import SpatialPage from "./SpatialPage";
 import "./spatial.css";
+
+const SpatialPage = lazy(() => import("./SpatialPage"));
 
 export default function ExperienceRoot() {
   const pathname = typeof window !== "undefined"
@@ -11,7 +13,11 @@ export default function ExperienceRoot() {
     : null;
 
   if (pathname === "/" && view === "spatial") {
-    return <SpatialPage />;
+    return (
+      <Suspense fallback={<SpatialLoading />}>
+        <SpatialPage />
+      </Suspense>
+    );
   }
 
   if (pathname === "/support") {
@@ -31,5 +37,17 @@ export default function ExperienceRoot() {
       </nav>
       <App />
     </>
+  );
+}
+
+function SpatialLoading() {
+  return (
+    <div className="page-shell">
+      <div className="page-frame">
+        <main className="content-area" role="status" aria-live="polite">
+          <p>Loading spatial viewer…</p>
+        </main>
+      </div>
+    </div>
   );
 }
