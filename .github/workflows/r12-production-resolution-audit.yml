@@ -1,0 +1,52 @@
+name: R12 production resolution audit
+
+on:
+  push:
+    branches:
+      - audit/r12-production-resolution
+    paths:
+      - .github/workflows/r12-production-resolution-audit.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/r12-production-resolution
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Wait for R12 production behavior
+        shell: bash
+        run: |
+          set +e
+          for attempt in $(seq 1 8); do
+            echo "R12 production audit attempt ${attempt}/8"
+            node scripts/r12-production-audit.mjs
+            status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 8 ]; then
+              sleep 15
+            fi
+          done
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r12-production-resolution-audit
+          path: r12-production-audit.json
+          if-no-files-found: warn
