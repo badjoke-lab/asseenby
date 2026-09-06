@@ -38,7 +38,6 @@ function HomePage() {
   const [compareMode, setCompareMode] = useState<CompareMode>("slider");
   const [divider, setDivider] = useState(52);
   const [imageSrc, setImageSrc] = useState<string>(SAMPLE_IMAGE);
-  const [originalUrl, setOriginalUrl] = useState<string>(SAMPLE_IMAGE);
   const [transformedUrl, setTransformedUrl] = useState<string>(SAMPLE_IMAGE);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string>("");
@@ -50,6 +49,7 @@ function HomePage() {
   const categoryModes = useMemo(() => MODES.filter((mode) => mode.category === category), [category]);
   const currentMode = useMemo(() => MODES.find((mode) => mode.key === modeKey) ?? MODES[0], [modeKey]);
   const currentModeEvidence = useMemo(() => getModeEvidence(modeKey), [modeKey]);
+  const renderPending = isBusy || strength !== renderStrength;
 
   useEffect(() => {
     if (!categoryModes.some((mode) => mode.key === modeKey)) {
@@ -69,7 +69,6 @@ function HomePage() {
     const run = async () => {
       setIsBusy(true);
       setError("");
-      setOriginalUrl(imageSrc);
       try {
         let prepared = baseCanvasRef.current;
         if (!prepared || prepared.source !== imageSrc) {
@@ -130,13 +129,13 @@ function HomePage() {
 
           <section id="workspace" className="workspace-grid">
             <CompareStage
-              originalUrl={originalUrl}
+              originalUrl={imageSrc}
               transformedUrl={transformedUrl}
               compareMode={compareMode}
               setCompareMode={setCompareMode}
               divider={divider}
               setDivider={setDivider}
-              isBusy={isBusy}
+              isBusy={renderPending}
               currentMode={currentMode}
               currentModeEvidence={currentModeEvidence}
             />
