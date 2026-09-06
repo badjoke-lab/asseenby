@@ -1,0 +1,462 @@
+from pathlib import Path
+
+
+def replace(path: str, old: str, new: str) -> None:
+    p = Path(path)
+    text = p.read_text()
+    if old not in text:
+        raise SystemExit(f"anchor not found in {path}: {old[:120]!r}")
+    p.write_text(text.replace(old, new, 1))
+
+
+spatial = Path("src/SpatialPage.tsx")
+text = spatial.read_text()
+text = text.replace(
+    'type SpatialMode = "normal" | "tunnel" | "central_loss" | "cataract";',
+    'type SpatialMode = "normal" | "tunnel" | "central_loss" | "night" | "cataract";',
+)
+
+night_shader = r'''const NIGHT_LOW_LIGHT_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    float lumaAt(vec2 uv) {
+      vec3 color = texture2D(tDiffuse, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
+      return dot(color, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    void main() {
+      vec2 px = 1.0 / max(resolution, vec2(1.0));
+      vec3 source = texture2D(tDiffuse, vUv).rgb;
+      float localLuma = dot(source, vec3(0.2126, 0.7152, 0.0722));
+
+      float viewLuma = (
+        lumaAt(vec2(0.50, 0.50)) +
+        lumaAt(vec2(0.24, 0.28)) +
+        lumaAt(vec2(0.76, 0.28)) +
+        lumaAt(vec2(0.24, 0.72)) +
+        lumaAt(vec2(0.76, 0.72))
+      ) / 5.0;
+
+      float dimView = 1.0 - smoothstep(0.16, 0.48, viewLuma);
+      float localDark = 1.0 - smoothstep(0.08, 0.52, localLuma);
+      float lowLightWeight = clamp(localDark * 0.72 + dimView * 0.46, 0.0, 1.0);
+
+      float blurRadius = mix(0.7, 2.8, lowLightWeight);
+      vec3 soft = source * 0.48;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x * blurRadius, 0.0)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv - vec2(px.x * blurRadius, 0.0)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv + vec2(0.0, px.y * blurRadius)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv - vec2(0.0, px.y * blurRadius)).rgb * 0.13;
+
+      float softLuma = dot(soft, vec3(0.2126, 0.7152, 0.0722));
+      float desaturation = mix(0.18, 0.78, lowLightWeight);
+      vec3 muted = mix(soft, vec3(softLuma), desaturation);
+
+      float contrastScale = mix(0.94, 0.68, lowLightWeight);
+      vec3 reducedContrast = vec3(0.065) + (muted - vec3(0.065)) * contrastScale;
+      float shadowLoss = localDark * mix(0.08, 0.26, dimView);
+      vec3 result = reducedContrast * (1.0 - shadowLoss);
+
+      gl_FragColor = vec4(result, 1.0);
+    }
+  `,
+};
+
+'''
+anchor = "const CATARACT_SHADER = {"
+if anchor not in text:
+    raise SystemExit("cataract shader anchor missing")
+text = text.replace(anchor, night_shader + anchor, 1)
+
+replace_old_new = [
+    (
+        '    let cataractPass: ShaderPass | null = null;\n    let bloomPass: UnrealBloomPass | null = null;',
+        '    let cataractPass: ShaderPass | null = null;\n    let nightPass: ShaderPass | null = null;\n    let bloomPass: UnrealBloomPass | null = null;',
+    ),
+    (
+        '      cataractPass = new ShaderPass(CATARACT_SHADER);\n      cataractPass.enabled = false;\n      composer.addPass(cataractPass);\n\n      centralLossPass = new ShaderPass(CENTRAL_LOSS_SHADER);',
+        '      cataractPass = new ShaderPass(CATARACT_SHADER);\n      cataractPass.enabled = false;\n      composer.addPass(cataractPass);\n\n      nightPass = new ShaderPass(NIGHT_LOW_LIGHT_SHADER);\n      nightPass.enabled = false;\n      composer.addPass(nightPass);\n\n      centralLossPass = new ShaderPass(CENTRAL_LOSS_SHADER);',
+    ),
+    (
+        '        if (cataractPass) cataractPass.enabled = nextMode === "cataract";\n        if (centralLossPass) centralLossPass.enabled = nextMode === "central_loss";',
+        '        if (cataractPass) cataractPass.enabled = nextMode === "cataract";\n        if (nightPass) nightPass.enabled = nextMode === "night";\n        if (centralLossPass) centralLossPass.enabled = nextMode === "central_loss";',
+    ),
+    (
+        '        if (!renderer || !composer || !tunnelPass || !centralLossPass || !cataractPass) return;',
+        '        if (!renderer || !composer || !tunnelPass || !centralLossPass || !nightPass || !cataractPass) return;',
+    ),
+    (
+        '        (centralLossPass.uniforms.resolution.value as THREE.Vector2).set(width, height);\n        (cataractPass.uniforms.resolution.value as THREE.Vector2).set(width, height);',
+        '        (centralLossPass.uniforms.resolution.value as THREE.Vector2).set(width, height);\n        (nightPass.uniforms.resolution.value as THREE.Vector2).set(width, height);\n        (cataractPass.uniforms.resolution.value as THREE.Vector2).set(width, height);',
+    ),
+    (
+        '        centralLossPass?.material.dispose();\n        cataractPass?.material.dispose();',
+        '        centralLossPass?.material.dispose();\n        nightPass?.material.dispose();\n        cataractPass?.material.dispose();',
+    ),
+    (
+        '      tunnelPass?.material.dispose();\n        centralLossPass?.material.dispose();\n      cataractPass?.material.dispose();',
+        '      tunnelPass?.material.dispose();\n      centralLossPass?.material.dispose();\n      nightPass?.material.dispose();\n      cataractPass?.material.dispose();',
+    ),
+]
+for old, new in replace_old_new:
+    if old not in text:
+        raise SystemExit(f"SpatialPage anchor missing: {old[:100]!r}")
+    text = text.replace(old, new, 1)
+
+old_desc = '''  const modeDescription = mode === "normal"
+    ? "Baseline scene with no perception simulation."
+    : mode === "tunnel"
+      ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."
+      : mode === "central_loss"
+        ? "Live screen-relative central field loss. Center a shop sign, window, lamp, or other detail, then look elsewhere to see the disrupted region stay with straight-ahead vision."
+        : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";'''
+new_desc = '''  const modeDescription = mode === "normal"
+    ? "Baseline scene with no perception simulation."
+    : mode === "tunnel"
+      ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."
+      : mode === "central_loss"
+        ? "Live screen-relative central field loss. Center a shop sign, window, lamp, or other detail, then look elsewhere to see the disrupted region stay with straight-ahead vision."
+        : mode === "night"
+          ? "Luminance-dependent low-light proxy. Darker scene regions lose more color, contrast, and fine detail while brighter shopfronts and lamps remain more available. It does not model calibrated scotopic luminance or dark-adaptation time."
+          : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";'''
+if old_desc not in text:
+    raise SystemExit("mode description anchor missing")
+text = text.replace(old_desc, new_desc, 1)
+
+button_anchor = '<button type="button" className={mode === "central_loss" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "central_loss"} onClick={() => setMode("central_loss")}>Central Loss</button>\n        <button type="button" className={mode === "cataract"'
+button_replacement = '<button type="button" className={mode === "central_loss" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "central_loss"} onClick={() => setMode("central_loss")}>Central Loss</button>\n        <button type="button" className={mode === "night" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "night"} onClick={() => setMode("night")}>Night / Low Light</button>\n        <button type="button" className={mode === "cataract"'
+if button_anchor not in text:
+    raise SystemExit("night button anchor missing")
+text = text.replace(button_anchor, button_replacement, 1)
+
+note_old = "Tunnel Vision and Central Loss are generic field-loss models; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction."
+note_new = "Tunnel Vision and Central Loss are generic field-loss models; Night / Low Light is a luminance-dependent low-light proxy; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction, and the low-light mode does not infer physical scene luminance from the tone-mapped panorama."
+if note_old not in text:
+    raise SystemExit("spatial note anchor missing")
+text = text.replace(note_old, note_new, 1)
+spatial.write_text(text)
+
+# Spatial evidence: reuse phenomenon evidence but grade this renderer separately.
+evidence = Path("src/spatialEvidence.ts")
+text = evidence.read_text()
+text = text.replace(
+    'type SpatialEvidenceMode = "tunnel" | "central_loss" | "cataract";',
+    'type SpatialEvidenceMode = "tunnel" | "central_loss" | "night" | "cataract";',
+    1,
+)
+anchor = '''  return {
+    ...base,
+    modelScore: "C",
+    modelNote: "The spatial renderer samples the live rendered frame, gates light spread by actual high-luminance scene pixels, and combines that view-dependent glare with optical softness, lower contrast, slight desaturation, warming, and a veil component. Headlights, streetlights, and signals therefore spread more strongly when they are actually in view, while dark directions do not receive the same glare. This remains a generic browser model rather than a validated lens-scatter reconstruction.",'''
+night_branch = '''  if (modeKey === "night") {
+    return {
+      ...base,
+      modelScore: "C",
+      modelNote: "The spatial Night / Low Light renderer uses displayed scene luminance from the current rendered view to increase desaturation, contrast loss, and fine-detail loss in darker regions while leaving brighter sources more available. Because the 360° panorama is a tone-mapped RGB photograph rather than calibrated radiometric scene data, this is a luminance-dependent communication model, not a physical scotopic or mesopic reconstruction.",
+      caveat: "Real low-light vision changes with absolute luminance, rod/cone contribution, adaptation state, pupil size, glare, ocular health, and individual differences. The current spatial mode does not model dark-adaptation timing, calibrated cd/m², or full rod/cone spectral sensitivity.",
+      lastReviewed: SPATIAL_REVIEWED_ON,
+    };
+  }
+
+'''
+if anchor not in text:
+    raise SystemExit("spatial evidence cataract anchor missing")
+text = text.replace(anchor, night_branch + anchor, 1)
+evidence.write_text(text)
+
+# Add direct low-light physiology references to the existing Night evidence.
+mode_evidence = Path("src/modeEvidence.ts")
+text = mode_evidence.read_text()
+old = '''      {
+        title: "National Eye Institute — Age-Related Macular Degeneration (AMD)",
+        url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/age-related-macular-degeneration",
+        kind: "organization",
+        note: "Lists trouble seeing in low lighting as a symptom in intermediate or late AMD.",
+      },
+    ],
+    lastReviewed: REVIEWED_ON,
+  },
+  fatigue:'''
+new = '''      {
+        title: "National Eye Institute — Age-Related Macular Degeneration (AMD)",
+        url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/age-related-macular-degeneration",
+        kind: "organization",
+        note: "Lists trouble seeing in low lighting as a symptom in intermediate or late AMD.",
+      },
+      {
+        title: "NCBI Bookshelf — Functional Specialization of the Rod and Cone Systems",
+        url: "https://www.ncbi.nlm.nih.gov/books/NBK10850/",
+        kind: "reference",
+        note: "Explains that rod-mediated scotopic vision trades spatial resolution and color discrimination for sensitivity at very low light levels.",
+      },
+      {
+        title: "NCBI Bookshelf — Light and Dark Adaptation",
+        url: "https://www.ncbi.nlm.nih.gov/books/NBK11525/",
+        kind: "reference",
+        note: "Documents the mesopic/scotopic transition and the time-dependent nature of dark adaptation.",
+      },
+    ],
+    lastReviewed: "2026-09-06",
+  },
+  fatigue:'''
+if old not in text:
+    raise SystemExit("night evidence source anchor missing")
+text = text.replace(old, new, 1)
+mode_evidence.write_text(text)
+
+# Browser acceptance captures for the new mode.
+check = Path(".github/spatial-browser-check.mjs")
+text = check.read_text()
+repls = [
+    (
+        'await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });\nawait assertMode(desktop, "Central Loss");',
+        'await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });\nawait assertMode(desktop, "Night / Low Light");\nawait desktop.screenshot({ path: `${outDir}/desktop-night-forward.png`, fullPage: true });\nawait assertMode(desktop, "Normal");\nawait assertMode(desktop, "Central Loss");',
+    ),
+    (
+        'await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });\nawait assertMode(desktop, "Central Loss");',
+        'await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });\nawait assertMode(desktop, "Night / Low Light");\nawait desktop.screenshot({ path: `${outDir}/desktop-night-turned.png`, fullPage: true });\nawait assertMode(desktop, "Normal");\nawait assertMode(desktop, "Central Loss");',
+    ),
+    (
+        'await assertMode(mobile, "Normal");\nawait mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });\nawait assertMode(mobile, "Tunnel Vision");',
+        'await assertMode(mobile, "Normal");\nawait mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });\nawait assertMode(mobile, "Night / Low Light");\nawait mobile.screenshot({ path: `${outDir}/mobile-night-turned.png`, fullPage: true });\nawait assertMode(mobile, "Tunnel Vision");',
+    ),
+]
+for old, new in repls:
+    if old not in text:
+        raise SystemExit(f"browser check anchor missing: {old[:100]!r}")
+    text = text.replace(old, new, 1)
+check.write_text(text)
+
+# Documentation boundary and current-state cleanup.
+replace(
+    "AGENTS.md",
+    "- Current expansion target remains `Central Loss`, but scene-quality correction blocks its acceptance. Do not begin Night / Low Light, Dog-like, Cat-like, Bird-like, or Bee-like until this gate passes.\n- Central Loss must be a live view-relative central-field-loss simulation. It must remain centered in the viewer's field while the camera turns and must not be attached to a world-space object or position.\n- Central Loss is a generic field-loss model, not an individual's measured scotoma or perimetry result.",
+    "- Central Loss and the photographic 360° reference scene are accepted and merged. The current expansion target is `Night / Low Light`; do not begin Dog-like, Cat-like, Bird-like, or Bee-like until its rendered acceptance gate passes or it is explicitly rejected.\n- Night / Low Light must respond to luminance differences in the current rendered view rather than acting as a uniform dark tint. Darker regions should lose more color, contrast, and fine detail while brighter regions remain comparatively available.\n- The current panorama is tone-mapped RGB, not calibrated radiometric data. Do not claim physical scotopic/mesopic luminance, dark-adaptation timing, pupil response, or full rod/cone spectral reproduction from it.\n- Central Loss remains a generic field-loss model, not an individual's measured scotoma or perimetry result.",
+)
+
+roadmap = Path("docs/roadmap.md")
+text = roadmap.read_text()
+start = text.index("## Spatial expansion — Central Loss")
+end = text.index("## Ordered next spatial candidates")
+replacement = '''## Spatial expansion — Night / Low Light
+Status: **active**
+
+Goal:
+Add a scene-luminance-dependent low-light comparison that becomes more restrictive in darker rendered regions while preserving the same camera and photographic reference scene.
+
+Required characteristics:
+- darker regions lose more color separation, contrast, and fine detail than bright regions;
+- the effect uses the currently rendered view rather than a uniform global tint;
+- mode switching preserves camera and source-scene state;
+- the model is explicitly a display-luminance proxy, not calibrated scotopic/mesopic photometry;
+- no dark-adaptation timing or patient-specific night-vision claim;
+- renderer-specific Model assessment remains separate from the 2D transform;
+- desktop/mobile rendered acceptance is required before merge.
+
+'''
+text = text[:start] + replacement + text[end:]
+text = text.replace(
+    "Only after Central Loss acceptance:\n1. Night / Low Light;\n2. Dog-like;\n3. Cat-like;\n4. Bird-like separate evaluation;\n5. Bee-like only with additional UV-reflectance scene data.",
+    "After the active Night / Low Light phase:\n1. Dog-like;\n2. Cat-like;\n3. Bird-like separate evaluation;\n4. Bee-like only with additional UV-reflectance scene data.",
+    1,
+)
+text = text.replace(
+    "1. complete Central Loss documentation boundary;\n2. implement Central Loss as a live view-relative spatial pass;\n3. run build plus desktop/mobile browser regression;\n4. inspect same-camera rendered comparisons;\n5. accept/correct/reject Central Loss;\n6. begin Night / Low Light only after Central Loss integration.",
+    "1. define the Night / Low Light scientific and source-data boundary;\n2. implement the luminance-dependent spatial pass;\n3. run build plus desktop/mobile browser regression;\n4. inspect same-camera Normal / Night comparisons across bright and dark view directions;\n5. accept, correct, or reject the spatial mode;\n6. begin Dog-like only after Night / Low Light is resolved.",
+    1,
+)
+roadmap.write_text(text)
+
+spec = Path("docs/spatial-pilot-spec.md")
+text = spec.read_text()
+text = text.replace(
+    "Current expansion target:\n3. **Central Loss** — active scanning should show that disrupted straight-ahead detail remains tied to the viewer's central field. Looking directly at a target can make that target harder to inspect, while turning the view moves a different scene target into the affected center.",
+    "Accepted post-pilot example:\n3. **Central Loss** — active scanning shows that disrupted straight-ahead detail remains tied to the viewer's central field.\n\nCurrent expansion target:\n4. **Night / Low Light** — the rendered comparison should respond to luminance differences in the current view, with darker regions losing more color, contrast, and fine detail than brighter regions, without claiming calibrated scotopic photometry.",
+    1,
+)
+text = text.replace(
+    "### Cataract-like\nLive scene-dependent model combining softness, lower contrast, warming / veil, and high-luminance-gated local light spread.",
+    "### Central Loss\nLive screen/view-relative central-field-loss simulation.\n\nBoundary:\n- generic central-loss profile;\n- not an individual's measured scotoma or perimetry result.\n\n### Cataract-like\nLive scene-dependent model combining softness, lower contrast, warming / veil, and high-luminance-gated local light spread.",
+    1,
+)
+night_section = '''## Post-pilot expansion — Night / Low Light
+
+### Purpose
+Show how a scene can become less informative as available light falls, while preserving the same viewpoint and allowing the user to scan between brighter and darker parts of the 360° environment.
+
+### Current source-data boundary
+The accepted Hansaplatz reference is a tone-mapped RGB panorama. It contains useful relative brightness differences, but it does not provide calibrated scene luminance, spectral radiance, exposure metadata sufficient for photometry, or a physiological adaptation state.
+
+Therefore the current spatial mode may use **displayed/rendered luminance as a relative signal**, but must not claim:
+- calibrated scotopic or mesopic luminance;
+- a validated rod/cone response curve;
+- dark-adaptation timing;
+- pupil dynamics;
+- patient-specific night blindness or ocular-disease severity.
+
+### Requirements
+- darker rendered regions lose more chromatic separation than bright regions;
+- darker regions lose more fine detail / effective sharpness;
+- darker regions show reduced usable contrast without simply blacking out the entire scene;
+- bright shopfronts and lamps remain comparatively more available than dark sky/street regions;
+- the effect changes naturally as the user turns toward differently lit parts of the same panorama;
+- switching Normal <-> Night / Low Light preserves camera position, direction, and source scene exactly;
+- no uniform blue/black tint standing in for low-light vision;
+- no claim that the display output is what a specific person literally sees at night.
+
+### Why this is spatial
+The value is the interaction with the current view's brightness distribution. The same low-light model should treat a bright storefront differently from a dark street or sky, and turning the camera should change the mix of bright and dark information under the model without changing the source scene.
+
+### Evidence / model rule
+- reuse the existing Night / Low Light evidence set for the broad low-light phenomenon;
+- add direct rod/cone and dark-adaptation references to make the physiological boundary explicit;
+- rate the spatial implementation separately from the image transform;
+- keep the spatial Model score at **C** during this phase unless stronger validation is added.
+
+'''
+if "## Camera and interaction\n" not in text:
+    raise SystemExit("spec camera anchor missing")
+text = text.replace("## Camera and interaction\n", night_section + "## Camera and interaction\n", 1)
+text += '''
+## Night / Low Light acceptance gate
+Night / Low Light is successful only if all of the following are true:
+1. Existing Compare image behavior remains unchanged.
+2. Normal, Tunnel Vision, Central Loss, and Cataract-like remain functional.
+3. Night / Low Light can be selected without camera reset.
+4. Darker rendered regions visibly lose more color, contrast, and fine detail than bright regions.
+5. The mode does not collapse into a uniform global dark tint.
+6. Same-camera Normal / Night captures show that only the perception renderer changed.
+7. Turned-view captures demonstrate that the effect responds to the brightness distribution of the new view.
+8. Evidence and limitation text explicitly state the tone-mapped RGB / non-calibrated-luminance boundary.
+9. Desktop and 390px mobile remain usable with no horizontal overflow or captured page/console errors.
+10. `npm run build` passes.
+11. Rendered review shows that the mode adds explanatory value beyond simply lowering image brightness.
+
+If criterion 4, 5, 7, or 11 fails, reject or revise the spatial mode rather than merging it because the shader merely runs.
+'''
+spec.write_text(text)
+
+methodology = Path("docs/methodology.md")
+text = methodology.read_text()
+text = text.replace(
+    "Accepted baseline spatial modes:\n- Normal;\n- Tunnel Vision;\n- Cataract-like.\n\nCurrent expansion target:\n- Central Loss.",
+    "Accepted spatial modes:\n- Normal;\n- Tunnel Vision;\n- Central Loss;\n- Cataract-like.\n\nCurrent expansion target:\n- Night / Low Light.",
+    1,
+)
+insert = '''## Night / Low Light spatial model
+The current spatial target is a luminance-dependent low-light communication model. It uses relative displayed luminance in the rendered 360° view so darker regions can lose more color, contrast, and fine detail than brighter regions.
+
+The source panorama is tone-mapped RGB rather than calibrated radiometric data. The spatial mode therefore does not model physical cd/m², full rod/cone spectral sensitivity, pupil response, or the time course of dark adaptation. Those limitations are part of the model definition, not hidden implementation details.
+
+'''
+text = text.replace("## Evidence display model\n", insert + "## Evidence display model\n", 1)
+text = text.replace(
+    "- the accepted controlled night-street scene is reused while the current field-loss expansion is evaluated;",
+    "- the accepted fixed-viewpoint 360° photographic night-city reference is reused while post-pilot modes are evaluated;",
+    1,
+)
+methodology.write_text(text)
+
+limitations = Path("docs/limitations.md")
+text = limitations.read_text()
+insert = '''### Night / Low Light specific limitation
+The current spatial Night / Low Light mode can use relative brightness differences in the rendered panorama, but the source is a tone-mapped RGB photograph rather than calibrated luminance or spectral data.
+
+It therefore does not reproduce a validated scotopic/mesopic observer, dark-adaptation timing, pupil dynamics, complete rod/cone spectral response, or a specific person's night-vision impairment. It is a luminance-dependent comparison proxy: dark regions are made less informative relative to bright regions so users can inspect the consequence across one fixed scene.
+
+'''
+text = text.replace("## Animal-mode limitation\n", insert + "## Animal-mode limitation\n", 1)
+limitations.write_text(text)
+
+ui = Path("docs/ui-spec.md")
+text = ui.read_text()
+text = text.replace(
+    "- Central Loss\n- Cataract-like\n\nCentral Loss is the active expansion target; its control is included only with the live view-relative implementation, not as an unimplemented placeholder.",
+    "- Central Loss\n- Night / Low Light\n- Cataract-like\n\nNight / Low Light is the active expansion target. Its control is included only with the live luminance-dependent implementation, not as an unimplemented placeholder.",
+    1,
+)
+insert = '''## Night / Low Light UI behavior
+When Night / Low Light is selected:
+- keep the current camera position and direction;
+- explain that darker rendered regions lose more color, contrast, and fine detail while brighter regions remain more available;
+- do not describe the output as calibrated scotopic vision or a patient's measured night-vision deficit;
+- make the tone-mapped RGB / non-calibrated-luminance boundary available in the evidence panel.
+
+'''
+text = text.replace("## Labels\n", insert + "## Labels\n", 1)
+ui.write_text(text)
+
+modes = Path("docs/modes.md")
+text = modes.read_text()
+text = text.replace(
+    "- spatial status: active post-pilot expansion target\n- spatial renderer target: live view-relative central-field-loss simulation;",
+    "- spatial status: accepted post-pilot mode\n- spatial renderer: live view-relative central-field-loss simulation;",
+    1,
+)
+text = text.replace(
+    "### Night / Low Light\n- class: Estimated\n- goal: low-light viewing approximation\n- spatial status: next candidate only after Central Loss acceptance",
+    "### Night / Low Light\n- class: Estimated\n- goal: low-light viewing approximation\n- spatial status: active post-pilot expansion target\n- spatial renderer target: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker rendered regions while brighter regions remain comparatively available\n- spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction",
+    1,
+)
+modes.write_text(text)
+
+schedule = Path("docs/spatial-pilot-schedule.md")
+text = schedule.read_text()
+old = '''## Ordered next spatial candidates
+1. Night / Low Light
+2. Dog-like
+3. Cat-like
+4. Bird-like as a separate evaluation
+5. Bee-like only with additional UV-reflectance scene data
+
+## Current next action
+Begin `Night / Low Light` as a separate evaluated mode. First define its evidence boundary and what the current photographic reference can and cannot support before implementing a shader. Do not alter the accepted reference scene merely to force the new mode to work.'''
+new = '''## Step 12 — Night / Low Light evidence boundary and renderer candidate
+Status: **evidence boundary complete / implementation candidate awaiting rendered review**
+
+Evidence/source-data boundary:
+- low-light vision involves a shift toward rod contribution, reduced color information, and lower spatial resolution at sufficiently low luminance;
+- dark adaptation is time-dependent rather than an instant filter;
+- the current Hansaplatz source is a tone-mapped RGB panorama, not calibrated scene photometry;
+- this phase therefore uses relative displayed luminance only and does not claim physical scotopic/mesopic reconstruction.
+
+Renderer candidate:
+- darker rendered regions receive stronger desaturation, contrast reduction, and fine-detail loss;
+- brighter rendered regions remain comparatively available;
+- the same camera and panorama are preserved across mode switching;
+- spatial Model remains C pending rendered acceptance.
+
+Rendered gate:
+- compare Normal vs Night / Low Light at the identical forward view;
+- repeat at a turned view with a different bright/dark composition;
+- confirm the output is not a uniform dark tint;
+- verify existing spatial modes and image comparison remain unchanged;
+- verify 390px mobile interaction, no overflow, and no captured page/console errors;
+- accept, revise, or reject before beginning Dog-like.
+
+## Ordered next spatial candidates
+1. Dog-like
+2. Cat-like
+3. Bird-like as a separate evaluation
+4. Bee-like only with additional UV-reflectance scene data
+
+## Current next action
+Run build and the existing desktop / 390px Chromium capture on the Night / Low Light candidate. Inspect identical-camera Normal/Night forward and turned views, then either correct the renderer or mark Step 12 accepted. Do not begin Dog-like yet.'''
+if old not in text:
+    raise SystemExit("schedule anchor missing")
+text = text.replace(old, new, 1)
+schedule.write_text(text)
