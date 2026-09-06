@@ -1,0 +1,125 @@
+name: apply image render state
+
+on:
+  push:
+    branches:
+      - feat/image-render-state
+    paths:
+      - .github/workflows/apply-image-render-state.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/image-render-state
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply render-state polish
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.tsx')
+          text = p.read_text()
+
+          replacements = [
+            ('  const [imageSrc, setImageSrc] = useState<string>(SAMPLE_IMAGE);\n  const [originalUrl, setOriginalUrl] = useState<string>(SAMPLE_IMAGE);\n  const [transformedUrl, setTransformedUrl] = useState<string>(SAMPLE_IMAGE);',
+             '  const [imageSrc, setImageSrc] = useState<string>(SAMPLE_IMAGE);\n  const [transformedUrl, setTransformedUrl] = useState<string>(SAMPLE_IMAGE);'),
+            ('  const currentModeEvidence = useMemo(() => getModeEvidence(modeKey), [modeKey]);\n',
+             '  const currentModeEvidence = useMemo(() => getModeEvidence(modeKey), [modeKey]);\n  const renderPending = isBusy || strength !== renderStrength;\n'),
+            ('      setError("");\n      setOriginalUrl(imageSrc);\n      try {',
+             '      setError("");\n      try {'),
+            ('              originalUrl={originalUrl}\n',
+             '              originalUrl={imageSrc}\n'),
+            ('              isBusy={isBusy}\n',
+             '              isBusy={renderPending}\n'),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'anchor missing: {old[:60]!r}')
+              text = text.replace(old, new, 1)
+
+          p.write_text(text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install temporary browser dependency
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify render state and full browser regression
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/asseenby-vite.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:4173/ > /dev/null
+          node .github/spatial-browser-check.mjs
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+          await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+
+          const compareCard = page.locator('.compare-card');
+          const original = page.locator('img[alt="Original"]').first();
+          const approximation = page.locator('img[alt="Approximation"]').first();
+          await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
+          const before = await approximation.getAttribute('src');
+
+          const strength = page.getByLabel('Strength');
+          await strength.fill('82');
+          if (await compareCard.getAttribute('aria-busy') !== 'true') throw new Error('Debounced Strength change is not exposed as pending');
+          await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
+          const after = await approximation.getAttribute('src');
+          if (!after?.startsWith('blob:') || after === before) throw new Error('Pending Strength render did not settle to a new blob output');
+
+          const fileInput = page.locator('input[type="file"]');
+          await fileInput.setInputFiles({
+            name: 'render-state.svg',
+            mimeType: 'image/svg+xml',
+            buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="blue"/></svg>'),
+          });
+          await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute('src')?.startsWith('blob:'));
+          const uploadOriginal = await original.getAttribute('src');
+          if (!uploadOriginal?.startsWith('blob:')) throw new Error('Uploaded original did not switch directly to the active source URL');
+
+          await page.getByRole('button', { name: 'Use sample image', exact: true }).click();
+          await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute('src')?.startsWith('data:image/svg+xml'));
+          const sampleOriginal = await original.getAttribute('src');
+          if (!sampleOriginal?.startsWith('data:image/svg+xml')) throw new Error('Sample original did not switch directly to the sample source');
+
+          await browser.close();
+          NODE
+
+      - name: Commit implementation and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-image-render-state.yml
+          git add src/App.tsx
+          git commit -m "Clarify image render state"
+          git push
