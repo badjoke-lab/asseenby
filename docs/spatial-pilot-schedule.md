@@ -1,22 +1,18 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-Branch: `feat/spatial-pilot`
-PR: `#2`
+Branch: `feat/spatial-central-loss`
 
-The existing public product remains the v0.1 static-image comparison tool. The spatial track is additive and has now passed its initial pilot acceptance gate.
+The existing public product remains the v0.1 static-image comparison tool. The accepted Three.js spatial baseline contains Normal, Tunnel Vision, and Cataract-like on one controlled night-street scene.
 
-Current implementation state:
-- existing Vite + React + TypeScript image comparison remains in place;
-- `src/transformEngine.ts` remains the 2D image renderer;
-- Three.js powers a separate `Explore 3D` experience;
-- one controlled night-street scene is implemented;
-- the camera remains at one physical position and supports pointer/touch drag plus keyboard look-around;
-- Normal, Tunnel Vision, and Cataract-like switch without recreating or moving the camera;
-- Tunnel Vision is a live view-relative post-process;
-- Cataract-like samples the live rendered frame, gates glare by actual high-luminance scene pixels, and adds local light spread, softness, lower contrast, slight desaturation, warmth, and veil;
-- spatial renderer-specific evidence / Model notes are separate from the 2D model notes;
-- dependency lockfile is synchronized with `three` and `@types/three`.
+Main baseline before this expansion:
+- initial spatial pilot PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`;
+- main post-merge build run `34000040892` passed;
+- image comparison remains the default experience;
+- Three.js remains a separate `Explore 3D` experience;
+- accepted spatial interaction is fixed-position pointer/touch/keyboard look-around;
+- mode changes preserve camera position and direction;
+- spatial evidence / Model notes remain renderer-specific.
 
 ## Execution rule
 At the start of every future spatial step, implementation work must re-read:
@@ -27,145 +23,107 @@ At the start of every future spatial step, implementation work must re-read:
 
 A step is not complete until its acceptance condition is satisfied. Update this file whenever scope, status, or claim boundaries change.
 
-## Step 0 — Documentation baseline
-Status: **complete**
+## Steps 0–8 — Initial spatial pilot
+Status: **complete / accepted / merged**
 
-Completed:
-- repository-level `AGENTS.md` added;
-- `docs/spatial-pilot-spec.md` added;
-- this execution schedule added;
-- roadmap, methodology, limitations, UI, modes, and evidence documents aligned;
-- `approximation` clarified as a scientific claim boundary rather than permission for weak static filtering.
+Accepted baseline:
+- controlled night-street scene;
+- Normal;
+- Tunnel Vision;
+- Cataract-like;
+- fixed-position look-around;
+- desktop and mobile interaction;
+- evidence / limitations integration;
+- 2D image regression coverage;
+- rendered acceptance review.
 
-## Step 1 — Three.js integration shell
-Status: **complete**
+The initial acceptance gate passed. This permits the ordered post-pilot expansion below; it does not make later modes automatically accepted.
 
-Completed:
-- `three` and `@types/three` added;
-- isolated spatial React renderer added;
-- additive `Explore 3D` entry added;
-- renderer failure UI and disposal added;
-- CI build passed.
+## Step 9 — Central Loss definition and evidence boundary
+Status: **in progress**
 
-## Step 2 — Controlled night-street scene
-Status: **complete**
+Goal:
+Define exactly what the spatial Central Loss mode demonstrates before changing renderer code.
 
-Validated scene targets:
-- red / green signal lenses;
-- CROSSING sign target;
-- pedestrian form;
-- vehicle form and bright headlights;
-- streetlights;
-- crosswalk and lane markings;
-- illuminated storefront / sign targets;
-- mid / far building forms;
-- deliberately darker side region.
+Product behavior:
+- add `Central Loss` as the only new spatial mode in this phase;
+- reuse the existing controlled night-street scene;
+- keep the exact same camera position and direction when switching Normal <-> Central Loss;
+- keep the central impairment screen/view-relative while the user looks around;
+- preserve usable peripheral information while degrading or obscuring straight-ahead detail;
+- use a soft, generic central scotoma-style profile rather than implying a measured patient field;
+- make direct-fixation consequences visible: a pedestrian, sign, signal, or headlight placed in the center should become harder to inspect, while moving the view changes which scene target falls inside the central-loss region.
 
-The scene uses procedural / primitive geometry and browser-generated text textures; no photorealistic asset pipeline was introduced.
+What this produces:
+A documented reason for using the interactive spatial renderer: the user can actively scan the same scene and experience that the disrupted region stays tied to straight-ahead vision rather than to one object or one pre-rendered image position.
 
-## Step 3 — Camera and comparison invariants
-Status: **complete**
+Acceptance:
+- product behavior is documented in spec / methodology / limitations / modes;
+- underlying phenomenon evidence remains inherited from the existing Central Loss evidence set;
+- spatial implementation confidence starts conservatively at Model C;
+- no claim of patient-specific scotoma shape, size, severity, or perimetry reconstruction.
 
-Validated:
-- pointer drag look-around;
-- real touch input through Pointer Events;
-- keyboard arrow look-around when the canvas is focused;
-- fixed camera position;
-- no walking / collision / game controller;
-- perception mode changes preserve camera position and direction.
+## Step 10 — Central Loss live renderer implementation
+Status: **not started**
 
-## Step 4 — Tunnel Vision spatial simulation
-Status: **complete**
+Work:
+- extend the spatial mode union and UI with `Central Loss`;
+- add a dedicated live post-processing pass;
+- keep the central-loss region view-relative;
+- degrade central detail through a combination of local softness / desaturation / obscuration while retaining surrounding scene information;
+- preserve camera state when toggling among all accepted modes;
+- connect Central Loss to renderer-specific evidence metadata;
+- update browser validation to exercise the new mode.
 
-Validated:
-- live post-processing shader;
-- central area remains visible;
-- peripheral field progressively desaturates and is obscured;
-- mask is screen / view-relative;
-- same camera state is preserved across Normal <-> Tunnel Vision;
-- desktop forward / turned screenshots and mobile touch screenshots show the field-loss effect following the viewer's view.
+What this produces:
+The same street scene can be viewed as Normal, Tunnel Vision, Central Loss, or Cataract-like without camera reset.
 
-Scientific boundary:
-- generic circular field-loss profile;
-- not individual perimetry reconstruction.
+Acceptance:
+- center is materially less useful for detailed inspection;
+- periphery remains substantially more usable than the center;
+- the central-loss region remains in the visual center while the camera direction changes;
+- no world-space object is used as the mask anchor;
+- mode switching does not move or recreate the camera;
+- active mode evidence / limitations are visible;
+- `npm run build` passes.
 
-## Step 5 — Cataract-like scene-dependent simulation
-Status: **complete after correction and second rendered review**
+## Step 11 — Central Loss rendered acceptance gate
+Status: **not started**
 
-First rendered review:
-- the initial broad-bloom version was rejected because one captured view appeared excessively washed out and the validation sequence did not isolate camera direction cleanly.
+Required browser validation:
+- existing 2D image comparison still passes desktop and 390px mobile checks;
+- existing Normal / Tunnel Vision / Cataract-like spatial regression still passes;
+- Central Loss mode can be selected on desktop and mobile;
+- same-camera Normal vs Central Loss forward screenshots are captured;
+- the user then changes camera direction and same-camera Normal vs Central Loss turned screenshots are captured;
+- real mobile touch look-around is exercised before a Central Loss capture;
+- no horizontal overflow;
+- no captured page / console errors;
+- build succeeds.
 
-Correction and stronger validation:
-- broad `UnrealBloomPass` contribution is disabled for Cataract-like output;
-- the post-process samples the live rendered frame and gates glare by actual high luminance;
-- local and wider bright-sample offsets spread only bright rendered sources;
-- modest optical softness, contrast loss, desaturation, warmth, and veil remain;
-- new acceptance screenshots compare Normal and Cataract-like from the same forward camera direction and again from the same turned camera direction;
-- forward view shows strong local spread around headlights, streetlights, and signal lights while scene structure remains readable;
-- dark turned view shows no comparable bright-source halo, confirming view-dependent response rather than a fixed decorative glow.
+Rendered-review questions:
+1. Does straight-ahead detail become clearly harder to inspect while the surrounding scene remains useful?
+2. When the camera turns, does the disrupted region remain centered in the viewer's field rather than staying on the previous world location?
+3. Does active scanning make the consequence of central field loss clearer than another transformed still image?
+4. Is the result restrained enough to remain a generic educational simulation rather than a dramatic decorative effect?
 
-Scientific boundary:
-- generic scene-dependent optical-impairment model;
-- not validated individual lens-scatter reconstruction.
+Pass requires all four rendered-review answers to be yes plus the browser/build checks above.
 
-## Step 6 — Evidence and limitations integration
-Status: **complete**
+If pass:
+- mark Central Loss accepted;
+- merge the mode cleanly;
+- only then begin `Night / Low Light`.
 
-Implemented:
-- active spatial Tunnel Vision / Cataract-like mode shows underlying phenomenon evidence;
-- `src/spatialEvidence.ts` supplies renderer-specific Model assessment / notes;
-- both pilot implementations remain Model C rather than inheriting a stronger 2D rating;
-- Normal shows a separate baseline note;
-- UI states generic versus measured boundaries;
-- Cataract-like evidence wording reflects the corrected high-luminance-gated renderer rather than the rejected broad-bloom implementation.
+If fail:
+- correct or reject the Central Loss spatial implementation;
+- do not begin Night / Low Light.
 
-## Step 7 — Responsive, accessibility, dependency, and performance pass
-Status: **complete**
-
-Validated:
-- responsive spatial layout;
-- 44px mode controls and keyboard-focus styling;
-- pointer, keyboard, and real touch interaction;
-- device pixel ratio capped at 2;
-- no shadows or continuous animation loop;
-- ResizeObserver sizing;
-- renderer / scene / material / texture / composer cleanup;
-- graceful renderer failure path;
-- synchronized package lock;
-- no horizontal overflow in desktop or 390px mobile validation;
-- no captured page or console errors;
-- existing 2D image comparison is also exercised by the browser check on desktop and 390px mobile, including the Original / Approximation stage and Upload image control.
-
-Final validation:
-- Chromium spatial + image regression run: `33999864975` — **success**;
-- PR build run: `33999866862` — **success**.
-
-## Step 8 — Pilot acceptance gate
-Status: **passed**
-
-Decision: **PASS**.
-
-Acceptance results:
-1. existing `Compare image` behavior remains available and browser regression checks pass — **met**;
-2. `Explore 3D` loads the controlled night-street scene — **met**;
-3. all three modes switch without camera reset — **met**;
-4. Tunnel Vision clearly changes spatial awareness while looking around — **met**;
-5. Cataract-like glare changes with bright sources entering / leaving the rendered view — **met**;
-6. evidence / limitation text is available for active spatial modes — **met**;
-7. desktop and mobile interaction are usable — **met**;
-8. build passes — **met**;
-9. spatial rendering adds information beyond another transformed still image — **met for the accepted pilot modes**: Tunnel Vision demonstrates active scanning under peripheral loss, and Cataract-like demonstrates view-dependent glare response to scene lighting.
-
-This pass does **not** mean the output is exact biological or patient-specific reproduction. The claim boundaries in methodology / limitations remain in force.
-
-## Next spatial candidates
-Proceed only in this order and re-apply the same evidence / rendered-review discipline:
-1. Central Loss;
-2. Night / Low Light;
-3. Dog-like;
-4. Cat-like;
-5. Bird-like as a separate evaluation;
-6. Bee-like only with additional UV-reflectance scene data.
+## Ordered next spatial candidates after Central Loss
+1. Night / Low Light;
+2. Dog-like;
+3. Cat-like;
+4. Bird-like as a separate evaluation;
+5. Bee-like only with additional UV-reflectance scene data.
 
 ## Current next action
-Finalize PR #2 against the documented acceptance result, then begin the next spatial mode only after the accepted pilot is integrated cleanly.
+Finish Step 9 documentation alignment, then implement Step 10 Central Loss as a live view-relative spatial pass on the existing accepted scene.
