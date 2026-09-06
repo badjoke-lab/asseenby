@@ -104,8 +104,8 @@ Important reading rule:
 - spatial model maturity must be assessed separately from the existing 2D transform quality.
 
 ## Strength control limitation
-The strength slider changes degree within the current image approximation model.
-It does not map to a validated real-world severity scale unless a future mode explicitly documents such a mapping.
+The strength slider changes degree within the current image approximation model. At 0%, the image comparison uses the Original source without a perception transform; 100% applies the mode's full configured transform.
+Intermediate percentages are renderer intensity controls, not validated real-world severity values. They do not map to a clinical scale unless a future mode explicitly documents such a mapping.
 
 The current spatial field-loss modes do not expose a patient-severity control. Their generic profile should not be interpreted as a severity measurement.
 
