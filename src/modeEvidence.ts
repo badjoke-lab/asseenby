@@ -253,29 +253,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  dry_eye: {
-    summary: "Approximation of irregular blur and visual discomfort tendencies associated with dry eye symptoms.",
-    evidenceScore: "B",
-    modelScore: "C",
-    basisNote: "Dry eye is commonly described as causing discomfort together with blurry vision and fluctuating clarity.",
-    modelNote: "The current transform uses a soft blur plus localized artifacts to express the tendency toward unstable clarity, but it remains heuristic.",
-    caveat: "Dry eye symptoms can fluctuate over time and with environment. This is not a patient-specific tear-film model.",
-    primarySource: {
-      title: "National Eye Institute — Dry Eye",
-      url: "https://www.nei.nih.gov/eye-health-information/eye-conditions-and-diseases/dry-eye",
-      kind: "organization",
-      note: "Clinical reference describing blurry vision among common dry-eye symptoms.",
-    },
-    supportingSources: [
-      {
-        title: "National Eye Institute — Causes of Dry Eye",
-        url: "https://www.nei.nih.gov/eye-health-information/eye-conditions-and-diseases/dry-eye/causes-dry-eye",
-        kind: "organization",
-        note: "Adds context on how dry eye can lead to discomfort and vision problems, and why symptoms fluctuate.",
-      },
-    ],
-    lastReviewed: REVIEWED_ON,
-  },
   dog: {
     summary: "Visible-range approximation inspired by well-studied canine dichromatic vision, presented as a comparison proxy rather than a full dog-view simulation.",
     evidenceScore: "A",

@@ -27,7 +27,6 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 
 ### Estimated
 - Night / Low Light
-- Dry-eye-like
 
 ## Animal modes
 - Dog
