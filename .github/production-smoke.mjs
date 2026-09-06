@@ -68,15 +68,26 @@ async function waitForCurrentProduction(page) {
     await input.setInputFiles(file);
     await page.waitForTimeout(250);
     const src = await page.locator('img[alt="Original"]').first().getAttribute("src");
-    if (src?.startsWith("blob:")) {
+
+    let currentReferenceSet = false;
+    try {
+      await page.locator("#category-select").selectOption("Reference");
+      const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
+      currentReferenceSet = JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]);
+    } catch {
+      currentReferenceSet = false;
+    }
+
+    if (src?.startsWith("blob:") && currentReferenceSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference exposes Age Profile only`);
       return;
     }
-    result.notes.push(`attempt ${attempt}: production still exposed pre-blob upload behavior`);
+
+    result.notes.push(`attempt ${attempt}: production is stale for blob upload and/or Reference mode set`);
     if (attempt < 12) await page.waitForTimeout(15_000);
   }
-  throw new Error("Production did not reach the current blob-upload release behavior within the retry window.");
+  throw new Error("Production did not reach the current blob-upload + Reference-mode release behavior within the retry window.");
 }
 
 async function desktopImageSmoke(browser) {
@@ -91,6 +102,12 @@ async function desktopImageSmoke(browser) {
 
   const initialResources = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
   assert(!initialResources.some((name) => /SpatialEntry/i.test(name)), "desktop image: spatial bundle loaded before Explore 3D was opened");
+
+  await page.locator("#category-select").selectOption("Reference");
+  const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
+  assert(JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]), `desktop image: unexpected Reference modes ${JSON.stringify(referenceOptions)}`);
+  assert(!(await page.locator("body").innerText()).includes("Sex-difference Profile"), "desktop image: removed Sex-difference Profile is still visible");
+  await page.locator("#category-select").selectOption("Human");
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();
