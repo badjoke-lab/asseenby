@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-Branch: `feat/spatial-central-loss`
-PR: `#3` — **draft / final clean-head regression before merge**
+PR #3 — **merged / complete**
+Merge commit: `48dbda797ac287170dc02444771e8ee0ce1e38d0`
 
-The existing public product remains the v0.1 static-image comparison tool. The spatial track is additive. The initial Normal / Tunnel Vision / Cataract-like renderer is on main, while Central Loss and the accepted photographic spatial reference remain isolated in PR #3 until the final regression passes.
+The public spatial track now uses the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, and Cataract-like comparison modes. Image comparison remains available separately.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -13,90 +13,51 @@ At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spe
 Status: **complete / merged**
 
 - PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`.
-- main post-merge build `34000040892` passed.
-- Three.js fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally accepted.
-- Later user-visible review showed that the original primitive street itself was not presentation-quality. That presentation defect was treated as blocking rather than accepted as a final visual baseline.
+- Three.js fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally established.
+- Later rendered review rejected the primitive street itself as a presentation baseline, so subsequent expansion was blocked until the scene was replaced.
 
 ## Step 9 — Central Loss definition and evidence boundary
 Status: **complete**
 
-- Central Loss is the only new spatial mode in this phase.
-- The disrupted center is screen/view-relative and follows straight-ahead vision while the camera turns.
+- Central Loss is screen/view-relative and follows straight-ahead vision while the view rotates.
 - Surrounding scene information remains more available than central detail.
-- The model is generic and educational, not patient perimetry or a measured individual scotoma.
+- It is a generic educational model, not patient perimetry or a measured individual scotoma.
 - Spatial Model confidence remains conservative at C.
 
 ## Step 10 — Central Loss live renderer
-Status: **complete / rendered acceptance passed**
+Status: **complete / accepted**
 
-Functional validation:
-- implementation workflow `34000391905` passed;
-- PR build `34000459038` passed;
-- initial Chromium validation `34000441484` passed.
-
-The implementation preserves camera direction across mode switching and keeps the disrupted region screen/view-relative rather than attached to a world-space target.
+Functional validation passed and mode switching preserves the exact viewing direction. The affected region is viewer-relative rather than attached to a world-space target.
 
 ## Step 10A — Spatial reference scene presentation rebuild
 Status: **PASS / accepted**
 
-### Original through v3
-Result: **FAIL**.
+### Rejected approaches
+- Original through v3: hand-built procedural scene remained visibly low-poly / prototype-like.
+- v4: real CC0 building GLBs improved the forward view but still read as a stage-set environment because primitive foreground geometry remained.
 
-The first public screenshot read as a sparse prototype. v1–v3 progressively added facade detail, side-view architecture, procedural textures, better vehicle/pedestrian geometry, shadows and lighting. Browser checks passed technically, but rendered review still showed a self-built low-poly/procedural scene rather than a convincing environment.
+### Accepted v5 approach
+The active scene was replaced with a locally bundled Poly Haven `Hansaplatz` tonemapped 360° panorama. The source/license note is stored beside the asset and runtime has no external CDN dependency.
 
-### v4 — real CC0 building assets
-Commit `61ce2e103d745fe9e1c2590dc4faa81dd633640c`; corrected build workflow `34007002239` passed.
+This fits the current pilot because the camera rotates but does not translate. No geometric parallax is required by the accepted interaction. Future features that require camera translation or depth-dependent effects must add an explicit depth/geometry requirement.
 
-Three Quaternius Downtown City MegaKit GLB buildings were bundled locally and integrated with `GLTFLoader`. The forward view improved, but rendered review still failed the product-quality test: primitive foreground geometry remained and side turns still read like stage-set facades rather than inhabiting a coherent real place. **v4 rejected.**
+Rendered review confirmed:
+- forward, turned and opposite directions all read as one coherent real night-city environment;
+- architecture, storefronts, streetlights, dark sky and near/far detail remain useful across view directions;
+- the original primitive / low-poly / stage-set presentation failure is gone;
+- desktop and 390px mobile remain usable;
+- bright and dark regions remain useful for field-loss and Cataract-like comparisons.
 
-### v5 — photographic 360° reference stimulus
-Core scene commit `b194bd652ee67340140e52675d6956d9b0993464`; patch/build workflow `34007320447` passed.
-
-The active scene was changed from hand-built geometry to a locally bundled Poly Haven `Hansaplatz` tonemapped 360° panorama. The source note is stored beside the asset, the source is CC0, and the runtime does not depend on an external CDN.
-
-Why this fits the current pilot:
-- the current interaction rotates the view but never translates the camera, so scene parallax was not being used;
-- the perception effects under test are screen/view-relative and operate correctly on the photographic reference;
-- real architecture, lighting, material detail and 360° continuity now come from one coherent captured environment rather than hand-built approximations;
-- future modes that require camera translation or geometric depth must add a separate depth/geometry requirement instead of pretending the panorama supplies it.
-
-Rendered browser review `34007355631` passed technically and its captures were manually reviewed:
-- Normal forward reads immediately as a real night-city environment;
-- the turned direction contains coherent building facades, trees and illuminated storefront detail rather than a dark or flat stage edge;
-- the opposite direction contains a coherent plaza, monument, lamps and surrounding architecture;
-- bright shopfronts/streetlights and dark sky/street regions provide useful contrast targets;
-- the original low-poly / primitive / stage-set problem is no longer present;
-- the 390px mobile view remains usable and the existing browser check reported no horizontal overflow or captured page/console errors.
-
-All seven v5 presentation questions passed. **Step 10A is accepted.**
-
-Cleanup workflow `34007582142` subsequently passed and removed the dead primitive-scene implementation, obsolete Quaternius GLB assets, obsolete imports and remaining user-facing `3D renderer` wording. The active scene is now the panorama-backed spatial reference only.
+Cleanup workflow `34007582142` passed and removed the dead primitive scene implementation, obsolete GLB assets/imports and obsolete user-facing `3D renderer` wording.
 
 ## Step 11 — Central Loss rendered acceptance
-Status: **PASS / accepted**
+Status: **PASS / accepted / merged**
 
-Rendered review on the v5 photographic reference confirmed:
-- identical forward Normal vs Central Loss comparison makes direct central detail harder to inspect while surrounding scene information remains more available;
-- after turning, the disrupted region remains centered in the viewer's field rather than staying on the previous world-space location;
-- mobile touch look-around produces the same view-relative behavior;
-- the effect remains restrained and generic rather than claiming patient-specific reconstruction;
-- active scanning across a dense real scene makes the consequence of central field loss clearer than another transformed still image.
+Final clean-head Chromium regression `34007622720` passed. Review confirmed that Central Loss remains centered in the viewer's field after rotation and mobile touch look-around, while surrounding information remains more available. The model remains generic and restrained.
 
-Central Loss is accepted for this spatial pilot.
+PR build `34007624784` passed. PR #3 was then squash-merged to main as `48dbda797ac287170dc02444771e8ee0ce1e38d0`. Main build `34007765671` passed.
 
-## Final merge gate
-Before PR #3 merges, run the existing full desktop / 390px Chromium regression once more on the cleaned branch head and require:
-- image comparison desktop/mobile unchanged;
-- Normal / Tunnel Vision / Cataract-like / Central Loss switching green;
-- forward, turned and opposite panorama captures present;
-- real mobile touch look-around green;
-- no horizontal overflow;
-- no captured page/console errors;
-- build green.
-
-No new perception mode may begin before this final regression and merge complete.
-
-## Ordered next spatial candidates after Central Loss
+## Ordered next spatial candidates
 1. Night / Low Light
 2. Dog-like
 3. Cat-like
@@ -104,4 +65,4 @@ No new perception mode may begin before this final regression and merge complete
 5. Bee-like only with additional UV-reflectance scene data
 
 ## Current next action
-Run the final clean-head browser/build regression, mark PR #3 ready, squash-merge it to main, verify main, then begin evaluation of `Night / Low Light` as the next spatial candidate.
+Begin `Night / Low Light` as a separate evaluated mode. First define its evidence boundary and what the current photographic reference can and cannot support before implementing a shader. Do not alter the accepted reference scene merely to force the new mode to work.
