@@ -74,9 +74,6 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - spatial renderer target: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker rendered regions while brighter regions remain comparatively available
 - spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction
 
-### Fatigue-like
-- class: Estimated
-- goal: fatigue-related viewing softness approximation
 
 ### Dry-eye-like
 - class: Estimated

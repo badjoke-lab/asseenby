@@ -197,7 +197,7 @@ Validation so far:
 - earlier runs `34018291841` and `34018339466` were workflow/test-harness failures before product commit: invalid workflow formatting, then Playwright module resolution from `/tmp`; neither was a product-code failure.
 
 ### R7-4 — Cat-like image mode
-Status: **ACTIVE — removal implementation**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE the public Cat-like image mode**
 
@@ -231,5 +231,41 @@ Acceptance:
 - build passes;
 - after merge, production smoke confirms Cat-like is absent and Dog-like is the only public Animal image mode.
 
+Validation:
+- corrected Cat-like image-output audit `34019040004` — **success**;
+- removal/build/desktop + 390px + spatial regression `34025906254` — **success**;
+- PR #16 build `34025986307` — **success**;
+- merge SHA `9b12e4d855f9e4b3be388812a43ba1e5e0990f04`;
+- matching main build `34026021415` — **success**;
+- production smoke `34026021476` — **success**, confirming Dog-like is the only public Animal image mode while Reference remains Age Profile and the accepted six spatial controls remain unchanged.
+
+### R7-5 — Fatigue-like image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE the public Fatigue-like image mode**
+
+Reason:
+- digital eye strain / visual fatigue is a symptom cluster, not one stable visual phenotype shared by affected viewers;
+- the current Evidence entry is B / Model C and explicitly describes the renderer as a communication proxy rather than a validated fatigue-specific visual model;
+- the public transform is only a mild generic blur followed by contrast reduction;
+- Blur and Low Contrast already expose those visual effects directly without implying that a particular combined output is what “fatigue” looks like;
+- strengthening the mode would manufacture specificity that the current evidence does not support.
+
+Removal scope:
+- remove Fatigue-like from the public Human mode list;
+- remove the fatigue transform branch and public fatigue Evidence entry;
+- update README, MVP/mode documentation, and limitations;
+- strengthen production smoke so the accepted Human image set explicitly excludes Fatigue-like and stale deployments cannot pass;
+- keep Dry-eye-like as the next separate Model C audit rather than conflating the two symptom categories.
+
+Acceptance:
+- Human image modes are Protan-like, Deutan-like, Tritan-like, Blur, Low Contrast, Cataract-like, Tunnel Vision, Central Loss, Night / Low Light, and Dry-eye-like;
+- no `fatigue` transform or Fatigue-like public Evidence entry remains;
+- Animal remains Dog-like only and Reference remains Age Profile only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px image/spatial regression passes without overflow or page/console errors;
+- build passes;
+- after merge, production smoke must observe the exact Human set without Fatigue-like before R7-5 is marked PASS.
+
 ## Current next action
-Complete and validate the R7-4 removal branch, open a clean PR, merge only after the normal PR build passes, then require the public production smoke to observe Dog-like as the complete Animal image set before marking R7-4 PASS.
+Complete and validate the R7-5 Fatigue-like removal branch, open a clean PR, merge only if the normal PR build is green, then require production smoke to observe the exact Human set with Fatigue-like absent.
