@@ -1,0 +1,241 @@
+name: R8 mobile header validate
+
+on:
+  push:
+    branches:
+      - feat/r8-mobile-header-tap-targets
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.event.head_commit.message == 'Run R8-5 validation'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/r8-mobile-header-tap-targets
+          fetch-depth: 0
+
+      - name: Apply R8-5 patch and status updates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          styles_path = Path('src/styles.css')
+          styles = styles_path.read_text()
+          styles_old = '''  .topnav {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 11px;
+          }
+
+          .content-area {'''
+          styles_new = '''  .topnav {
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 11px;
+          }
+
+          .topbar .brand,
+          .topbar .topnav a,
+          .topbar .ghost-button {
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+          }
+
+          .topbar .topnav a {
+            min-width: 44px;
+            justify-content: center;
+          }
+
+          .topbar .ghost-button {
+            justify-content: center;
+          }
+
+          .content-area {'''
+          if styles_old not in styles:
+              raise SystemExit('mobile topnav style anchor not found')
+          styles_path.write_text(styles.replace(styles_old, styles_new, 1))
+
+          smoke_path = Path('.github/production-smoke.mjs')
+          smoke = smoke_path.read_text()
+          helper_anchor = '''async function waitForCurrentProduction(page) {'''
+          helper = '''async function assertTouchTargets(locator, label) {
+            const count = await locator.count();
+            assert(count > 0, `${label}: no touch targets found`);
+            for (let index = 0; index < count; index += 1) {
+              const box = await locator.nth(index).boundingBox();
+              assert(box, `${label}: target ${index + 1} has no bounding box`);
+              assert(
+                box.width >= 44 && box.height >= 44,
+                `${label}: target ${index + 1} is ${box.width.toFixed(1)}x${box.height.toFixed(1)}; expected at least 44x44`,
+              );
+            }
+          }
+
+          async function waitForCurrentProduction(page) {'''
+          if helper_anchor not in smoke:
+              raise SystemExit('smoke helper anchor not found')
+          smoke = smoke.replace(helper_anchor, helper, 1)
+          image_anchor = '  await noHorizontalOverflow(page, "mobile image");\n'
+          image_new = image_anchor + '  await assertTouchTargets(page.locator(".topbar a"), "mobile image header");\n'
+          if image_anchor not in smoke:
+              raise SystemExit('mobile image smoke anchor not found')
+          smoke = smoke.replace(image_anchor, image_new, 1)
+          spatial_anchor = '  await noHorizontalOverflow(page, "mobile spatial");\n'
+          spatial_new = spatial_anchor + '  await assertTouchTargets(page.locator(".topbar a"), "mobile spatial header");\n'
+          if spatial_anchor not in smoke:
+              raise SystemExit('mobile spatial smoke anchor not found')
+          smoke = smoke.replace(spatial_anchor, spatial_new, 1)
+          smoke_path.write_text(smoke)
+
+          readme_path = Path('README.md')
+          readme = readme_path.read_text()
+          readme_old = 'AsSeenBy is a research-based visual comparison tool for translating commonly described visual differences into image-based comparison views across human visual conditions, animal-inspired approximations, and reference profiles.'
+          readme_new = 'AsSeenBy is a research-based visual comparison tool for translating commonly described visual differences into image-based comparison views across human visual conditions and animal-inspired approximations.'
+          if readme_old not in readme:
+              raise SystemExit('README scope sentence not found')
+          readme = readme.replace(readme_old, readme_new, 1)
+          ref_old = '* Reference modes are averaged profiles only and should not be treated as individual-level predictions.'
+          ref_new = '* The current public release has no Reference modes; any future reference dataset must define its population and mapping explicitly.'
+          if ref_old not in readme:
+              raise SystemExit('README reference note not found')
+          readme_path.write_text(readme.replace(ref_old, ref_new, 1))
+
+          schedule_path = Path('docs/release-polish-schedule.md')
+          schedule = schedule_path.read_text()
+          marker = '### R8-3 — Desktop image workspace flow after Reference removal\n'
+          if marker not in schedule:
+              raise SystemExit('R8-3 schedule marker not found')
+          prefix = schedule.split(marker, 1)[0]
+          tail = '''### R8-3 — Desktop image workspace flow after Reference removal
+          Status: **PASS / production verified**
+
+          Finding:
+          - the desktop production image capture left a large empty area below the compare card because the taller sticky ControlRail determined the `workspace-grid` row height while the Human/Animal cards lived outside that grid;
+          - after Reference removal, `.category-grid` still reserved three desktop columns even though only Human and Animal remained, leaving an unused third column.
+
+          Implementation:
+          - group CompareStage + Human/Animal cards + footer into a primary desktop column independent of the sticky ControlRail height;
+          - use exactly two desktop category columns;
+          - at <=960px use `display: contents` plus explicit ordering so the existing mobile sequence remains Compare -> controls/evidence -> Human/Animal -> footer;
+          - add browser-smoke geometry assertions for the desktop compare-to-category gap, two-column fill, and mobile content order.
+
+          Acceptance:
+          - Human/Animal cards begin within 48px of the compare card bottom on desktop — **PASS**;
+          - the two cards fill the available primary-column width with no obsolete empty third column — **PASS**;
+          - 390px order remains Compare -> controls/evidence -> category cards — **PASS**;
+          - no horizontal overflow or console/page errors — **PASS**;
+          - all existing image and six spatial mode regression paths remain green — **PASS**;
+          - production screenshot review after merge — **PASS**.
+
+          Validation:
+          - PR #24 merged as `e21ef48e76357686c6a33e0e8de87e03629e6102`;
+          - matching main build `34043567332` — **success**;
+          - production smoke `34043567336` — **success**;
+          - production artifact `9992424231` was manually reviewed: desktop no longer has the large compare/category gap or obsolete third category column, and 390px ordering remains intact.
+
+          ### R8-4 — Hero copy after Reference removal
+          Status: **PASS / production verified**
+
+          Finding:
+          - the Reference category had been removed from the public product, but the image hero still advertised `reference profiles`.
+
+          Implementation:
+          - describe the current public image scope as human visual conditions plus animal-inspired modes;
+          - permanently assert in production smoke that the hero includes the current Human/Animal scope and does not reintroduce `reference profiles`.
+
+          Acceptance:
+          - no removed Reference scope is advertised in the public hero — **PASS**;
+          - desktop and 390px image layouts remain intact — **PASS**;
+          - image and spatial regression paths remain green — **PASS**.
+
+          Validation:
+          - full local image + spatial browser validation `34043876824` — **success**;
+          - PR #25 build `34044534190` — **success**;
+          - PR #25 squash-merged as `d2630921a8d980d5de6de42ae96863f28b193396`;
+          - matching main build `34044557244` — **success**;
+          - production smoke `34044557155` — **success**;
+          - production artifact `9992706810` was manually reviewed: desktop/mobile hero copy matches the Human + Animal public scope with no layout regression.
+
+          ### R8-5 — Mobile header touch targets
+          Status: **ACTIVE — implementation / validation**
+
+          Finding:
+          - accepted 390px image and spatial production captures show the global header links as narrow text-only targets;
+          - `.topnav` changes layout on mobile, but its anchors have no minimum touch-target size, and the mobile brand / `Open viewer` action are also below the 44px interaction-height standard already used by the R8-1 experience switch.
+
+          Implementation:
+          - on <=960px, give header brand/nav/ghost actions at least 44px height;
+          - give nav links at least 44px width while retaining the existing restrained editorial presentation;
+          - add browser-smoke bounding-box assertions for every `.topbar a` on the 390px image and spatial surfaces.
+
+          Acceptance:
+          - every mobile image-header and spatial-header link is at least 44x44px;
+          - no horizontal overflow at 390px;
+          - header wrapping remains orderly and does not obscure the hero/spatial intro;
+          - all existing image and six spatial mode regression paths remain green;
+          - build passes;
+          - after merge, production smoke and screenshot review are required before R8-5 is marked PASS.
+
+          ## Current next action
+          Run build + full desktop/390px image/spatial browser smoke for R8-5, manually inspect the image/spatial captures, then open a clean PR only if the larger mobile header targets preserve the editorial layout without overflow or regression.
+          '''
+          tail = '\n'.join(line[10:] if line.startswith('          ') else line for line in tail.splitlines()) + '\n'
+          schedule_path.write_text(prefix + marker + tail[len(marker):])
+          PY
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run full local browser smoke
+        shell: bash
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 > /tmp/asseenby-r8-5-preview.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+
+      - name: Commit validated R8-5 changes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/styles.css .github/production-smoke.mjs README.md docs/release-polish-schedule.md
+          git commit -m 'Polish mobile header touch targets'
+          git push
+
+      - name: Upload browser captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r8-mobile-header-smoke
+          path: production-smoke
