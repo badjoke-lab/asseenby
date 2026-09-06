@@ -34,6 +34,7 @@ function HomePage() {
   const [category, setCategory] = useState<ModeCategory>("Human");
   const [modeKey, setModeKey] = useState<string>("protan");
   const [strength, setStrength] = useState(65);
+  const [renderStrength, setRenderStrength] = useState(65);
   const [compareMode, setCompareMode] = useState<CompareMode>("slider");
   const [divider, setDivider] = useState(52);
   const [imageSrc, setImageSrc] = useState<string>(SAMPLE_IMAGE);
@@ -42,6 +43,9 @@ function HomePage() {
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const baseCanvasRef = useRef<{ source: string; canvas: HTMLCanvasElement } | null>(null);
+  const transformedObjectUrlRef = useRef<string | null>(null);
+  const uploadedObjectUrlRef = useRef<string | null>(null);
 
   const categoryModes = useMemo(() => MODES.filter((mode) => mode.category === category), [category]);
   const currentMode = useMemo(() => MODES.find((mode) => mode.key === modeKey) ?? MODES[0], [modeKey]);
@@ -54,27 +58,64 @@ function HomePage() {
   }, [category, categoryModes, modeKey]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setRenderStrength(strength), 90);
+    return () => window.clearTimeout(timer);
+  }, [strength]);
+
+  useEffect(() => {
     let cancelled = false;
+    let pendingObjectUrl: string | null = null;
+
     const run = async () => {
       setIsBusy(true);
       setError("");
+      setOriginalUrl(imageSrc);
       try {
-        const result = await prepareImages(imageSrc, modeKey, strength / 100);
-        if (cancelled) return;
-        setOriginalUrl(result.originalUrl);
-        setTransformedUrl(result.transformedUrl);
+        let prepared = baseCanvasRef.current;
+        if (!prepared || prepared.source !== imageSrc) {
+          prepared = await prepareBaseCanvas(imageSrc);
+          if (cancelled) return;
+          baseCanvasRef.current = prepared;
+        }
+
+        const transformedCanvas = document.createElement("canvas");
+        transformedCanvas.width = prepared.canvas.width;
+        transformedCanvas.height = prepared.canvas.height;
+        applyImageTransform(prepared.canvas, transformedCanvas, modeKey, renderStrength / 100);
+        pendingObjectUrl = await canvasToObjectUrl(transformedCanvas, "image/jpeg", 0.94);
+
+        if (cancelled) {
+          URL.revokeObjectURL(pendingObjectUrl);
+          return;
+        }
+
+        if (transformedObjectUrlRef.current) {
+          URL.revokeObjectURL(transformedObjectUrlRef.current);
+        }
+        transformedObjectUrlRef.current = pendingObjectUrl;
+        setTransformedUrl(pendingObjectUrl);
+        pendingObjectUrl = null;
       } catch (err) {
+        if (pendingObjectUrl) URL.revokeObjectURL(pendingObjectUrl);
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to render image.");
       } finally {
         if (!cancelled) setIsBusy(false);
       }
     };
+
     run();
     return () => {
       cancelled = true;
     };
-  }, [imageSrc, modeKey, strength]);
+  }, [imageSrc, modeKey, renderStrength]);
+
+  useEffect(() => {
+    return () => {
+      if (transformedObjectUrlRef.current) URL.revokeObjectURL(transformedObjectUrlRef.current);
+      if (uploadedObjectUrlRef.current) URL.revokeObjectURL(uploadedObjectUrlRef.current);
+    };
+  }, []);
 
   const humanModes = MODES.filter((mode) => mode.category === "Human");
   const animalModes = MODES.filter((mode) => mode.category === "Animal");
@@ -109,7 +150,14 @@ function HomePage() {
               setStrength={setStrength}
               currentMode={currentMode}
               onUploadClick={() => fileInputRef.current?.click()}
-              onUseSample={() => setImageSrc(SAMPLE_IMAGE)}
+              onUseSample={() => {
+                if (uploadedObjectUrlRef.current) {
+                  URL.revokeObjectURL(uploadedObjectUrlRef.current);
+                  uploadedObjectUrlRef.current = null;
+                }
+                baseCanvasRef.current = null;
+                setImageSrc(SAMPLE_IMAGE);
+              }}
               error={error}
               currentModeEvidence={currentModeEvidence}
             />
@@ -137,11 +185,11 @@ function HomePage() {
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            if (typeof reader.result === "string") setImageSrc(reader.result);
-          };
-          reader.readAsDataURL(file);
+          const nextUrl = URL.createObjectURL(file);
+          if (uploadedObjectUrlRef.current) URL.revokeObjectURL(uploadedObjectUrlRef.current);
+          uploadedObjectUrlRef.current = nextUrl;
+          baseCanvasRef.current = null;
+          setImageSrc(nextUrl);
           event.currentTarget.value = "";
         }}
       />
@@ -416,26 +464,28 @@ function buildCompareGuidance(mode: ModeDef, evidence: ModeEvidence) {
   return "";
 }
 
-async function prepareImages(source: string, modeKey: string, amount: number) {
+async function prepareBaseCanvas(source: string) {
   const image = await loadImage(source);
   const { width, height } = fitWithin(image.width, image.height, 1400, 960);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available.");
+  ctx.drawImage(image, 0, 0, width, height);
+  return { source, canvas };
+}
 
-  const baseCanvas = document.createElement("canvas");
-  baseCanvas.width = width;
-  baseCanvas.height = height;
-  const baseCtx = baseCanvas.getContext("2d");
-  if (!baseCtx) throw new Error("Canvas is not available.");
-  baseCtx.drawImage(image, 0, 0, width, height);
-
-  const transformedCanvas = document.createElement("canvas");
-  transformedCanvas.width = width;
-  transformedCanvas.height = height;
-  applyImageTransform(baseCanvas, transformedCanvas, modeKey, amount);
-
-  return {
-    originalUrl: baseCanvas.toDataURL("image/jpeg", 0.94),
-    transformedUrl: transformedCanvas.toDataURL("image/jpeg", 0.94),
-  };
+function canvasToObjectUrl(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<string>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Rendered image could not be encoded."));
+        return;
+      }
+      resolve(URL.createObjectURL(blob));
+    }, type, quality);
+  });
 }
 
 function fitWithin(width: number, height: number, maxWidth: number, maxHeight: number) {
