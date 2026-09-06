@@ -42,25 +42,40 @@ A conservative Cat-like candidate was implemented and compared against Normal an
 The image-track Cat-like mode remains available as an explicitly cautious visible-range approximation. The rejected spatial candidate is not added to the public spatial controls.
 
 ## Spatial evaluation — Bird-like
-Status: **active next evaluation**
+Status: **rejected / blocked at evidence-source gate**
 
-Goal:
-Determine whether an honest Bird-like spatial comparison is possible from the current tone-mapped RGB panorama, and reject it rather than inventing ultraviolet/tetrachromatic information if the source data is insufficient.
+Evidence review found no defensible generic Bird-like spatial renderer for the current Hansaplatz source.
 
-Required evaluation:
-- review avian cone classes, ultraviolet/violet sensitivity, oil-droplet filtering and species variation;
-- separate what can be communicated from ordinary RGB from what requires spectral/UV scene data;
-- do not treat saturation or contrast boost as a sufficient Bird-like simulation;
-- preserve the exact camera/source scene for any candidate that survives the evidence boundary;
-- require rendered explanatory value beyond a decorative filter before adding a public control.
+Why:
+- many birds use four single-cone classes plus oil-droplet spectral filtering, with ultraviolet-sensitive (UVS) and violet-sensitive (VS) systems that ordinary RGB does not encode;
+- the fourth avian color dimension cannot be reconstructed from three human-camera RGB channels after spectral information has been collapsed;
+- avian visual acuity varies by roughly two orders of magnitude across measured species, so a generic sharpen/blur rule would not describe “bird vision” coherently;
+- temporal resolution, retinal specializations, field of view and ecology also vary substantially across species;
+- the only current image Bird-like behavior is a visible-range saturation/microcontrast proxy, which is not enough to justify a separate spatial mode.
 
-## Ordered next spatial candidates
-1. Bird-like evidence/source-data evaluation;
-2. Bee-like only with additional UV-reflectance scene data.
+Decision:
+Do not add a Bird-like spatial control or shader from the current RGB panorama. A future avian spatial mode must be species-specific and/or use additional spectral/UV source data with a documented observer model.
+
+## Spatial evaluation — Bee-like
+Status: **blocked by missing UV-reflectance scene data**
+
+The current panorama contains no UV-reflectance/spectral channel. Honeybee UV/blue/green photoreceptor behavior therefore cannot be reconstructed honestly from the current RGB source. No Bee-like spatial shader is started.
+
+A future Bee-like phase requires:
+- a UV-capable or measured spectral/UV scene source;
+- documented mapping from bee photoreceptor catches to a human-display false-color representation;
+- explicit handling of the fact that the human display cannot literally emit the bee perceptual dimensions being modeled.
+
+## Spatial post-pilot status
+The ordered animal expansion is **complete under the current RGB source-data boundary**:
+- Dog-like — accepted;
+- Cat-like — rejected after rendered review;
+- Bird-like — rejected/blocked at evidence/source-data gate;
+- Bee-like — blocked pending UV-reflectance/spectral scene data.
+
+No additional generic animal spatial filter should be added merely to fill out the image-mode list.
 
 ## Near-term priority order
-1. define the Bird-like spectral/source-data boundary;
-2. decide whether the current RGB panorama supports any non-misleading spatial Bird-like renderer;
-3. if yes, implement one restrained candidate and run same-camera desktop/mobile review;
-4. if no, record Bird-like as rejected/blocked rather than faking missing UV/tetrachromatic information;
-5. do not begin Bee-like until Bird-like is resolved.
+1. keep the accepted spatial set stable and regression-covered;
+2. return active product work to image-transform quality, responsive/release polish, and evidence accuracy;
+3. reopen species-specific spatial work only when a new source-data/model requirement is explicitly accepted.

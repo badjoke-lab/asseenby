@@ -99,13 +99,14 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Estimated
 - goal: bee-like visible-range approximation
 - limitation: UV is not reproduced by the current image mode
-- spatial rule: a future UV-aware implementation requires additional UV-reflectance scene/material data and must not invent UV from ordinary RGB color
+- spatial status: blocked; requires additional UV-reflectance/spectral scene/material data and a documented false-color observer mapping before implementation
 
 ### Bird-like
 - class: Estimated
 - goal: bird-like visible-range approximation
-- limitation: UV and full tetrachromatic response are not reproduced by ordinary RGB
-- spatial status: next evidence/source-data evaluation; no spatial control until a non-misleading renderer candidate is justified
+- image status: current saturation/microcontrast proxy remains available with Model D
+- limitation: UV/tetrachromacy and broad species variation are not reproduced by ordinary RGB
+- spatial status: rejected/blocked at evidence/source-data gate; no generic Bird-like spatial control is accepted from the current RGB panorama
 
 ## Reference modes
 ### Age Profile

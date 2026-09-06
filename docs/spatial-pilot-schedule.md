@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-PR #6 — **Cat-like spatial rejection recorded / final clean-head regression before merge**
-Branch: `feat/spatial-cat-like`
+Branch: `feat/spatial-bird-evaluation`
+Status: **Bird-like rejected/blocked at evidence gate / Bee-like blocked by source data**
 
-Dog-like is merged on main as `5bdd0d39f963b498fcf2f7f379f07b50adf79e25`; post-merge main build `34009808490` passed. Cat-like candidate browser run `34010239767` passed technically, but manual same-camera review rejected the spatial mode as insufficiently distinct from Dog-like without unsupported assumptions. Rejection/cleanup commit `2497db8d6143c13155be4b477e3ec017216549d4` contains no Cat-like spatial renderer/control changes; patch/build workflow `34010475440` passed.
+Cat-like rejection was merged to main as `b28262f65ca8358aecbb4b76175e786423cf93fe`; post-merge main build `34010635740` passed. Bird-like was then reviewed as a source-data/evidence question before any shader work. The current RGB panorama cannot support a defensible generic Bird-like spatial observer, and Bee-like remains blocked without UV-reflectance/spectral scene data.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -82,19 +82,41 @@ Decision: **reject the spatial Cat-like control**. The current RGB panorama and 
 
 The rejected candidate was removed before the merge head. Comparison against main contains documentation/evidence updates only; no Cat-like shader, spatial evidence branch, control, or browser capture addition remains. Cleanup build `34010475440` passed.
 
-## Step 15 — Bird-like evidence/source-data boundary
-Status: **next / not yet implemented**
+## Step 15 — Bird-like evidence/source-data evaluation
+Status: **REJECTED / BLOCKED before implementation**
 
-Before any Bird-like renderer is added, determine which avian characteristics can be represented from the current tone-mapped RGB panorama and which require additional spectral/UV scene data. Many avian visual systems involve four cone classes, ultraviolet/violet sensitivity, species-specific oil-droplet filtering and other properties that ordinary RGB cannot reconstruct.
+Evidence review established:
+- avian color vision commonly uses four spectrally distinct single-cone classes, with oil-droplet filtering and UVS/VS short-wavelength systems;
+- UVS/VS tuning differs across avian lineages and cannot be recovered from the current three-channel tone-mapped RGB panorama;
+- measured visual acuity varies by roughly two orders of magnitude across bird species, so one generic “bird sharpness” transform would be biologically incoherent;
+- temporal resolution and other visual specializations also vary substantially across species;
+- the current image Bird-like transform only boosts visible-range saturation/microcontrast and has Model D, which does not provide a scientifically sufficient spatial mechanism.
 
-Acceptance rule for beginning implementation:
-- a candidate must have a documented visible-range component that is both supported and meaningfully different from simply increasing saturation/contrast;
-- missing UV/tetrachromatic information must not be fabricated from RGB;
-- if the current source cannot support a useful non-misleading Bird-like spatial comparison, record the mode as rejected/blocked instead of implementing a decorative filter.
+Evidence anchors reviewed for this decision include:
+- `Avian visual pigments: characteristics, spectral tuning, and evolution` (PMID 19426092);
+- `Ultraviolet vision in birds: the importance of transparent eye media` (PMID 24258716);
+- `The phylogenetic distribution of ultraviolet sensitivity in birds` (PMID 23394614);
+- `Ecological and morphological correlates of visual acuity in birds` (PMID 38126722), which compiled acuity data for 94 species in 38 families and reported variation across roughly two orders of magnitude.
 
-## Ordered next spatial candidates
-1. Bird-like evidence/source-data evaluation
-2. Bee-like only with additional UV-reflectance scene data
+Decision:
+**Do not implement a generic Bird-like spatial shader/control from the current RGB panorama.** A saturation/contrast boost would be decorative, not an avian observer model. A future avian spatial mode must either target a specific species with a documented visual model or add spectral/UV scene data sufficient for the intended observer transform.
 
-## Final merge gate
-Run the existing PR build and full desktop / 390px Chromium regression on this clean rejection/documentation head. If both are green, mark PR #6 ready and squash-merge it. Then begin Bird-like evidence/source-data evaluation from the new main.
+## Step 16 — Bee-like source-data gate
+Status: **BLOCKED / not implemented**
+
+Bee-like already has an explicit special rule: ordinary RGB cannot provide the UV information required for a defensible bee observer model. The current Hansaplatz panorama has no UV-reflectance or spectral channel, so no Bee-like spatial implementation is started.
+
+Unblock requirements:
+- UV-reflectance or spectral scene/material data;
+- documented bee photoreceptor sensitivity/model inputs;
+- explicit human-display false-color mapping and caveats;
+- a rendered acceptance gate proving explanatory value beyond an arbitrary purple/blue filter.
+
+## Ordered animal spatial evaluation — resolved
+- Dog-like — **accepted / merged**;
+- Cat-like — **rejected after rendered review**;
+- Bird-like — **rejected/blocked at evidence/source-data gate**;
+- Bee-like — **blocked pending UV-reflectance/spectral scene data**.
+
+## Current next action
+Close the current ordered animal spatial expansion under the RGB source-data boundary. Keep the accepted spatial modes regression-covered and return active product work to the existing image track / release-polish priorities unless a new spatial data/model requirement is explicitly introduced.

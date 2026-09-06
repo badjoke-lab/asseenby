@@ -68,8 +68,11 @@ Accepted spatial modes:
 Evaluated and rejected spatial candidate:
 - Cat-like — technically valid renderer candidate, but not distinct enough from Dog-like to justify a separate spatial claim from the current RGB source.
 
-Current expansion target:
-- Bird-like evidence/source-data evaluation.
+Evaluated and rejected/blocked spatial candidate:
+- Bird-like — the current RGB source cannot support a generic avian observer without fabricating missing tetrachromatic/UV information, and species-level acuity/spectral variation is too large for one generic renderer.
+
+Blocked spatial candidate:
+- Bee-like — requires UV-reflectance/spectral scene data before implementation.
 
 Mode switching must preserve camera position and view direction so the comparison isolates the modeled visual difference.
 
@@ -102,8 +105,13 @@ A Cat-like spatial candidate was implemented with conservative chromatic compres
 
 Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. This rejection does not remove the separate image-track Cat-like approximation; it only means the current spatial source/model does not justify a distinct live Cat-like mode.
 
-## Bird-like spatial evaluation boundary
-Bird-like begins as a source-data/evidence question, not a shader task. Ordinary RGB cannot reconstruct ultraviolet/violet-sensitive cone catches, tetrachromatic color relationships, species-specific oil-droplet filtering, or polarization sensitivity. Any spatial Bird-like candidate must identify a supported visible-range property with explanatory value beyond a generic saturation/contrast effect, or be rejected/blocked.
+## Bird-like spatial evaluation result
+Bird-like was evaluated as a source-data/evidence question before shader work and was rejected/blocked for the current generic RGB setup. Ordinary RGB cannot reconstruct ultraviolet/violet-sensitive cone catches, tetrachromatic color relationships, species-specific oil-droplet filtering, or polarization sensitivity. In addition, comparative data show very large species variation in avian acuity, making a generic spatial sharpness rule misleading.
+
+The current image Bird-like mode remains a deliberately weak visible-range proxy with Model D. That image transform is not promoted into a spatial mode merely because Three.js can reproduce the same saturation/microcontrast changes interactively.
+
+## Bee-like spatial source-data result
+Bee-like remains blocked until UV-reflectance/spectral scene data are available. A future implementation must model a documented bee observer and then translate that result to a human display with explicit false-color caveats; ordinary RGB cannot supply the missing UV channel after capture.
 
 ## Evidence display model
 Each mode can expose a mode-level evidence panel in the UI.
