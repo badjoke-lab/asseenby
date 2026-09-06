@@ -176,7 +176,7 @@ export default function SpatialPage() {
           <a href="/" className="brand">AsSeenBy</a>
           <nav className="topnav" aria-label="Spatial navigation">
             <a href="/">Compare image</a>
-            <a href="/?view=spatial" aria-current="page">Explore 3D</a>
+            <a href="/?view=spatial" aria-current="page">Explore spatial</a>
             <a href="/support/">Support</a>
           </nav>
           <a href="/" className="ghost-button">Back to image</a>
@@ -187,14 +187,14 @@ export default function SpatialPage() {
             <p className="spatial-kicker">Experimental spatial comparison</p>
             <h1 className="spatial-title">Explore the same scene through different ways of seeing.</h1>
             <p className="spatial-lead">
-              A controlled night-street scene provides bright lights, dark regions, near and far targets, signage, people, vehicles, and road markings for the spatial comparison pilot.
+              A real 360° night-city panorama provides dense architecture, shopfronts, streetlights, dark sky, near and far detail, and high-contrast targets for the spatial comparison pilot.
             </p>
           </section>
 
           <SpatialRenderer mode={mode} setMode={setMode} />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the street scene. Tunnel Vision and Central Loss are generic field-loss models; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction.
+            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the 360° photographic reference scene. Tunnel Vision and Central Loss are generic field-loss models; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction.
           </section>
 
           {evidenceModeKey && evidenceMode ? (
@@ -242,11 +242,11 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
 
     try {
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0b0f14);
-      scene.fog = new THREE.Fog(0x0b0f14, 22, 58);
+      scene.background = new THREE.Color(0x05070a);
+      scene.fog = null;
 
       const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 100);
-      camera.position.set(0, 1.65, 7.4);
+      camera.position.set(0, 0, 0);
       camera.rotation.order = "YXZ";
 
       let yaw = 0;
@@ -264,25 +264,14 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.08;
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      renderer.shadowMap.enabled = false;
       renderer.domElement.className = "spatial-canvas";
       renderer.domElement.tabIndex = 0;
       renderer.domElement.setAttribute("role", "application");
-      renderer.domElement.setAttribute("aria-label", "Controlled night street scene. Drag or use arrow keys to look around.");
+      renderer.domElement.setAttribute("aria-label", "360 degree photographic night-city reference scene. Drag or use arrow keys to look around.");
       host.appendChild(renderer.domElement);
-
-      createNightStreetScene(scene);
-      scene.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return;
-        const material = object.material as THREE.Material | THREE.Material[];
-        const materials = Array.isArray(material) ? material : [material];
-        const isUnlitPlane = materials.some((item) => item instanceof THREE.MeshBasicMaterial);
-        object.castShadow = !isUnlitPlane;
-        object.receiveShadow = !isUnlitPlane;
-      });
 
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
@@ -309,7 +298,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         composer?.render();
       };
 
-      loadPresentationBuildings(scene, renderScene);
+      loadPanoramaEnvironment(scene, renderScene);
 
       const applyMode = (nextMode: SpatialMode) => {
         if (bloomPass) bloomPass.enabled = false;
@@ -427,13 +416,13 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
     : mode === "tunnel"
       ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."
       : mode === "central_loss"
-        ? "Live screen-relative central field loss. Center a pedestrian, sign, or light, then look elsewhere to see the disrupted region stay with straight-ahead vision."
-        : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward headlights or streetlights, then toward a dark area to compare.";
+        ? "Live screen-relative central field loss. Center a shop sign, window, lamp, or other detail, then look elsewhere to see the disrupted region stay with straight-ahead vision."
+        : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";
 
   if (error) {
     return (
       <section className="spatial-error" role="status">
-        <h2>3D preview unavailable</h2>
+        <h2>Spatial preview unavailable</h2>
         <p>{error}</p>
         <p><a href="/">Continue with Compare image</a>.</p>
       </section>
@@ -441,11 +430,11 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
   }
 
   return (
-    <section className="spatial-card" aria-label="Explore 3D pilot">
+    <section className="spatial-card" aria-label="Explore spatial pilot">
       <div className="spatial-card__header">
         <div>
-          <div className="control-label">Explore 3D</div>
-          <h2>Controlled night-street scene</h2>
+          <div className="control-label">Explore spatial</div>
+          <h2>360° photographic night-city scene</h2>
         </div>
         <span className="spatial-status">Pilot</span>
       </div>
@@ -460,9 +449,28 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       <p className="spatial-mode-description" aria-live="polite">{modeDescription}</p>
       <div ref={hostRef} className="spatial-render-host" />
       <div className="spatial-caption">
-        Drag on the scene to look around. Mode switching keeps the same camera position and direction. Arrow keys work when the scene has keyboard focus.
+        Drag to look around the full 360° reference scene. Mode switching keeps the exact same viewpoint and direction. Arrow keys work when the scene has keyboard focus.
       </div>
     </section>
+  );
+}
+
+function loadPanoramaEnvironment(scene: THREE.Scene, renderScene: () => void) {
+  const loader = new THREE.TextureLoader();
+  loader.load(
+    "/assets/panoramas/hansaplatz.jpg",
+    (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      scene.background = texture;
+      renderScene();
+    },
+    undefined,
+    (error) => {
+      console.error("360° reference panorama failed to load", error);
+    },
   );
 }
 
@@ -1246,6 +1254,7 @@ function addBox(
 
 function disposeScene(scene: THREE.Scene | null, host: HTMLDivElement, renderer: THREE.WebGLRenderer | null) {
   if (scene) {
+    if (scene.background instanceof THREE.Texture) scene.background.dispose();
     scene.traverse((object) => {
       const mesh = object as THREE.Mesh;
       mesh.geometry?.dispose?.();
