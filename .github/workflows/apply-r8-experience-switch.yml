@@ -1,0 +1,217 @@
+name: Apply R8 experience switch polish
+
+on:
+  push:
+    branches:
+      - feat/r8-experience-switch-polish
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/r8-experience-switch-polish
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply R8-1 patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('.')
+          exp = root / 'src/ExperienceRoot.tsx'
+          text = exp.read_text()
+          needle = 'import App from "./App";\n'
+          if 'import "./experience-switch.css";' not in text:
+              text = text.replace(needle, needle + 'import "./experience-switch.css";\n')
+          exp.write_text(text)
+
+          css = '''.experience-switch {
+            max-width: 1440px;
+            margin: 8px auto 0;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            color: #6b6258;
+            font-family: Georgia, "Times New Roman", serif;
+          }
+
+          .experience-switch__label {
+            margin-right: 6px;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #7a7063;
+          }
+
+          .experience-switch__link {
+            min-height: 40px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d9d0c2;
+            border-radius: 6px;
+            background: #f7f3eb;
+            color: #5f564b;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+
+          .experience-switch__link:hover {
+            border-color: #b79a63;
+            color: #2b241d;
+          }
+
+          .experience-switch__link--active {
+            border-color: #2e2a27;
+            background: #2e2a27;
+            color: #f7f3eb;
+          }
+
+          .experience-switch__link:focus-visible {
+            outline: 2px solid #8b6c32;
+            outline-offset: 3px;
+          }
+
+          @media (max-width: 640px) {
+            .experience-switch {
+              margin-top: 4px;
+              padding: 0 8px;
+              display: grid;
+              grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+              justify-content: stretch;
+            }
+
+            .experience-switch__label {
+              margin-right: 2px;
+              padding: 0 4px;
+              font-size: 9px;
+            }
+
+            .experience-switch__link {
+              min-height: 44px;
+              padding: 0 8px;
+              font-size: 10px;
+            }
+          }
+          '''
+          (root / 'src/experience-switch.css').write_text(css)
+
+          schedule = root / 'docs/release-polish-schedule.md'
+          s = schedule.read_text()
+          s = s.replace('Status: **Step R7 active / R7-2 production verified / R7-3 branch validated**', 'Status: **Step R8 active / R7 complete / R8-1 implementation**', 1)
+          s = s.replace('## Step R7 — Image transform / evidence quality audit\nStatus: **ACTIVE**', '## Step R7 — Image transform / evidence quality audit\nStatus: **PASS / complete / production verified**', 1)
+          s = s.replace('### R7-9 — Age Profile / Reference category\nStatus: **ACTIVE — removal implementation**', '### R7-9 — Age Profile / Reference category\nStatus: **PASS / removed / production verified**', 1)
+          old = '''## Current next action
+Apply R7-9 removal, run the patched production smoke against a local build at desktop/390px plus the accepted spatial controls, then open a PR only if the two-category release is clean.'''
+          new = '''Validation:
+- local Age/Reference removal + build + desktop/390px image and accepted-spatial smoke workflow `34035694131` — **success**;
+- PR #21 build `34040582076` — **success**;
+- merge SHA `4da5328f9e48b5b630d13a8951926241ca5e22f7`;
+- matching main build `34040615102` — **success**;
+- production smoke `34040615208` — **success**, confirming the image experience exposes exactly Human + Animal while the accepted six spatial controls remain unchanged.
+
+## Step R8 — Public surface / responsive polish
+Status: **ACTIVE**
+
+Purpose: inspect accepted production captures as a user-facing surface and fix concrete presentation or responsive defects without changing the scientific model or spatial source-data boundary.
+
+### R8-1 — Image experience switch presentation
+Status: **ACTIVE — implementation**
+
+Finding:
+- production smoke `34040615208` exposed `ExperienceCompare imageExplore 3D` as unstyled run-together text above the image page frame on desktop and 390px mobile;
+- `ExperienceRoot.tsx` rendered the experience switch, but the shared image CSS defined no `experience-switch*` styles.
+
+Acceptance:
+- the image/spatial switch reads as one compact editorial control rather than raw text;
+- Compare image remains visibly active on the image route;
+- both experience links have usable pointer/touch targets, with at least 44px height at 390px;
+- the switch introduces no horizontal overflow at 1440px or 390px;
+- the existing image page and accepted spatial route remain otherwise unchanged;
+- build and production smoke remain green.
+
+## Current next action
+Implement and browser-verify R8-1, open a minimal PR, then require a fresh production smoke screenshot before marking R8-1 PASS.'''
+          if old not in s:
+              raise SystemExit('Current next action block not found')
+          s = s.replace(old, new, 1)
+          schedule.write_text(s)
+          PY
+      - name: Install app dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Install temporary browser dependency
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify desktop and mobile switch
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/asseenby-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+          const browser = await chromium.launch({ headless: true });
+          const failures = [];
+          async function check(width, height, label) {
+            const page = await browser.newPage({ viewport: { width, height } });
+            page.on('pageerror', e => failures.push(`${label} pageerror: ${e.message}`));
+            page.on('console', m => { if (m.type() === 'error') failures.push(`${label} console: ${m.text()}`); });
+            await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+            const nav = page.getByRole('navigation', { name: 'AsSeenBy experience' });
+            await nav.waitFor({ state: 'visible' });
+            const image = nav.getByRole('link', { name: 'Compare image', exact: true });
+            const spatial = nav.getByRole('link', { name: 'Explore 3D', exact: true });
+            const imageBox = await image.boundingBox();
+            const spatialBox = await spatial.boundingBox();
+            if (!imageBox || !spatialBox) failures.push(`${label}: switch links missing box`);
+            if (width <= 640 && ((imageBox?.height ?? 0) < 44 || (spatialBox?.height ?? 0) < 44)) failures.push(`${label}: mobile tap target below 44px`);
+            const active = await image.evaluate(el => ({ bg: getComputedStyle(el).backgroundColor, display: getComputedStyle(el).display }));
+            if (active.display !== 'flex' && active.display !== 'inline-flex') failures.push(`${label}: active link is not styled flex control`);
+            if (active.bg === 'rgba(0, 0, 0, 0)' || active.bg === 'transparent') failures.push(`${label}: active link has no visible background`);
+            const metrics = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+            if (metrics.scroll > metrics.client + 1) failures.push(`${label}: horizontal overflow ${metrics.scroll} > ${metrics.client}`);
+            await page.screenshot({ path: `/tmp/${label}.png`, fullPage: true });
+            await page.close();
+          }
+          await check(1440, 1000, 'r8-desktop');
+          await check(390, 844, 'r8-mobile');
+          await browser.close();
+          await fs.writeFile('/tmp/r8-result.json', JSON.stringify({ ok: failures.length === 0, failures }, null, 2));
+          if (failures.length) {
+            console.error(failures.join('\n'));
+            process.exit(1);
+          }
+          NODE
+      - name: Remove temporary workflow and commit clean implementation
+        shell: bash
+        run: |
+          rm .github/workflows/apply-r8-experience-switch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/ExperienceRoot.tsx src/experience-switch.css docs/release-polish-schedule.md .github/workflows/apply-r8-experience-switch.yml
+          git commit -m 'Polish image experience switch'
+          git push
