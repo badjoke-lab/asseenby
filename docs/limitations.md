@@ -4,7 +4,7 @@
 AsSeenBy is a visual comparison tool built around browser-side rendering.
 It is designed for exploration, explanation, and side-by-side inspection.
 
-The current public v0.1 experience uses browser-side image transforms. An experimental spatial track may add live 3D rendering for selected phenomena where space, view direction, or lighting materially affect the comparison.
+The public v0.1 experience uses browser-side image transforms. The spatial track adds live 3D rendering only for selected phenomena where space, view direction, or lighting materially affect the comparison.
 
 ## Image-source limitation
 All current image outputs start from a standard RGB image.
@@ -16,23 +16,24 @@ Because of that, the current image experience does not attempt to fully reproduc
 - full species-specific spectral response;
 - interpretation beyond image-space approximation.
 
-## Spatial-pilot limitation
-The spatial pilot is not limited to a static RGB photograph: it can use live scene geometry, view direction, depth, rendered luminance, and other renderer data.
+## Spatial limitation
+The spatial renderer is not limited to a static RGB photograph: it can use live scene geometry, view direction, depth, rendered luminance, screen-relative field position, and other renderer data.
 
 That does **not** make it an exact reconstruction of lived perception.
 
-The pilot does not include:
-- patient-specific perimetry or optical measurements;
+The spatial experience does not include:
+- patient-specific perimetry or scotoma measurements;
 - measured lens-scatter parameters for a specific person;
 - retinal / neural reconstruction;
 - clinical validation;
 - automatic diagnosis.
 
 Therefore:
-- Tunnel Vision may be dynamically and spatially modeled while remaining a generic field-loss profile;
+- Tunnel Vision may be dynamically and spatially modeled while remaining a generic peripheral field-loss profile;
+- Central Loss may remain tied to the viewer's central field while remaining a generic central-loss profile rather than an individual's measured scotoma;
 - Cataract-like glare may respond to actual scene brightness while remaining a generic impairment model.
 
-The term `approximation` refers to this claim boundary. It should not be interpreted as permission to substitute a decorative static filter where scene-aware modeling is required by the spatial specification.
+The term `approximation` refers to this claim boundary. It should not be interpreted as permission to substitute a decorative static filter where live spatial modeling is required by the specification.
 
 ## Human-mode limitation
 Human modes are simplified visual proxies or generic simulations.
@@ -41,9 +42,15 @@ They are useful for comparative viewing, but they are not exact reconstructions 
 Examples:
 - color-deficiency-like image modes are matrix-based approximations;
 - image blur and contrast modes are image-space approximations;
-- current image tunnel and central-loss views are simplified masks;
+- current image tunnel and central-loss views are simplified transforms;
 - spatial Tunnel Vision remains generic unless future work accepts measured individual field data;
+- spatial Central Loss must not be interpreted as a patient's actual scotoma shape, size, opacity, severity, or perimetry result;
 - spatial Cataract-like remains generic unless future work accepts validated individual optical measurements.
+
+### Central Loss specific limitation
+Real central vision loss can be irregular, incomplete, blurred, distorted, or experienced differently depending on condition and individual.
+
+The spatial Central Loss mode therefore uses a deliberately generic central disruption for education and comparison. Its purpose is to demonstrate the consequence of reduced straight-ahead detail during active scene scanning, not to claim that people with macular disease see a fixed circular patch identical to the renderer output.
 
 ## Animal-mode limitation
 Animal modes in v0.1 are visible-range approximations only.
@@ -71,8 +78,10 @@ Important reading rule:
 - spatial model maturity must be assessed separately from the existing 2D transform quality.
 
 ## Strength control limitation
-The strength slider changes degree within the current approximation model.
+The strength slider changes degree within the current image approximation model.
 It does not map to a validated real-world severity scale unless a future mode explicitly documents such a mapping.
+
+The current spatial field-loss modes do not expose a patient-severity control. Their generic profile should not be interpreted as a severity measurement.
 
 ## Product limitation
 The v0.1 image product is intentionally limited to:
@@ -82,7 +91,7 @@ The v0.1 image product is intentionally limited to:
 - no saved sessions;
 - no server-side transformation.
 
-The spatial pilot is also browser-side and does not add accounts, saved sessions, or patient data collection.
+The spatial experience is also browser-side and does not add accounts, saved sessions, or patient data collection.
 
 ## Reading rule
 Treat each output as:

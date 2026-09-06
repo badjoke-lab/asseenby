@@ -1,171 +1,107 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-Branch: `feat/spatial-pilot`
-PR: `#2`
+Branch: `feat/spatial-central-loss`
+PR: `#3` — **draft / final clean-head regression before merge**
 
-The existing public product remains the v0.1 static-image comparison tool. The spatial track is additive and has now passed its initial pilot acceptance gate.
-
-Current implementation state:
-- existing Vite + React + TypeScript image comparison remains in place;
-- `src/transformEngine.ts` remains the 2D image renderer;
-- Three.js powers a separate `Explore 3D` experience;
-- one controlled night-street scene is implemented;
-- the camera remains at one physical position and supports pointer/touch drag plus keyboard look-around;
-- Normal, Tunnel Vision, and Cataract-like switch without recreating or moving the camera;
-- Tunnel Vision is a live view-relative post-process;
-- Cataract-like samples the live rendered frame, gates glare by actual high-luminance scene pixels, and adds local light spread, softness, lower contrast, slight desaturation, warmth, and veil;
-- spatial renderer-specific evidence / Model notes are separate from the 2D model notes;
-- dependency lockfile is synchronized with `three` and `@types/three`.
+The existing public product remains the v0.1 static-image comparison tool. The spatial track is additive. The initial Normal / Tunnel Vision / Cataract-like renderer is on main, while Central Loss and the accepted photographic spatial reference remain isolated in PR #3 until the final regression passes.
 
 ## Execution rule
-At the start of every future spatial step, implementation work must re-read:
-- `AGENTS.md`;
-- `docs/spatial-pilot-spec.md`;
-- this schedule;
-- the relevant methodology / limitation / evidence documents for the active mode.
+At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
 
-A step is not complete until its acceptance condition is satisfied. Update this file whenever scope, status, or claim boundaries change.
+## Steps 0–8 — Initial spatial pilot
+Status: **complete / merged**
 
-## Step 0 — Documentation baseline
+- PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`.
+- main post-merge build `34000040892` passed.
+- Three.js fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally accepted.
+- Later user-visible review showed that the original primitive street itself was not presentation-quality. That presentation defect was treated as blocking rather than accepted as a final visual baseline.
+
+## Step 9 — Central Loss definition and evidence boundary
 Status: **complete**
 
-Completed:
-- repository-level `AGENTS.md` added;
-- `docs/spatial-pilot-spec.md` added;
-- this execution schedule added;
-- roadmap, methodology, limitations, UI, modes, and evidence documents aligned;
-- `approximation` clarified as a scientific claim boundary rather than permission for weak static filtering.
+- Central Loss is the only new spatial mode in this phase.
+- The disrupted center is screen/view-relative and follows straight-ahead vision while the camera turns.
+- Surrounding scene information remains more available than central detail.
+- The model is generic and educational, not patient perimetry or a measured individual scotoma.
+- Spatial Model confidence remains conservative at C.
 
-## Step 1 — Three.js integration shell
-Status: **complete**
+## Step 10 — Central Loss live renderer
+Status: **complete / rendered acceptance passed**
 
-Completed:
-- `three` and `@types/three` added;
-- isolated spatial React renderer added;
-- additive `Explore 3D` entry added;
-- renderer failure UI and disposal added;
-- CI build passed.
+Functional validation:
+- implementation workflow `34000391905` passed;
+- PR build `34000459038` passed;
+- initial Chromium validation `34000441484` passed.
 
-## Step 2 — Controlled night-street scene
-Status: **complete**
+The implementation preserves camera direction across mode switching and keeps the disrupted region screen/view-relative rather than attached to a world-space target.
 
-Validated scene targets:
-- red / green signal lenses;
-- CROSSING sign target;
-- pedestrian form;
-- vehicle form and bright headlights;
-- streetlights;
-- crosswalk and lane markings;
-- illuminated storefront / sign targets;
-- mid / far building forms;
-- deliberately darker side region.
+## Step 10A — Spatial reference scene presentation rebuild
+Status: **PASS / accepted**
 
-The scene uses procedural / primitive geometry and browser-generated text textures; no photorealistic asset pipeline was introduced.
+### Original through v3
+Result: **FAIL**.
 
-## Step 3 — Camera and comparison invariants
-Status: **complete**
+The first public screenshot read as a sparse prototype. v1–v3 progressively added facade detail, side-view architecture, procedural textures, better vehicle/pedestrian geometry, shadows and lighting. Browser checks passed technically, but rendered review still showed a self-built low-poly/procedural scene rather than a convincing environment.
 
-Validated:
-- pointer drag look-around;
-- real touch input through Pointer Events;
-- keyboard arrow look-around when the canvas is focused;
-- fixed camera position;
-- no walking / collision / game controller;
-- perception mode changes preserve camera position and direction.
+### v4 — real CC0 building assets
+Commit `61ce2e103d745fe9e1c2590dc4faa81dd633640c`; corrected build workflow `34007002239` passed.
 
-## Step 4 — Tunnel Vision spatial simulation
-Status: **complete**
+Three Quaternius Downtown City MegaKit GLB buildings were bundled locally and integrated with `GLTFLoader`. The forward view improved, but rendered review still failed the product-quality test: primitive foreground geometry remained and side turns still read like stage-set facades rather than inhabiting a coherent real place. **v4 rejected.**
 
-Validated:
-- live post-processing shader;
-- central area remains visible;
-- peripheral field progressively desaturates and is obscured;
-- mask is screen / view-relative;
-- same camera state is preserved across Normal <-> Tunnel Vision;
-- desktop forward / turned screenshots and mobile touch screenshots show the field-loss effect following the viewer's view.
+### v5 — photographic 360° reference stimulus
+Core scene commit `b194bd652ee67340140e52675d6956d9b0993464`; patch/build workflow `34007320447` passed.
 
-Scientific boundary:
-- generic circular field-loss profile;
-- not individual perimetry reconstruction.
+The active scene was changed from hand-built geometry to a locally bundled Poly Haven `Hansaplatz` tonemapped 360° panorama. The source note is stored beside the asset, the source is CC0, and the runtime does not depend on an external CDN.
 
-## Step 5 — Cataract-like scene-dependent simulation
-Status: **complete after correction and second rendered review**
+Why this fits the current pilot:
+- the current interaction rotates the view but never translates the camera, so scene parallax was not being used;
+- the perception effects under test are screen/view-relative and operate correctly on the photographic reference;
+- real architecture, lighting, material detail and 360° continuity now come from one coherent captured environment rather than hand-built approximations;
+- future modes that require camera translation or geometric depth must add a separate depth/geometry requirement instead of pretending the panorama supplies it.
 
-First rendered review:
-- the initial broad-bloom version was rejected because one captured view appeared excessively washed out and the validation sequence did not isolate camera direction cleanly.
+Rendered browser review `34007355631` passed technically and its captures were manually reviewed:
+- Normal forward reads immediately as a real night-city environment;
+- the turned direction contains coherent building facades, trees and illuminated storefront detail rather than a dark or flat stage edge;
+- the opposite direction contains a coherent plaza, monument, lamps and surrounding architecture;
+- bright shopfronts/streetlights and dark sky/street regions provide useful contrast targets;
+- the original low-poly / primitive / stage-set problem is no longer present;
+- the 390px mobile view remains usable and the existing browser check reported no horizontal overflow or captured page/console errors.
 
-Correction and stronger validation:
-- broad `UnrealBloomPass` contribution is disabled for Cataract-like output;
-- the post-process samples the live rendered frame and gates glare by actual high luminance;
-- local and wider bright-sample offsets spread only bright rendered sources;
-- modest optical softness, contrast loss, desaturation, warmth, and veil remain;
-- new acceptance screenshots compare Normal and Cataract-like from the same forward camera direction and again from the same turned camera direction;
-- forward view shows strong local spread around headlights, streetlights, and signal lights while scene structure remains readable;
-- dark turned view shows no comparable bright-source halo, confirming view-dependent response rather than a fixed decorative glow.
+All seven v5 presentation questions passed. **Step 10A is accepted.**
 
-Scientific boundary:
-- generic scene-dependent optical-impairment model;
-- not validated individual lens-scatter reconstruction.
+Cleanup workflow `34007582142` subsequently passed and removed the dead primitive-scene implementation, obsolete Quaternius GLB assets, obsolete imports and remaining user-facing `3D renderer` wording. The active scene is now the panorama-backed spatial reference only.
 
-## Step 6 — Evidence and limitations integration
-Status: **complete**
+## Step 11 — Central Loss rendered acceptance
+Status: **PASS / accepted**
 
-Implemented:
-- active spatial Tunnel Vision / Cataract-like mode shows underlying phenomenon evidence;
-- `src/spatialEvidence.ts` supplies renderer-specific Model assessment / notes;
-- both pilot implementations remain Model C rather than inheriting a stronger 2D rating;
-- Normal shows a separate baseline note;
-- UI states generic versus measured boundaries;
-- Cataract-like evidence wording reflects the corrected high-luminance-gated renderer rather than the rejected broad-bloom implementation.
+Rendered review on the v5 photographic reference confirmed:
+- identical forward Normal vs Central Loss comparison makes direct central detail harder to inspect while surrounding scene information remains more available;
+- after turning, the disrupted region remains centered in the viewer's field rather than staying on the previous world-space location;
+- mobile touch look-around produces the same view-relative behavior;
+- the effect remains restrained and generic rather than claiming patient-specific reconstruction;
+- active scanning across a dense real scene makes the consequence of central field loss clearer than another transformed still image.
 
-## Step 7 — Responsive, accessibility, dependency, and performance pass
-Status: **complete**
+Central Loss is accepted for this spatial pilot.
 
-Validated:
-- responsive spatial layout;
-- 44px mode controls and keyboard-focus styling;
-- pointer, keyboard, and real touch interaction;
-- device pixel ratio capped at 2;
-- no shadows or continuous animation loop;
-- ResizeObserver sizing;
-- renderer / scene / material / texture / composer cleanup;
-- graceful renderer failure path;
-- synchronized package lock;
-- no horizontal overflow in desktop or 390px mobile validation;
-- no captured page or console errors;
-- existing 2D image comparison is also exercised by the browser check on desktop and 390px mobile, including the Original / Approximation stage and Upload image control.
+## Final merge gate
+Before PR #3 merges, run the existing full desktop / 390px Chromium regression once more on the cleaned branch head and require:
+- image comparison desktop/mobile unchanged;
+- Normal / Tunnel Vision / Cataract-like / Central Loss switching green;
+- forward, turned and opposite panorama captures present;
+- real mobile touch look-around green;
+- no horizontal overflow;
+- no captured page/console errors;
+- build green.
 
-Final validation:
-- Chromium spatial + image regression run: `33999864975` — **success**;
-- PR build run: `33999866862` — **success**.
+No new perception mode may begin before this final regression and merge complete.
 
-## Step 8 — Pilot acceptance gate
-Status: **passed**
-
-Decision: **PASS**.
-
-Acceptance results:
-1. existing `Compare image` behavior remains available and browser regression checks pass — **met**;
-2. `Explore 3D` loads the controlled night-street scene — **met**;
-3. all three modes switch without camera reset — **met**;
-4. Tunnel Vision clearly changes spatial awareness while looking around — **met**;
-5. Cataract-like glare changes with bright sources entering / leaving the rendered view — **met**;
-6. evidence / limitation text is available for active spatial modes — **met**;
-7. desktop and mobile interaction are usable — **met**;
-8. build passes — **met**;
-9. spatial rendering adds information beyond another transformed still image — **met for the accepted pilot modes**: Tunnel Vision demonstrates active scanning under peripheral loss, and Cataract-like demonstrates view-dependent glare response to scene lighting.
-
-This pass does **not** mean the output is exact biological or patient-specific reproduction. The claim boundaries in methodology / limitations remain in force.
-
-## Next spatial candidates
-Proceed only in this order and re-apply the same evidence / rendered-review discipline:
-1. Central Loss;
-2. Night / Low Light;
-3. Dog-like;
-4. Cat-like;
-5. Bird-like as a separate evaluation;
-6. Bee-like only with additional UV-reflectance scene data.
+## Ordered next spatial candidates after Central Loss
+1. Night / Low Light
+2. Dog-like
+3. Cat-like
+4. Bird-like as a separate evaluation
+5. Bee-like only with additional UV-reflectance scene data
 
 ## Current next action
-Finalize PR #2 against the documented acceptance result, then begin the next spatial mode only after the accepted pilot is integrated cleanly.
+Run the final clean-head browser/build regression, mark PR #3 ready, squash-merge it to main, verify main, then begin evaluation of `Night / Low Light` as the next spatial candidate.

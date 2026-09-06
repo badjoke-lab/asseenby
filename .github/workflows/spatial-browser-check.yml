@@ -3,7 +3,7 @@ name: spatial browser check
 on:
   push:
     branches:
-      - feat/spatial-pilot
+      - 'feat/spatial-*'
 
 permissions:
   contents: read
