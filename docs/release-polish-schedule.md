@@ -310,7 +310,7 @@ Validation:
 - production smoke `34026734384` — **success**, confirming the exact Human image set without Dry-eye-like while Animal=Dog-like, Reference=Age Profile, and all six spatial controls remained unchanged.
 
 ### R7-7 — Night / Low Light image mode
-Status: **ACTIVE — removal implementation**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE the static-image Night / Low Light mode; KEEP the accepted spatial mode**
 
@@ -337,5 +337,39 @@ Acceptance:
 - build passes;
 - after merge, production smoke must observe the exact 8-mode Human image set while still exercising the six-mode spatial set.
 
+Validation:
+- removal/build/desktop + 390px + spatial regression workflow `34026970730` — **success**;
+- PR #19 build `34034654963` — **success**;
+- merge SHA `b1f565feaf46251da3ad8149856ff73d69ee5569`;
+- matching main build `34034680040` — **success**;
+- production smoke `34034680087` — **success**, confirming image Night is absent while spatial Night remains one of the accepted six controls.
+
+### R7-8 — Dog-like image mode
+Status: **ACTIVE — renderer revision and output audit**
+
+Decision: **KEEP the public Dog-like image mode, but REVISE the renderer and narrow its model claim**
+
+Reason:
+- canine dichromatic color vision has strong behavioral and photopigment support;
+- behavioral work also supports a broad similarity to human red-green color-deficiency discrimination, while canine acuity and brightness discrimination differ from typical human vision;
+- the former AsSeenBy image renderer used an ad-hoc RGB matrix, which was not derived from canine cone catches or a validated observer model;
+- unlike the removed Cat/Bird/Bee modes, Dog-like still has a defensible visible-range explanatory target from ordinary RGB if the implementation is kept conservative.
+
+Revision scope:
+- replace the bespoke dog RGB matrix with the existing linear-RGB red-green-deficiency mapping as a human-display proxy;
+- add only restrained red-green compression, contrast reduction, and detail softening;
+- remove the now-unused arbitrary RGB-deficiency helper;
+- keep Evidence A but keep image Model C;
+- explicitly state that the renderer is not canine cone-catch reconstruction, literal canine qualia, rod/tapetal night vision, motion processing, or breed-specific field of view.
+
+Acceptance:
+- Dog-like remains the only public Animal image mode;
+- Dog-like produces a non-trivial but restrained output change that increases with Strength;
+- the implementation no longer contains the bespoke dog RGB matrix/helper;
+- desktop and 390px image checks pass without overflow or page/console errors;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- build passes;
+- after merge, production smoke remains green with Animal=Dog-like only.
+
 ## Current next action
-Complete and validate R7-7, merge only after the normal PR build passes, and require production smoke to confirm image Night is absent while spatial Night remains present.
+Apply and browser-test the R7-8 Dog-like renderer revision, inspect its output against Original at multiple Strength levels, then open a PR only if the revised output remains useful and restrained.
