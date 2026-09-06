@@ -55,7 +55,7 @@ async function checkImageExperience(page, label) {
   await assertNoHorizontalOverflow(page, label);
 }
 
-// Existing image comparison is part of the spatial pilot acceptance gate and must not regress.
+// Existing image comparison must not regress.
 const imageDesktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 await checkImageExperience(imageDesktop, "image-desktop");
 await imageDesktop.screenshot({ path: `${outDir}/desktop-image-baseline.png`, fullPage: true });
@@ -68,8 +68,11 @@ const desktopCanvas = desktop.locator("canvas.spatial-canvas");
 await desktopCanvas.waitFor({ state: "visible" });
 await assertNoHorizontalOverflow(desktop, "spatial-desktop");
 
-// Forward-view comparison: same camera, only the perception renderer changes.
+// Forward view: hold camera fixed and compare each renderer against Normal.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
+await assertMode(desktop, "Central Loss");
+await desktop.screenshot({ path: `${outDir}/desktop-central-forward.png`, fullPage: true });
+await assertMode(desktop, "Normal");
 await assertMode(desktop, "Cataract-like");
 await desktop.screenshot({ path: `${outDir}/desktop-cataract-forward.png`, fullPage: true });
 await assertMode(desktop, "Normal");
@@ -83,9 +86,12 @@ if (!(await dragCanvas(desktop, desktopCanvas, 250, -45))) {
   await desktop.screenshot({ path: `${outDir}/desktop-tunnel-turned.png`, fullPage: true });
 }
 
-// Turned-view comparison: preserve that exact camera direction across modes.
+// Turned view: preserve the exact new camera direction across Normal, Central Loss and Cataract-like.
 await assertMode(desktop, "Normal");
 await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });
+await assertMode(desktop, "Central Loss");
+await desktop.screenshot({ path: `${outDir}/desktop-central-turned.png`, fullPage: true });
+await assertMode(desktop, "Normal");
 await assertMode(desktop, "Cataract-like");
 await desktop.screenshot({ path: `${outDir}/desktop-cataract-turned.png`, fullPage: true });
 
@@ -109,10 +115,10 @@ await mobileCanvas.waitFor({ state: "visible" });
 await assertNoHorizontalOverflow(mobile, "spatial-mobile");
 
 await mobile.screenshot({ path: `${outDir}/mobile-normal-forward.png`, fullPage: true });
-await assertMode(mobile, "Cataract-like");
-await mobile.screenshot({ path: `${outDir}/mobile-cataract-forward.png`, fullPage: true });
-await assertMode(mobile, "Tunnel Vision");
+await assertMode(mobile, "Central Loss");
+await mobile.screenshot({ path: `${outDir}/mobile-central-forward.png`, fullPage: true });
 
+// Exercise real touch input while Central Loss is active, then verify the affected region on the turned view.
 const mobileBox = await mobileCanvas.boundingBox();
 if (!mobileBox) {
   failures.push("spatial-mobile: canvas has no bounding box");
@@ -131,9 +137,13 @@ if (!mobileBox) {
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await mobile.waitForTimeout(150);
 }
-await mobile.screenshot({ path: `${outDir}/mobile-tunnel-turned.png`, fullPage: true });
+await mobile.screenshot({ path: `${outDir}/mobile-central-turned.png`, fullPage: true });
+
+// Same turned camera, compare baseline and accepted modes too.
 await assertMode(mobile, "Normal");
 await mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });
+await assertMode(mobile, "Tunnel Vision");
+await mobile.screenshot({ path: `${outDir}/mobile-tunnel-turned.png`, fullPage: true });
 await assertMode(mobile, "Cataract-like");
 await mobile.screenshot({ path: `${outDir}/mobile-cataract-turned.png`, fullPage: true });
 
