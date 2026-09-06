@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-PR #4 — **draft / rendered acceptance passed / final clean-head regression before merge**
-Branch: `feat/spatial-night-low-light`
+Branch: `feat/spatial-dog-like`
+Status: **Dog-like implementation candidate awaiting rendered review**
 
-The public main branch currently uses the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, and Cataract-like comparison modes. PR #4 adds the accepted Night / Low Light candidate while preserving the separate image comparison experience.
+The public main branch now includes the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like comparison modes. The Dog-like branch is additive and preserves the separate image comparison experience.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -66,6 +66,9 @@ The accepted model remains a relative displayed-luminance proxy with spatial Mod
 
 ## Step 13 — Dog-like evidence boundary and renderer candidate
 Status: **evidence boundary complete / implementation candidate awaiting rendered review**
+
+Implementation candidate commit: `0c72120a5ba7fed80581c2337d06073211fa9103`.
+Patch/build workflow `34009455739` passed, including `npm ci` and `npm run build`.
 
 Evidence boundary:
 - behavioral and photopigment studies strongly support canine dichromatic color vision;
