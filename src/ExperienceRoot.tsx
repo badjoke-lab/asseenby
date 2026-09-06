@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import App from "./App";
+import "./experience-switch.css";
 
 const SpatialPage = lazy(() => import("./SpatialEntry"));
 
