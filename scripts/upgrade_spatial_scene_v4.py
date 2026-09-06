@@ -13,8 +13,8 @@ def replace_once(old: str, new: str, label: str) -> None:
 
 replace_once(
     'import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";',
-    'import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";\nimport { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";\nimport { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";',
-    "GLTF loader imports",
+    'import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";\nimport { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";',
+    "GLTF loader import",
 )
 
 replace_once(
@@ -25,7 +25,6 @@ replace_once(
 
 loader_fn = r'''function loadPresentationBuildings(scene: THREE.Scene, renderScene: () => void) {
   const loader = new GLTFLoader();
-  loader.setMeshoptDecoder(MeshoptDecoder);
 
   const placements = [
     { url: "/assets/models/downtown-small.glb", position: [-5.35, 0, -14.5] as [number, number, number], height: 8.6, rotationY: Math.PI / 2 },
