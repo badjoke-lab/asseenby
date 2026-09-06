@@ -1,7 +1,7 @@
 # AsSeenBy — Spatial Pilot Spec
 
 ## Status
-The initial Three.js pilot has passed its acceptance gate. This document now also governs ordered post-pilot spatial expansion.
+The initial Three.js pilot has passed its functional acceptance gate. This document now also governs ordered post-pilot spatial expansion and presentation quality.
 
 The spatial experience remains additive to the existing v0.1 image comparison experience and does not replace `Compare image`.
 
@@ -22,7 +22,7 @@ The 3D experience must remain visually and conceptually part of AsSeenBy: resear
 ## Why 3D exists
 3D is justified only where spatial interaction materially improves understanding.
 
-Accepted examples:
+Accepted functional examples:
 1. **Tunnel Vision** — active scanning shows the consequence of losing peripheral information while the field-loss region remains tied to the viewer's field.
 2. **Cataract-like** — actual bright scene sources produce stronger glare / spread when they enter the rendered view.
 
@@ -31,21 +31,31 @@ Current expansion target:
 
 A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
-## Controlled scene
-Use the accepted purpose-designed night street / street-corner scene for the Central Loss phase.
+## Controlled night-street scene
+The same night-street environment remains the comparison scene, but the first primitive version is no longer considered presentation-quality.
 
-It contains:
-- traffic signal targets;
-- road / text-like sign target;
-- pedestrian;
-- vehicle and headlights;
-- streetlights;
-- crosswalk / high-contrast markings;
-- illuminated storefront / sign;
-- mid-distance and far-distance building forms;
-- darker low-contrast regions.
+The scene is still a controlled comparison environment, not a realistic city recreation and not a game level. However, controlled does **not** mean visually crude.
 
-The scene is a controlled comparison environment, not a realistic city recreation and not a game level.
+### Scene-quality requirements
+The public-facing scene must read immediately as a believable street environment rather than placeholder geometry.
+
+Required presentation layers:
+- building masses with facade structure rather than bare black boxes;
+- repeated windows, lit/unlit variation, entrances, storefront framing, signs, awnings, or similar architectural detail;
+- road surface with credible material response and secondary markings/details;
+- sidewalks with curbs and enough surface segmentation to read as constructed space;
+- at least one vehicle with recognizable body, cabin/glass, wheels, bumpers/lights, and grounded proportions;
+- pedestrian form with recognizable body segmentation rather than a capsule/box mannequin;
+- traffic signal and streetlights with believable housings and support geometry;
+- street furniture / utility detail such as bollards, bins, hydrants, planters, poles, utility cabinets, or equivalent elements;
+- near, mid, and far layers with enough density that looking around continues to reveal useful visual information;
+- a coherent night-light hierarchy: ambient sky/moon contribution, warm practical lights, headlights, shop lighting, and deliberately darker regions;
+- scene composition that remains readable in Normal mode before any perception effect is applied.
+
+Primitive Three.js geometry is allowed, but only if composed into convincing objects. A bare cuboid used as a building, car, or person is not acceptable by itself.
+
+### Scene-quality rejection rule
+If a rendered screenshot still looks like a debug environment, low-effort low-poly mockup, or sparse black-box corridor, the spatial track fails the presentation gate even if the perception shaders and browser tests pass.
 
 ## Accepted baseline spatial modes
 
@@ -140,7 +150,7 @@ After the accepted initial pilot, spatial modes are evaluated one at a time in t
 5. Bird-like as a separate evaluation;
 6. Bee-like only with additional UV-reflectance scene data.
 
-Do not start the next mode until the active mode has passed its rendered acceptance gate or has been explicitly rejected.
+Do not start the next mode until the active mode has passed both its rendered-effect acceptance gate and the scene-presentation quality gate, or has been explicitly rejected.
 
 ### Bee-like special rule
 Bee-like UV work cannot be represented honestly from ordinary RGB scene color alone. A future UV-aware scene requires additional scene/material data such as UV-reflectance information and a documented false-color mapping. Do not fake UV perception with a purple / blue filter.
@@ -151,7 +161,7 @@ The spatial experience must remain usable on desktop and mobile browsers support
 Requirements:
 - no server-side rendering dependency for the 3D scene;
 - no account or storage requirement;
-- keep scene and post-processing lightweight;
+- keep scene and post-processing lightweight enough for the current deployment target;
 - preserve the existing image comparison experience if WebGL / Three.js initialization fails;
 - show a concise failure notice instead of breaking the page.
 
@@ -167,5 +177,6 @@ Central Loss is successful only if all of the following are true:
 8. Desktop and mobile interaction remain usable.
 9. `npm run build` passes.
 10. Rendered review shows that active scanning explains central field loss more clearly than another transformed still image.
+11. Normal-mode rendered review passes the scene-quality requirements above and no longer reads as placeholder geometry or a cheap demo environment.
 
-If criterion 10 is not met, do not keep the spatial Central Loss mode merely because the shader works.
+If criterion 10 or 11 is not met, do not merge the spatial Central Loss phase merely because the shader works.
