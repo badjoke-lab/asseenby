@@ -99,8 +99,13 @@ export function applyTransform(
     applyColorMatrixLinear(data, severity, TRITAN_MATRIX, 0.38);
     compressBlueYellowAxis(data, 0.07 + severity * 0.18);
   } else if (modeKey === "dog") {
-    applyColorDeficiency(data, amount * 0.85, [[0.62, 0.38, 0], [0.22, 0.78, 0], [0, 0.32, 0.68]]);
-    applyLowContrastToData(data, amount * 0.12);
+    const severity = curveAmount(amount, 1.08);
+    // Human-display proxy: canine behavioral work supports a dichromatic pattern
+    // broadly similar to human red-green deficiency, but this is not a canine
+    // cone-catch reconstruction. Keep the chromatic and acuity changes restrained.
+    applyColorMatrixLinear(data, severity * 0.82, DEUTAN_MATRIX, 0.34);
+    compressRedGreenAxis(data, 0.06 + severity * 0.12);
+    applyLowContrastToData(data, 0.035 + severity * 0.075);
   } else if (modeKey === "age") {
     applyLowContrastToData(data, 0.12 + amount * 0.16);
     warmTintData(data, 0.04 + amount * 0.08);
@@ -109,7 +114,7 @@ export function applyTransform(
   ctx.putImageData(imageData, 0, 0);
 
   if (modeKey === "dog") {
-    mixBlurredCopy(ctx, outCanvas, width, height, 0.6 + amount * 2, 0.75);
+    mixBlurredCopy(ctx, outCanvas, width, height, 0.45 + amount * 1.35, 0.52);
   }
 }
 
@@ -310,20 +315,6 @@ function applyColorMatrixLinear(
     data[i] = clamp255(mix(data[i], linearToSrgb255(tr), amount));
     data[i + 1] = clamp255(mix(data[i + 1], linearToSrgb255(tg), amount));
     data[i + 2] = clamp255(mix(data[i + 2], linearToSrgb255(tb), amount));
-  }
-}
-
-function applyColorDeficiency(data: Uint8ClampedArray, amount: number, matrix: number[][]) {
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const tr = clamp255(r * matrix[0][0] + g * matrix[0][1] + b * matrix[0][2]);
-    const tg = clamp255(r * matrix[1][0] + g * matrix[1][1] + b * matrix[1][2]);
-    const tb = clamp255(r * matrix[2][0] + g * matrix[2][1] + b * matrix[2][2]);
-    data[i] = clamp255(mix(r, tr, amount));
-    data[i + 1] = clamp255(mix(g, tg, amount));
-    data[i + 2] = clamp255(mix(b, tb, amount));
   }
 }
 

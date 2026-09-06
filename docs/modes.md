@@ -81,6 +81,8 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Dog
 - class: Estimated
 - goal: dog-like visible-range approximation
+- image status: retained after R7 audit with a narrowed human-display observer proxy
+- image renderer: linear-RGB red-green-deficiency mapping plus restrained red-green compression, contrast reduction, and fine-detail softening; not a canine cone-catch reconstruction
 - spatial status: accepted post-pilot mode
 - spatial renderer: conservative human-display visible-range dichromatic translation plus non-calibrated fine-detail softening
 

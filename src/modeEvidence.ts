@@ -258,8 +258,8 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "C",
     basisNote: "Canine color vision is comparatively well described in behavioral and photopigment studies, with evidence consistent with dichromatic vision.",
-    modelNote: "The current dog mode uses a simplified visible-range color remapping plus softening. It communicates the broad red-green limitation better than an unmodified image, but it does not model canine acuity, rod dominance, motion sensitivity, or low-light strengths.",
-    caveat: "This mode is a browser-side visible-range proxy. It should not be read as a complete simulation of what a dog sees.",
+    modelNote: "The audited image renderer now uses a linear-RGB red-green-deficiency mapping as a human-display proxy for canine dichromacy, then applies restrained red-green axis compression, mild contrast reduction, and mild detail softening. The mapping is evidence-aligned at the tendency level but is not derived from canine cone catches or a calibrated canine observer model, so Model remains C.",
+    caveat: "This is a visible-range human-display proxy. It does not reconstruct canine cone excitations, breed-dependent field of view, rod/tapetal low-light behavior, motion processing, neural interpretation, or literal canine color experience.",
     primarySource: {
       title: "Color vision in the dog",
       url: "https://pubmed.ncbi.nlm.nih.gov/2487095/",

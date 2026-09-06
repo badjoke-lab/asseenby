@@ -72,9 +72,9 @@ Examples:
 - Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.
 
 ### Dog-like specific limitation
-Canine dichromacy is well supported, but a conventional RGB panorama cannot recover the original scene spectra or exact canine cone catches. The spatial Dog-like output therefore translates broad two-channel color relationships onto a human RGB display and adds mild non-calibrated detail softening.
+Canine dichromacy is well supported, including behavioral results that resemble human red-green color deficiency, but ordinary RGB cannot recover original scene spectra or exact canine cone catches. The audited image renderer therefore uses a linear-RGB red-green-deficiency mapping only as a human-display proxy, with restrained contrast and detail changes rather than a bespoke species-specific RGB matrix. The spatial Dog-like renderer remains a separate visible-range proxy on the accepted panorama.
 
-It does not model breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, or neural interpretation. It should not be read as literal canine color qualia or as one universal view shared by all dogs.
+Neither renderer models breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, exact canine acuity, or neural interpretation. They should not be read as literal canine color qualia or as one universal view shared by all dogs.
 
 ### Cat-like image and spatial evaluation limitation
 The separate spatial Cat-like candidate was rejected after same-camera review because its visible distinction from Dog-like was mainly small chromatic and softening changes. R7 later audited the image renderer against Dog-like on the built-in sample and a controlled color/detail chart and reached the same product conclusion: the former Cat-specific RGB matrix was a heuristic, not a transform derived from measured feline cone catches or a validated feline observer model.
