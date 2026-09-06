@@ -25,22 +25,25 @@
 ## Primary experience switch
 The existing image workflow remains primary and intact.
 
-Add an explicit experience switch:
+Experiences:
 - **Compare image**
 - **Explore 3D**
 
-The switch must not make the 3D pilot look like a separate game or product.
+The switch must not make the 3D experience look like a separate game or product.
 
 ### Compare image
 Uses the existing slider / split / side-by-side image comparison flow.
 
 ### Explore 3D
-Shows one controlled spatial test scene and a restrained mode switch for the active pilot modes.
+Shows the controlled spatial test scene and a restrained mode switch for accepted / active spatial modes.
 
-Initial 3D mode controls:
+Current 3D mode controls:
 - Normal
 - Tunnel Vision
+- Central Loss
 - Cataract-like
+
+Central Loss is the active expansion target; its control is included only with the live view-relative implementation, not as an unimplemented placeholder.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 
@@ -51,8 +54,8 @@ Image comparison:
 - side-by-side
 
 Spatial comparison:
-- direct mode switching first;
-- do not add a second simultaneous dual-render layout until the single-view pilot is stable and performance is known.
+- direct mode switching;
+- do not add a second simultaneous dual-render layout unless separately justified and performance-tested.
 
 ## Control rail
 Image comparison:
@@ -64,7 +67,7 @@ Image comparison:
 - confidence badge
 - short note and warning
 
-Spatial pilot:
+Spatial experience:
 - active spatial mode
 - concise interaction hint
 - evidence / limitation access
@@ -75,13 +78,22 @@ Do not expose game-like movement, speed, graphics-quality, inventory, score, or 
 ## Spatial interaction
 Desktop:
 - pointer drag to look around
-- restrained zoom if implemented
+- keyboard look-around when the scene has focus
+- restrained zoom only if separately justified
 
 Mobile:
 - touch drag to look around
 - controls remain reachable without covering most of the scene
 
-The scene should not require free walking for the first pilot.
+The scene does not require free walking.
+
+## Central Loss UI behavior
+When Central Loss is selected:
+- keep the current camera position and direction;
+- keep the disrupted region centered in the rendered visual field;
+- do not draw a world-space marker suggesting the loss belongs to one scene object;
+- explanatory copy should state that straight-ahead detail is degraded while surrounding information remains more available;
+- evidence / limitation copy should state that the profile is generic, not an individual's measured scotoma.
 
 ## Labels
 Each existing mode should display one of:
