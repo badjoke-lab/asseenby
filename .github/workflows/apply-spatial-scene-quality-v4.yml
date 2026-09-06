@@ -1,0 +1,61 @@
+name: apply spatial scene quality v4
+
+on:
+  push:
+    branches:
+      - feat/spatial-central-loss
+    paths:
+      - scripts/upgrade_spatial_scene_v4.py
+      - .github/workflows/apply-spatial-scene-quality-v4.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/spatial-central-loss
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Add CC0 optimized downtown building assets
+        run: |
+          mkdir -p public/assets/models
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/anshaneja5/skyline-run/main/public/assets/models/b_small.glb' \
+            -o public/assets/models/downtown-small.glb
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/anshaneja5/skyline-run/main/public/assets/models/b_medium.glb' \
+            -o public/assets/models/downtown-medium.glb
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/anshaneja5/skyline-run/main/public/assets/models/b_large.glb' \
+            -o public/assets/models/downtown-large.glb
+          curl --fail --location --retry 3 \
+            'https://raw.githubusercontent.com/anshaneja5/skyline-run/main/public/assets/models/LICENSE-quaternius.txt' \
+            -o public/assets/models/LICENSE-quaternius.txt
+
+      - name: Apply asset-backed scene patch
+        run: python scripts/upgrade_spatial_scene_v4.py
+
+      - name: Verify build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit scene upgrade and remove temporary patch machinery
+        run: |
+          rm scripts/upgrade_spatial_scene_v4.py
+          rm .github/workflows/apply-spatial-scene-quality-v4.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add CC0 downtown building assets to spatial scene"
+          git push
