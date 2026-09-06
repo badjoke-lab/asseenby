@@ -52,7 +52,7 @@ The user can compare them through:
 - split;
 - side-by-side.
 
-The strength control changes the degree of transformation applied. At 0%, Approximation is the Original source with no perception transform; 100% applies the full configured transform for that mode. Intermediate values interpolate within the renderer model and are not a validated clinical severity scale.
+The strength control changes the degree of transformation applied. At 0%, Approximation is the Original source with no perception transform; 100% applies the full configured transform for that mode. Intermediate values interpolate within the renderer model and are not a validated clinical severity scale. Image-space blur radii are normalized to the processed image short edge against the 900 px built-in-sample reference, so the same image content at different source pixel resolutions receives a comparable relative blur effect.
 
 ### Spatial comparison
 Spatial comparison uses the same rendered scene from the same camera state while only the perception renderer changes.
