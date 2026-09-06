@@ -37,23 +37,50 @@ jobs:
           const BASE = "http://127.0.0.1:4173";
           const strengths = [40, 70, 100];
 
-          async function setStrength(page, value) {
-            await page.locator("#strength-range").evaluate((el, v) => {
-              el.value = String(v);
-              el.dispatchEvent(new Event("input", { bubbles: true }));
-              el.dispatchEvent(new Event("change", { bubbles: true }));
+          async function waitForNewApproximation(page, previousSrc) {
+            await page.waitForFunction(
+              (previous) => {
+                const card = document.querySelector('.compare-card');
+                const src = document.querySelector('img[alt="Approximation"]')?.getAttribute('src');
+                return card?.getAttribute('aria-busy') === 'false' && Boolean(src?.startsWith('blob:')) && src !== previous;
+              },
+              previousSrc,
+              { timeout: 10000 },
+            );
+          }
+
+          async function ensureStrength(page, value) {
+            const valueLabel = page.locator('.strength-row span');
+            const currentLabel = (await valueLabel.textContent())?.trim();
+            if (currentLabel === `${value}%`) return;
+            const approximation = page.locator('img[alt="Approximation"]').first();
+            const before = await approximation.getAttribute('src');
+            await page.locator('#strength-range').evaluate((el, v) => {
+              const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+              setter?.call(el, String(v));
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
             }, value);
-            await page.waitForTimeout(180);
-            await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
+            await page.waitForFunction((v) => document.querySelector('.strength-row span')?.textContent?.trim() === `${v}%`, value, { timeout: 3000 });
+            await waitForNewApproximation(page, before);
+          }
+
+          async function ensureMode(page, mode) {
+            const select = page.locator('#mode-select');
+            if ((await select.inputValue()) === mode) return;
+            const approximation = page.locator('img[alt="Approximation"]').first();
+            const before = await approximation.getAttribute('src');
+            await select.selectOption(mode);
+            await waitForNewApproximation(page, before);
           }
 
           async function saveFrame(page, alt, key) {
             await page.locator(`img[alt="${alt}"]`).first().evaluate(async (img, frameKey) => {
-              if (!img.complete) await new Promise(resolve => img.addEventListener("load", resolve, { once: true }));
-              const canvas = document.createElement("canvas");
+              if (!img.complete) await new Promise(resolve => img.addEventListener('load', resolve, { once: true }));
+              const canvas = document.createElement('canvas');
               canvas.width = img.naturalWidth;
               canvas.height = img.naturalHeight;
-              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              const ctx = canvas.getContext('2d', { willReadFrequently: true });
               ctx.drawImage(img, 0, 0);
               window.__r7Frames ??= {};
               window.__r7Frames[frameKey] = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -61,10 +88,9 @@ jobs:
           }
 
           async function renderAndSave(page, mode, strength, key) {
-            await page.locator("#mode-select").selectOption(mode);
-            await setStrength(page, strength);
-            await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
-            await saveFrame(page, "Approximation", key);
+            await ensureStrength(page, strength);
+            await ensureMode(page, mode);
+            await saveFrame(page, 'Approximation', key);
           }
 
           async function compareSaved(page, keyA, keyB) {
@@ -98,35 +124,42 @@ jobs:
           try {
             const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
             const page = await context.newPage();
-            await page.goto(BASE, { waitUntil: "networkidle" });
-            await page.locator("#category-select").selectOption("Animal");
+            await page.goto(BASE, { waitUntil: 'networkidle' });
+            await page.locator('#category-select').selectOption('Animal');
+            await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute('src')?.startsWith('blob:'));
 
             const chart = {
-              name: "cat-dog-audit.svg",
-              mimeType: "image/svg+xml",
-              buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#ddd"/><rect width="150" height="220" x="0" fill="#e51b23"/><rect width="150" height="220" x="150" fill="#25a244"/><rect width="150" height="220" x="300" fill="#1769ff"/><rect width="150" height="220" x="450" fill="#f4d03f"/><rect width="150" height="220" x="600" fill="#00c7c7"/><rect width="150" height="220" x="750" fill="#d946ef"/><defs><pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="#111" stroke-width="1.5"/></pattern></defs><rect y="240" width="450" height="230" fill="url(#g)"/><rect x="450" y="240" width="450" height="230" fill="#fff"/><g font-family="Arial" fill="#111"><text x="475" y="285" font-size="24">Fine detail</text><text x="475" y="330" font-size="12">small text 12 px</text><text x="475" y="380" font-size="20">medium text 20 px</text><text x="475" y="440" font-size="32">large text 32 px</text></g>${Array.from({length:9},(_,i)=>`<rect x="${i*100}" y="500" width="100" height="100" fill="rgb(${i*31},${i*31},${i*31})"/>`).join("")}</svg>`),
+              name: 'cat-dog-audit.svg',
+              mimeType: 'image/svg+xml',
+              buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#ddd"/><rect width="150" height="220" x="0" fill="#e51b23"/><rect width="150" height="220" x="150" fill="#25a244"/><rect width="150" height="220" x="300" fill="#1769ff"/><rect width="150" height="220" x="450" fill="#f4d03f"/><rect width="150" height="220" x="600" fill="#00c7c7"/><rect width="150" height="220" x="750" fill="#d946ef"/><defs><pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="#111" stroke-width="1.5"/></pattern></defs><rect y="240" width="450" height="230" fill="url(#g)"/><rect x="450" y="240" width="450" height="230" fill="#fff"/><g font-family="Arial" fill="#111"><text x="475" y="285" font-size="24">Fine detail</text><text x="475" y="330" font-size="12">small text 12 px</text><text x="475" y="380" font-size="20">medium text 20 px</text><text x="475" y="440" font-size="32">large text 32 px</text></g>${Array.from({length:9},(_,i)=>`<rect x="${i*100}" y="500" width="100" height="100" fill="rgb(${i*31},${i*31},${i*31})"/>`).join('')}</svg>`),
             };
 
-            for (const scenario of ["built-in sample", "controlled color-detail chart"]) {
-              if (scenario === "controlled color-detail chart") {
+            for (const scenario of ['built-in sample', 'controlled color-detail chart']) {
+              if (scenario === 'controlled color-detail chart') {
+                const before = await page.locator('img[alt="Original"]').first().getAttribute('src');
                 await page.locator('input[type="file"]').setInputFiles(chart);
-                await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute("src")?.startsWith("blob:"));
+                await page.waitForFunction((previous) => {
+                  const src = document.querySelector('img[alt="Original"]')?.getAttribute('src');
+                  return Boolean(src?.startsWith('blob:')) && src !== previous;
+                }, before);
+                await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
               } else {
-                await page.getByRole("button", { name: "Use sample image" }).click();
-                await page.waitForTimeout(120);
+                await page.getByRole('button', { name: 'Use sample image' }).click();
+                await page.waitForTimeout(150);
+                await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
               }
               await page.evaluate(() => { window.__r7Frames = {}; });
-              await saveFrame(page, "Original", "original");
+              await saveFrame(page, 'Original', 'original');
               for (const strength of strengths) {
                 const dogKey = `dog-${strength}`;
                 const catKey = `cat-${strength}`;
-                await renderAndSave(page, "dog", strength, dogKey);
-                await renderAndSave(page, "cat", strength, catKey);
+                await renderAndSave(page, 'dog', strength, dogKey);
+                await renderAndSave(page, 'cat', strength, catKey);
                 results.cases.push({
                   scenario,
                   strength,
-                  dogVsOriginal: await compareSaved(page, dogKey, "original"),
-                  catVsOriginal: await compareSaved(page, catKey, "original"),
+                  dogVsOriginal: await compareSaved(page, dogKey, 'original'),
+                  catVsOriginal: await compareSaved(page, catKey, 'original'),
                   dogVsCat: await compareSaved(page, dogKey, catKey),
                 });
               }
@@ -135,7 +168,7 @@ jobs:
           } finally {
             await browser.close();
           }
-          await fs.writeFile("cat-audit/results.json", JSON.stringify(results, null, 2));
+          await fs.writeFile('cat-audit/results.json', JSON.stringify(results, null, 2));
           console.log(JSON.stringify(results, null, 2));
           JS
           node .github/r7-cat-audit.mjs
