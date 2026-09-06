@@ -34,6 +34,7 @@ jobs:
           text = text.replace('import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";\n', '')
           text = text.replace('import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";\n', '')
           text = text.replace('experimental 3D renderer', 'experimental spatial renderer')
+          text = text.replace('The 3D renderer could not start in this browser.', 'The spatial renderer could not start in this browser.')
           start = text.find('function loadPresentationBuildings(')
           end = text.find('function disposeScene(', start)
           if start < 0 or end < 0 or end <= start:
