@@ -1,0 +1,273 @@
+name: Evidence accuracy fix validation
+
+on:
+  push:
+    branches:
+      - fix/evidence-accuracy-cleanup
+    paths:
+      - .github/workflows/evidence-accuracy-fix-validate.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/evidence-accuracy-cleanup
+          fetch-depth: 0
+
+      - name: Apply evidence-accuracy cleanup
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str):
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one replacement anchor, found {text.count(old)}')
+              p.write_text(text.replace(old, new, 1))
+
+          # Clarify that Night / Low Light is intentionally retained as shared
+          # phenomenon evidence for the spatial-only renderer, not an image control.
+          replace_once(
+              'src/modeEvidence.ts',
+              '  night: {\n',
+              '  // Spatial-only phenomenon basis: Night / Low Light is not in the public image MODES.\n'
+              '  // getSpatialModeEvidence("night") reuses these sources and replaces the renderer-specific Model note.\n'
+              '  night: {\n',
+          )
+
+          replace_once(
+              'docs/methodology.md',
+              'Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. This rejection does not remove the separate image-track Cat-like approximation; it only means the current spatial source/model does not justify a distinct live Cat-like mode.',
+              'Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. R7 later removed the separate image-track Cat-like mode after its own rendered-output audit reached the same product conclusion: the available RGB proxy did not justify a distinct feline observer claim. Cat-like is therefore absent from both current public tracks.',
+          )
+          replace_once(
+              'docs/methodology.md',
+              'The current image Bird-like mode remains a deliberately weak visible-range proxy with Model D. That image transform is not promoted into a spatial mode merely because Three.js can reproduce the same saturation/microcontrast changes interactively.',
+              'R7 later removed the former image Bird-like mode as well. Its visible-range saturation/microcontrast transform had Model D and could not represent avian tetrachromacy, UVS/VS variation, oil-droplet filtering, species-specific acuity, or a defensible generic avian observer. Bird-like is therefore absent from both current public tracks under the ordinary-RGB source boundary.',
+          )
+          old_human = '''## Human modes
+          Human modes are divided into two groups.
+
+          ### Strong
+          These are first-pass public approximations that have the clearest justification for comparison.
+          Examples:
+          - protan-like;
+          - deutan-like;
+          - tritan-like;
+          - blur;
+          - low contrast;
+          - tunnel vision;
+          - central loss;
+          - cataract-like.
+
+          ### Estimated
+          These are useful but more interpretive viewing profiles.
+          Examples:
+          - night / low light;
+          - fatigue-like;
+          - dry-eye-like.
+          '''
+          old_human = '\n'.join(line[10:] if line.startswith('          ') else line for line in old_human.splitlines()) + '\n'
+          new_human = '''## Human modes
+          Human modes use Strong / Estimated classes where applicable.
+
+          ### Strong
+          The current public image Human set contains the first-pass approximations with the clearest justification for static comparison:
+          - protan-like;
+          - deutan-like;
+          - tritan-like;
+          - blur;
+          - low contrast;
+          - tunnel vision;
+          - central loss;
+          - cataract-like.
+
+          ### Estimated
+          There are currently no Estimated Human modes in public image comparison. Night / Low Light remains an Estimated spatial-only mode because its live renderer can at least respond to relative displayed luminance in the accepted panorama. Fatigue-like and Dry-eye-like image modes were removed during R7 rather than retain symptom-cluster proxies that the static renderer could not justify as distinct observer models.
+          '''
+          new_human = '\n'.join(line[10:] if line.startswith('          ') else line for line in new_human.splitlines()) + '\n'
+          replace_once('docs/methodology.md', old_human, new_human)
+
+          replace_once(
+              'docs/evidence-model.md',
+              '  - examples: night / low light, fatigue-like, dry-eye-like, animal visible-range proxies',
+              '  - current examples: animal visible-range proxies and renderer-specific approximations such as spatial Night / Low Light',
+          )
+          replace_once(
+              'docs/evidence-model.md',
+              '- a future spatial Tunnel Vision implementation may use a live view-relative field model;',
+              '- the current spatial Tunnel Vision implementation uses a live view-relative field model;',
+          )
+          replace_once(
+              'docs/evidence-model.md',
+              'Therefore the spatial pilot must distinguish, in metadata or implementation notes, which renderer a model assessment refers to whenever there is a meaningful difference.',
+              'Therefore spatial metadata or implementation notes must distinguish which renderer a model assessment refers to whenever there is a meaningful difference.\n\nImplementation note: `src/modeEvidence.ts` is a shared phenomenon-evidence base, not an image-mode registry. It may contain a key that is not selectable in image comparison when a spatial renderer reuses the same phenomenon sources. Currently `night` is intentionally retained for the spatial-only Night / Low Light evidence panel, while image visibility remains controlled by `src/modes.ts`.',
+          )
+
+          replace_once(
+              'docs/spatial-pilot-schedule.md',
+              'Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. The existing image-track Cat-like approximation remains separately available and conservatively labeled.',
+              'Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. At the time of this Step 14 decision the image-track Cat-like approximation still existed; R7 later removed it after a separate image-output audit reached the same conclusion. Cat-like is now absent from both public tracks.',
+          )
+          replace_once(
+              'docs/spatial-pilot-schedule.md',
+              '- the current image Bird-like transform only boosts visible-range saturation/microcontrast and has Model D, which does not provide a scientifically sufficient spatial mechanism.',
+              '- the image Bird-like transform present at the time only boosted visible-range saturation/microcontrast and had Model D, which did not provide a scientifically sufficient spatial mechanism; R7 later removed that image mode as well.',
+          )
+
+          replace_once(
+              'docs/spatial-pilot-spec.md',
+              'The project rejected the spatial Cat-like control because keeping it would encourage unsupported species-specific differentiation from a tone-mapped RGB source. Historical feline cone literature is also less straightforward than the canine case. The image-track Cat-like approximation remains separately available and conservatively labeled.',
+              'The project rejected the spatial Cat-like control because keeping it would encourage unsupported species-specific differentiation from a tone-mapped RGB source. Historical feline cone literature is also less straightforward than the canine case. At the time of the spatial decision the image-track Cat-like approximation remained separately available; R7 later removed it after the image-output audit. Cat-like is now absent from both public tracks.',
+          )
+
+          schedule = Path('docs/release-polish-schedule.md')
+          text = schedule.read_text()
+          old_state = 'Status: **Step R8 PASS / production polished through R8-5**'
+          if text.count(old_state) != 1:
+              raise SystemExit('release schedule top-state anchor not found exactly once')
+          text = text.replace(old_state, 'Status: **Step R9 PASS / evidence accuracy validated / R8 production-polished**', 1)
+          old_next = '''## Current next action
+          Return to the roadmap/current product priority. Keep the production smoke as the regression gate, and open a new release-polish step only for a newly observed concrete production defect.'''
+          old_next = '\n'.join(line[10:] if line.startswith('          ') else line for line in old_next.splitlines())
+          if text.count(old_next) != 1:
+              raise SystemExit('release schedule current-next-action anchor not found exactly once')
+          run_id = os.environ['GITHUB_RUN_ID']
+          r9 = f'''## Step R9 — Evidence accuracy / removed-mode consistency
+          Status: **PASS / validated**
+
+          Finding:
+          - R7 removed Cat-like, Bird-like, Fatigue-like, Dry-eye-like, Night / Low Light image, and Reference image modes, but several methodology/evidence/spatial documents still contained pre-R7 wording that described some of those image modes as currently available;
+          - `src/modeEvidence.ts` contains a `night` entry even though `night` is absent from public image `MODES`; dependency inspection confirmed this is intentional shared phenomenon evidence used by `getSpatialModeEvidence("night")`, not dead image data.
+
+          Implementation:
+          - keep the shared `night` phenomenon evidence and explicitly document its spatial-only reuse;
+          - remove current-state Cat-like/Bird-like image availability claims from methodology and spatial documentation while preserving the historical decision sequence;
+          - remove Fatigue-like / Dry-eye-like from current Estimated examples and state that public image Human modes are currently all Strong;
+          - update the evidence-model Tunnel Vision example from a future spatial implementation to the accepted current live view-relative implementation;
+          - document that the phenomenon-evidence base can legitimately contain spatial-only keys while image visibility is controlled by `src/modes.ts`.
+
+          Acceptance:
+          - every public image mode has phenomenon evidence — **PASS**;
+          - every evidence-bearing spatial mode has phenomenon evidence, including spatial-only `night` — **PASS**;
+          - no current methodology/spec wording claims Cat-like or Bird-like image is still public — **PASS**;
+          - no current Estimated example lists removed Fatigue-like or Dry-eye-like image modes — **PASS**;
+          - build and full desktop/390px image + spatial browser regression remain green — **PASS**.
+
+          Validation:
+          - initial audit `34045976762` — **success**; it found public image keys `protan/deutan/tritan/blur/low_contrast/cataract/tunnel/central_loss/dog`, plus shared evidence key `night`;
+          - dependency check confirmed `src/spatialEvidence.ts` calls `getModeEvidence("night")`, so deleting that base entry would incorrectly downgrade the spatial Night evidence to pending D;
+          - corrected evidence-accuracy build + full browser validation `{run_id}` — **success** (this commit is emitted only after all validation gates pass).
+
+          ## Current next action
+          Continue the roadmap's retained-mode transform/evidence-quality audit without reopening removed modes. Prioritize the remaining public image renderers by implementation maturity and evidence/model fit, while keeping the accepted spatial set stable.
+          '''
+          r9 = '\n'.join(line[10:] if line.startswith('          ') else line for line in r9.splitlines())
+          schedule.write_text(text.replace(old_next, r9, 1))
+          PY
+
+      - name: Assert evidence and current-scope consistency
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          modes = Path('src/modes.ts').read_text()
+          evidence = Path('src/modeEvidence.ts').read_text()
+          spatial = Path('src/spatialEvidence.ts').read_text()
+          mode_keys = set(re.findall(r'key:\s*"([a-z_]+)"', modes))
+          evidence_keys = set(re.findall(r'^\s{2}([a-z_]+):\s*\{', evidence, flags=re.M))
+          spatial_match = re.search(r'type SpatialEvidenceMode = (.*?);', spatial)
+          if not spatial_match:
+              raise SystemExit('SpatialEvidenceMode type not found')
+          spatial_keys = set(re.findall(r'"([a-z_]+)"', spatial_match.group(1)))
+
+          assert not (mode_keys - evidence_keys), f'public image modes missing evidence: {sorted(mode_keys - evidence_keys)}'
+          assert not (spatial_keys - evidence_keys), f'spatial modes missing shared phenomenon evidence: {sorted(spatial_keys - evidence_keys)}'
+          assert evidence_keys - mode_keys == {'night'}, f'unexpected non-image evidence keys: {sorted(evidence_keys - mode_keys)}'
+          assert 'getModeEvidence(modeKey)' in spatial, 'spatial evidence no longer inherits shared phenomenon evidence'
+
+          stale = {
+              'docs/methodology.md': [
+                  'This rejection does not remove the separate image-track Cat-like approximation',
+                  'The current image Bird-like mode remains',
+                  '- fatigue-like;',
+                  '- dry-eye-like;',
+              ],
+              'docs/evidence-model.md': [
+                  'night / low light, fatigue-like, dry-eye-like',
+                  'a future spatial Tunnel Vision implementation',
+              ],
+              'docs/spatial-pilot-schedule.md': [
+                  'The existing image-track Cat-like approximation remains separately available',
+                  'the current image Bird-like transform only boosts',
+              ],
+              'docs/spatial-pilot-spec.md': [
+                  'The image-track Cat-like approximation remains separately available',
+              ],
+          }
+          for path, phrases in stale.items():
+              text = Path(path).read_text()
+              for phrase in phrases:
+                  assert phrase not in text, f'{path}: stale phrase remains: {phrase}'
+
+          print('PUBLIC_IMAGE_KEYS=', sorted(mode_keys))
+          print('SPATIAL_EVIDENCE_KEYS=', sorted(spatial_keys))
+          print('SHARED_EVIDENCE_KEYS=', sorted(evidence_keys))
+          print('SPATIAL_ONLY_SHARED_KEYS=', sorted(evidence_keys - mode_keys))
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run full local browser regression
+        shell: bash
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 > /tmp/asseenby-r9-preview.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+
+      - name: Commit validated cleanup
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/modeEvidence.ts docs/methodology.md docs/evidence-model.md docs/spatial-pilot-schedule.md docs/spatial-pilot-spec.md docs/release-polish-schedule.md
+          git commit -m 'Align evidence docs with current mode scope'
+          git push
+
+      - name: Upload browser captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r9-evidence-accuracy-smoke
+          path: production-smoke
