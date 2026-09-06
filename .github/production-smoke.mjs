@@ -125,6 +125,9 @@ async function desktopImageSmoke(browser) {
   const categoryValues = await page.locator("#category-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
   assert(JSON.stringify(categoryValues) === JSON.stringify(["Human", "Animal"]), `desktop image: unexpected categories ${JSON.stringify(categoryValues)}`);
   const pageText = await page.locator("body").innerText();
+  const heroText = await page.locator(".hero-copy").innerText();
+  assert(heroText.includes("human visual conditions") && heroText.includes("animal-inspired modes"), "desktop image: hero does not describe the current Human/Animal product scope");
+  assert(!heroText.includes("reference profiles"), "desktop image: removed Reference scope is still advertised in the hero");
   assert(!pageText.includes("Age Profile"), "desktop image: removed Age Profile is still visible");
   assert(!pageText.includes("Sex-difference Profile"), "desktop image: removed Sex-difference Profile is still visible");
   await page.locator("#category-select").selectOption("Animal");

@@ -282,7 +282,7 @@ function Hero() {
       </div>
       <div className="hero-copy">
         <p>
-          AsSeenBy is a research-based comparison viewer that translates commonly described visual differences into image-based approximations across human conditions, animal-inspired modes, and reference profiles.
+          AsSeenBy is a research-based comparison viewer that translates commonly described visual differences into image-based approximations across human visual conditions and animal-inspired modes.
           <span> Not a diagnostic tool—an instrument for understanding.</span>
         </p>
       </div>
