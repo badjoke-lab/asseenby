@@ -319,8 +319,20 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
         kind: "paper",
         note: "Behavioral evidence that dogs show a response pattern similar to red-green color-blind human observers.",
       },
+      {
+        title: "What do dogs (Canis familiaris) see? A review of vision in dogs",
+        url: "https://pubmed.ncbi.nlm.nih.gov/29143248/",
+        kind: "paper",
+        note: "Review covering canine light sensitivity, visual perspective, acuity, form perception, and color vision, and emphasizing remaining uncertainty in complete canine visual processing.",
+      },
+      {
+        title: "High visual acuity revealed in dogs",
+        url: "https://pubmed.ncbi.nlm.nih.gov/29206864/",
+        kind: "paper",
+        note: "Behavioral measurements show substantial individual variation but consistently lower spatial acuity than human participants under comparable bright and dim conditions.",
+      },
     ],
-    lastReviewed: REVIEWED_ON,
+    lastReviewed: "2026-09-06",
   },
   cat: {
     summary: "Visible-range approximation inspired by limited feline color discrimination, kept conservative because feline color-vision framing is less straightforward than the canine case.",

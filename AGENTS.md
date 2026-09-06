@@ -18,7 +18,7 @@ If code and documentation disagree, do not silently invent a new direction. Pres
 
 ## Product invariants
 - Keep the existing static-image comparison experience. The spatial experience is additive, not a replacement.
-- The image experience remains `Compare image`; the Three.js experience remains `Explore 3D`.
+- The image experience remains `Compare image`; the Three.js experience remains `Explore spatial`.
 - Do not turn AsSeenBy into a game, generic 3D showcase, medical tool, or claim of exact perception.
 - Every perception output is a research-based approximation or reference view, subject to the evidence and limitation documents.
 - Do not claim UV, polarization, full species-specific spectral perception, neural interpretation, diagnosis, or patient-level accuracy unless a future spec explicitly adds a validated data path for it.
@@ -34,9 +34,9 @@ If code and documentation disagree, do not silently invent a new direction. Pres
 - Interaction remains look-around first; no walking simulation, collision system, scoring, or game mechanics are required.
 - Reuse existing mode evidence and limitations wherever applicable instead of creating separate unsupported claims.
 - Add post-pilot spatial modes one at a time in the order defined by `docs/spatial-pilot-schedule.md` and require a rendered acceptance check before starting the following mode.
-- Central Loss and the photographic 360° reference scene are accepted and merged. The current expansion target is `Night / Low Light`; do not begin Dog-like, Cat-like, Bird-like, or Bee-like until its rendered acceptance gate passes or it is explicitly rejected.
-- Night / Low Light must respond to luminance differences in the current rendered view rather than acting as a uniform dark tint. Darker regions should lose more color, contrast, and fine detail while brighter regions remain comparatively available.
-- The current panorama is tone-mapped RGB, not calibrated radiometric data. Do not claim physical scotopic/mesopic luminance, dark-adaptation timing, pupil response, or full rod/cone spectral reproduction from it.
+- Central Loss, Night / Low Light, and the photographic 360° reference scene are accepted and merged. The current expansion target is `Dog-like`; do not begin Cat-like, Bird-like, or Bee-like until its rendered acceptance gate passes or it is explicitly rejected.
+- Dog-like must preserve the same camera and use a conservative visible-range dichromatic + acuity proxy. Do not claim that RGB can reconstruct canine cone catches for arbitrary spectra, or that the renderer models breed-dependent field of view, motion processing, tapetal/rod low-light advantages, or literal canine qualia.
+- The current panorama is tone-mapped RGB. It can support a human-display visible-range comparison, not complete species-specific spectral reconstruction.
 - Central Loss remains a generic field-loss model, not an individual's measured scotoma or perimetry result.
 - Bee-like UV work still requires additional UV-reflectance scene data and must not be faked with an RGB color filter.
 

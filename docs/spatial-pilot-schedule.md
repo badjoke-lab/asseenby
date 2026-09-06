@@ -57,36 +57,40 @@ Final clean-head Chromium regression `34007622720` passed. Review confirmed that
 
 PR build `34007624784` passed. PR #3 was then squash-merged to main as `48dbda797ac287170dc02444771e8ee0ce1e38d0`. Main build `34007765671` passed.
 
-## Step 12 — Night / Low Light evidence boundary and renderer
-Status: **PASS / accepted / pending merge**
+## Step 12 — Night / Low Light
+Status: **PASS / accepted / merged**
 
-Implementation candidate commit: `0aa83861be18d6ac77457ebe7032637aa6525944`.
-Patch/build workflow `34008903572` passed, including `npm ci` and `npm run build`.
-PR build `34009020573` passed on the rendered-review head.
-Chromium rendered review `34009009894` passed technically with `result.json` reporting no failures.
+Rendered-review browser run `34009009894` passed and its Normal/Night forward, turned and 390px mobile captures were manually accepted. Final clean-head PR build `34009195003` and browser regression `34009192584` passed. PR #4 was squash-merged to main as `f7d57d3817e273e0ce2f63973f049b1a68cc0085`; post-merge main build `34009285466` passed.
 
-Evidence/source-data boundary:
-- low-light vision involves a shift toward rod contribution, reduced color information, and lower spatial resolution at sufficiently low luminance;
-- dark adaptation is time-dependent rather than an instant filter;
-- the current Hansaplatz source is a tone-mapped RGB panorama, not calibrated scene photometry;
-- this phase therefore uses relative displayed luminance only and does not claim physical scotopic/mesopic reconstruction.
+The accepted model remains a relative displayed-luminance proxy with spatial Model C. It does not claim calibrated scotopic/mesopic reconstruction or dark-adaptation timing.
 
-Renderer behavior accepted in manual review:
-- darker rendered regions lose substantially more chromatic separation, contrast and fine detail than the Normal view;
-- bright shopfronts, windows and lamps remain comparatively available instead of being uniformly blacked down;
-- the forward comparison clearly differs from Normal without collapsing into a uniform dark or blue tint;
-- the turned view contains a different bright/dark composition and the renderer follows that composition while preserving the exact camera direction;
-- the effect reads as loss of low-light information rather than simply lowering the whole image brightness;
-- 390px mobile keeps the five spatial controls usable, preserves the same-view comparison, and the automated check reports no horizontal overflow or captured page/console errors;
-- accepted Normal, Tunnel Vision, Central Loss and Cataract-like regressions plus the separate image workflow remain green.
+## Step 13 — Dog-like evidence boundary and renderer candidate
+Status: **evidence boundary complete / implementation candidate awaiting rendered review**
 
-Spatial Model remains **C** because the renderer uses relative displayed luminance from tone-mapped RGB rather than calibrated scene photometry or a validated physiological observer model.
+Evidence boundary:
+- behavioral and photopigment studies strongly support canine dichromatic color vision;
+- comparative studies support lower canine spatial acuity than human acuity, with meaningful individual and methodological variation;
+- a standard RGB panorama cannot reconstruct exact canine cone catches for arbitrary spectra;
+- breed-dependent visual field, motion processing, tapetal/rod low-light advantages and neural interpretation are excluded from this phase.
+
+Renderer candidate:
+- human-display two-channel translation compresses red/green distinctions while keeping blue/yellow-like distinctions comparatively available;
+- mild angularly scaled softening reduces fine detail without claiming calibrated acuity;
+- camera position, direction, field of view and source panorama remain unchanged;
+- spatial Model remains C pending rendered acceptance.
+
+Rendered gate:
+- compare identical-camera Normal vs Dog-like forward and turned views;
+- verify red/green compression on signs, foliage and colored lights without a generic arbitrary tint;
+- verify fine-detail reduction is visible but restrained;
+- verify accepted spatial modes and image comparison remain unchanged;
+- verify 390px mobile, no overflow, and no captured page/console errors;
+- accept, revise, or reject before beginning Cat-like.
 
 ## Ordered next spatial candidates
-1. Dog-like
-2. Cat-like
-3. Bird-like as a separate evaluation
-4. Bee-like only with additional UV-reflectance scene data
+1. Cat-like
+2. Bird-like as a separate evaluation
+3. Bee-like only with additional UV-reflectance scene data
 
-## Final merge gate
-Run the existing full build and desktop / 390px Chromium regression once more on this accepted documentation head. If both are green, mark PR #4 ready and squash-merge it. Do not begin Dog-like before that merge completes.
+## Current next action
+Run build and the existing desktop / 390px Chromium capture on the Dog-like candidate. Inspect identical-camera Normal/Dog-like forward and turned views, then either correct the renderer or mark Step 13 accepted. Do not begin Cat-like yet.

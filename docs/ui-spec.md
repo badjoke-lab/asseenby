@@ -42,9 +42,10 @@ Current 3D mode controls:
 - Tunnel Vision
 - Central Loss
 - Night / Low Light
+- Dog-like
 - Cataract-like
 
-Night / Low Light is the active expansion target. Its control is included only with the live luminance-dependent implementation, not as an unimplemented placeholder.
+Dog-like is the active expansion target. Its control is included only with the live visible-range dichromatic/acuity implementation, not as an unimplemented placeholder.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 
@@ -102,6 +103,13 @@ When Night / Low Light is selected:
 - explain that darker rendered regions lose more color, contrast, and fine detail while brighter regions remain more available;
 - do not describe the output as calibrated scotopic vision or a patient's measured night-vision deficit;
 - make the tone-mapped RGB / non-calibrated-luminance boundary available in the evidence panel.
+
+## Dog-like UI behavior
+When Dog-like is selected:
+- keep the current camera position, direction, field of view and source scene;
+- explain that the mode is a visible-range human-display proxy for canine dichromacy plus lower fine-detail resolution;
+- do not describe the output as exact canine cone catches, literal canine color experience, or a breed-independent complete visual system;
+- make the RGB spectral-data limitation and excluded field-of-view/motion/low-light claims available in the evidence panel.
 
 ## Labels
 Each existing mode should display one of:

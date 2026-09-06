@@ -3,7 +3,7 @@ import { getModeEvidence } from "./modeEvidence";
 
 const SPATIAL_REVIEWED_ON = "2026-09-06";
 
-type SpatialEvidenceMode = "tunnel" | "central_loss" | "night" | "cataract";
+type SpatialEvidenceMode = "tunnel" | "central_loss" | "night" | "dog" | "cataract";
 
 export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEvidence {
   const base = getModeEvidence(modeKey);
@@ -34,6 +34,16 @@ export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEviden
       modelScore: "C",
       modelNote: "The spatial Night / Low Light renderer uses displayed scene luminance from the current rendered view to increase desaturation, contrast loss, and fine-detail loss in darker regions while leaving brighter sources more available. Because the 360° panorama is a tone-mapped RGB photograph rather than calibrated radiometric scene data, this is a luminance-dependent communication model, not a physical scotopic or mesopic reconstruction.",
       caveat: "Real low-light vision changes with absolute luminance, rod/cone contribution, adaptation state, pupil size, glare, ocular health, and individual differences. The current spatial mode does not model dark-adaptation timing, calibrated cd/m², or full rod/cone spectral sensitivity.",
+      lastReviewed: SPATIAL_REVIEWED_ON,
+    };
+  }
+
+  if (modeKey === "dog") {
+    return {
+      ...base,
+      modelScore: "C",
+      modelNote: "The spatial Dog-like renderer applies a simplified two-channel visible-range color translation plus mild angularly scaled softening to the live 360° view. It is grounded in strong evidence for canine dichromacy and lower visual acuity than humans, but a standard RGB panorama cannot reconstruct canine cone catches for arbitrary spectra and the blur is not a calibrated individual-dog acuity model.",
+      caveat: "Dog vision varies across individuals and breeds. This mode does not model breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, or neural interpretation. It is a human-display comparison proxy, not literal canine qualia.",
       lastReviewed: SPATIAL_REVIEWED_ON,
     };
   }
