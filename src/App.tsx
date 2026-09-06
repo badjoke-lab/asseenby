@@ -266,7 +266,7 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
   const compareGuidance = buildCompareGuidance(currentMode, currentModeEvidence);
 
   return (
-    <section className="compare-card">
+    <section className="compare-card" aria-busy={isBusy}>
       <div className={compareMode === "side-by-side" ? "compare-stage compare-stage--side" : "compare-stage"}>
         {compareMode === "side-by-side" ? (
           <>
@@ -283,7 +283,7 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
             <LabelPill className="image-label image-label--right">Approximation</LabelPill>
             <div className="divider-line" style={{ left: `${effectiveDivider}%` }} />
             {isInteractiveSlider ? <div className="divider-handle" style={{ left: `${effectiveDivider}%` }}>↔</div> : null}
-            {isBusy ? <div className="loading-badge" /> : null}
+            {isBusy ? <div className="loading-badge" role="status" aria-live="polite" aria-label="Rendering comparison" /> : null}
           </div>
         )}
       </div>
@@ -300,7 +300,7 @@ function CompareStage({ originalUrl, transformedUrl, compareMode, setCompareMode
         {isInteractiveSlider ? (
           <div className="balance-row">
             <span className="toolbar-label">Balance</span>
-            <input type="range" min={20} max={80} value={divider} onChange={(event) => setDivider(Number(event.target.value))} />
+            <input id="compare-balance" type="range" min={20} max={80} value={divider} aria-label="Comparison balance" onChange={(event) => setDivider(Number(event.target.value))} />
             <span className="balance-value">{divider}%</span>
           </div>
         ) : null}
@@ -328,24 +328,24 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
   return (
     <aside className="control-rail">
       <div className="control-block">
-        <label className="control-label">Category</label>
-        <SelectLike value={category} options={["Human", "Animal", "Reference"]} onChange={(value) => setCategory(value as ModeCategory)} />
+        <label className="control-label" htmlFor="category-select">Category</label>
+        <SelectLike id="category-select" value={category} options={["Human", "Animal", "Reference"]} onChange={(value) => setCategory(value as ModeCategory)} />
       </div>
       <div className="control-block">
-        <label className="control-label">Mode</label>
-        <SelectLike value={modeKey} options={categoryModes.map((mode) => mode.key)} onChange={setModeKey} labels={Object.fromEntries(categoryModes.map((m) => [m.key, m.label]))} />
+        <label className="control-label" htmlFor="mode-select">Mode</label>
+        <SelectLike id="mode-select" value={modeKey} options={categoryModes.map((mode) => mode.key)} onChange={setModeKey} labels={Object.fromEntries(categoryModes.map((m) => [m.key, m.label]))} />
         <p className="control-note">{currentMode.note}</p>
       </div>
       <div className="control-block">
-        <label className="control-label">Strength</label>
+        <label className="control-label" htmlFor="strength-range">Strength</label>
         <div className="strength-row">
-          <input type="range" min={0} max={100} value={strength} onChange={(event) => setStrength(Number(event.target.value))} />
+          <input id="strength-range" type="range" min={0} max={100} value={strength} onChange={(event) => setStrength(Number(event.target.value))} />
           <span>{strength}%</span>
         </div>
       </div>
       <div className="button-stack">
-        <button className="primary-button" onClick={onUploadClick}>Upload image</button>
-        <button className="secondary-button" onClick={onUseSample}>Use sample image</button>
+        <button type="button" className="primary-button" onClick={onUploadClick}>Upload image</button>
+        <button type="button" className="secondary-button" onClick={onUseSample}>Use sample image</button>
       </div>
       <div className="class-box">
         <div className="class-row">
@@ -362,7 +362,7 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
 
 function CategoryPanel({ title, subtitle, items, icon, onClick }: { title: string; subtitle: string; items: string[]; icon: React.ReactNode; onClick: () => void; }) {
   return (
-    <button onClick={onClick} className="category-card">
+    <button type="button" onClick={onClick} className="category-card">
       <div className="category-top">
         <div>
           <h2>{title}</h2>
@@ -378,16 +378,16 @@ function CategoryPanel({ title, subtitle, items, icon, onClick }: { title: strin
   );
 }
 
-function SelectLike({ value, options, onChange, labels }: { value: string; options: string[]; onChange: (value: string) => void; labels?: Record<string, string>; }) {
+function SelectLike({ id, value, options, onChange, labels }: { id?: string; value: string; options: string[]; onChange: (value: string) => void; labels?: Record<string, string>; }) {
   return (
-    <select className="control-select" value={value} onChange={(event) => onChange(event.target.value)}>
+    <select id={id} className="control-select" value={value} onChange={(event) => onChange(event.target.value)}>
       {options.map((option) => <option key={option} value={option}>{labels?.[option] ?? option}</option>)}
     </select>
   );
 }
 
 function ComparePill({ children, active, onClick }: { children: React.ReactNode; active?: boolean; onClick?: () => void; }) {
-  return <button onClick={onClick} className={active ? "pill pill--active" : "pill"}>{children}</button>;
+  return <button type="button" aria-pressed={Boolean(active)} onClick={onClick} className={active ? "pill pill--active" : "pill"}>{children}</button>;
 }
 
 function LabelPill({ children, className }: { children: React.ReactNode; className?: string }) {
