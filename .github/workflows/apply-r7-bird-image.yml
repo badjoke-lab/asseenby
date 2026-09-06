@@ -1,0 +1,277 @@
+name: apply R7 Bird image removal
+
+on:
+  push:
+    branches:
+      - feat/r7-remove-bird-image
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/r7-remove-bird-image
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply Bird-like image removal
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"missing expected text in {path}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          def sub_once(path, pattern, repl, flags=0):
+              p = Path(path)
+              text = p.read_text()
+              new, n = re.subn(pattern, repl, text, count=1, flags=flags)
+              if n != 1:
+                  raise SystemExit(f"expected one regex match in {path}, got {n}: {pattern}")
+              p.write_text(new)
+
+          # Public mode definition.
+          sub_once(
+              "src/modes.ts",
+              r'\n  \{ key: "bird", label: "Bird-like", category: "Animal", confidence: "Estimated", note: "Bird-like visible-range approximation based on commonly described avian characteristics\. UV not included\." \},',
+              "",
+          )
+
+          # Remove the decorative Bird-like transform and helpers that become unused.
+          replace_once(
+              "src/transformEngine.ts",
+              '  } else if (modeKey === "bird") {\n    saturateData(data, 0.08 + amount * 0.18);\n    boostMicroContrast(data, 0.02 + amount * 0.05);\n',
+              "",
+          )
+          sub_once(
+              "src/transformEngine.ts",
+              r'\nfunction saturateData\(data: Uint8ClampedArray, amount: number\) \{.*?\n\}\n',
+              "\n",
+              re.S,
+          )
+          sub_once(
+              "src/transformEngine.ts",
+              r'\nfunction boostMicroContrast\(data: Uint8ClampedArray, amount: number\) \{.*?\n\}\n',
+              "\n",
+              re.S,
+          )
+
+          # Public Evidence entry.
+          sub_once(
+              "src/modeEvidence.ts",
+              r'\n  bird: \{.*?\n  \},\n  age: \{',
+              "\n  age: {",
+              re.S,
+          )
+
+          # Public docs / MVP lists.
+          replace_once("README.md", "- Bird-like\n", "")
+          replace_once("docs/mvp-spec.md", "- Bird-like\n", "")
+          sub_once(
+              "docs/modes.md",
+              r'\n### Bird-like\n.*?(?=\n## Reference modes)',
+              "\n",
+              re.S,
+          )
+
+          replace_once(
+              "docs/limitations.md",
+              "Examples:\n- bird-like mode does not reproduce ultraviolet response or full avian perception;\n- dog and cat modes are simplified visible-range approximations.\n- Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.\n",
+              "Examples:\n- dog and cat modes are simplified visible-range approximations.\n- Bird-like is not publicly rendered from ordinary RGB because a generic avian observer cannot be reconstructed from three camera channels.\n- Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.\n",
+          )
+          replace_once(
+              "docs/limitations.md",
+              "A future avian spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.\n",
+              "The former Bird-like image mode was also removed during R7 because its saturation/microcontrast adjustment could not represent tetrachromacy, UVS/VS variation, oil-droplet filtering, species-specific acuity, or a defensible generic avian observer.\n\nA future avian image or spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.\n",
+          )
+
+          # Roadmap should no longer describe a current Bird-like image behavior.
+          replace_once(
+              "docs/roadmap.md",
+              "- the only current image Bird-like behavior is a visible-range saturation/microcontrast proxy, which is not enough to justify a separate spatial mode.\n",
+              "- the former image Bird-like behavior was only a visible-range saturation/microcontrast proxy; R7 removed it rather than preserve a generic avian claim that the RGB source cannot support.\n",
+          )
+
+          # Production gate now waits for both Model-D animal image removals.
+          replace_once(
+              ".github/production-smoke.mjs",
+              'const expectedAnimalImageModes = ["dog", "cat", "bird"];',
+              'const expectedAnimalImageModes = ["dog", "cat"];',
+          )
+          replace_once(
+              ".github/production-smoke.mjs",
+              'result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like image mode absent`);',
+              'result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like/Bird-like image modes absent`);',
+          )
+          replace_once(
+              ".github/production-smoke.mjs",
+              '  assert(!(await page.locator("body").innerText()).includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");\n',
+              '  const animalBodyText = await page.locator("body").innerText();\n  assert(!animalBodyText.includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");\n  assert(!animalBodyText.includes("Bird-like"), "desktop image: removed Bird-like image mode is still visible");\n',
+          )
+
+          # Close R7-2 and open R7-3 with the explicit evidence/model decision.
+          schedule = Path("docs/release-polish-schedule.md")
+          text = schedule.read_text()
+          start = text.index("### R7-2 — Bee-like image mode")
+          replacement = '''### R7-2 — Bee-like image mode
+Status: **PASS / removed / production verified**
+
+Decision: **REMOVE from the public image product until UV/spectral source data exists**
+
+Reason:
+- honeybee UV/blue/green color vision is well supported, so the phenomenon Evidence remains strong;
+- the former image implementation was Model D because a conventional RGB image has already discarded ultraviolet/spectral information;
+- the public transform only remapped visible RGB channels and could not reconstruct UV response, nectar-guide structure, receptor catches, or bee-specific scene coding;
+- strengthening the RGB color shift would have made the output more dramatic without making it more biologically defensible;
+- the spatial Bee-like gate is blocked for the same missing-source-data reason.
+
+Validation:
+- removal/build/local desktop + 390px + spatial regression workflow `34016158829` — **success**;
+- PR #14 clean-head build `34016314919` — **success**;
+- merge SHA `ce71b1f49c3fb15e6d382a3fa02fba938bd5651a`;
+- matching main build `34016338118` — **success**;
+- production smoke `34016338172` — **success**, confirming the public Animal image set had reached Dog-like / Cat-like / Bird-like with Bee-like absent.
+
+### R7-3 — Bird-like image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE the generic Bird-like image mode**
+
+Reason:
+- avian vision itself has strong evidence, but a generic “bird” observer is not a coherent single model across species;
+- many birds use four single-cone classes with UVS or VS tuning and oil-droplet filtering, none of which can be reconstructed from ordinary three-channel RGB after capture;
+- measured avian visual acuity varies by roughly two orders of magnitude across species, so a generic sharpen/blur rule would also overclaim;
+- the current Model D transform only increases visible-range saturation and microcontrast;
+- the spatial Bird-like candidate was already rejected/blocked at the evidence/source-data gate, so retaining a weaker 2D generic-bird filter is inconsistent.
+
+Removal scope:
+- remove Bird-like from the public Animal image list;
+- remove the saturation/microcontrast Bird transform and now-unused helpers;
+- remove the public Bird-specific Evidence entry;
+- update README, MVP/mode docs, limitations, and roadmap wording;
+- strengthen production smoke so the accepted public Animal image set is Dog-like / Cat-like only;
+- keep the scientific Bird-like rejection/source-data decision documented for future species-specific work.
+
+Acceptance:
+- Animal image category exposes Dog-like and Cat-like only;
+- no `bird` image transform or Bird-like public Evidence entry remains;
+- Reference remains Age Profile only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px browser checks pass without horizontal overflow or page/console errors;
+- build passes;
+- after merge, production smoke confirms Bird-like is absent from the public image UI.
+
+## Current next action
+Complete R7-3 removal, merge after clean build/browser validation, then require the public production smoke to observe Dog-like / Cat-like as the complete Animal image set before closing R7-3.
+'''
+          text = text[:start] + replacement
+          schedule.write_text(text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install temporary browser dependency
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run image and spatial browser checks
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/asseenby-vite.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          cat > /tmp/r7-bird-check.mjs <<'JS'
+          import { chromium } from "playwright";
+          const BASE = "http://127.0.0.1:4173";
+          const expectedSpatial = ["Normal", "Tunnel Vision", "Central Loss", "Night / Low Light", "Dog-like", "Cataract-like"];
+          function assert(value, message) { if (!value) throw new Error(message); }
+          function watch(page) {
+            const errors = [];
+            page.on("pageerror", e => errors.push(String(e)));
+            page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
+            return errors;
+          }
+          async function noOverflow(page, label) {
+            const m = await page.evaluate(() => ({ inner: innerWidth, doc: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+            assert(m.doc <= m.inner + 1 && m.body <= m.inner + 1, `${label}: overflow ${JSON.stringify(m)}`);
+          }
+          const browser = await chromium.launch({ headless: true });
+          try {
+            for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+              const context = await browser.newContext({ viewport, isMobile: viewport.width === 390, hasTouch: viewport.width === 390 });
+              const page = await context.newPage();
+              const errors = watch(page);
+              await page.goto(BASE, { waitUntil: "networkidle" });
+              await noOverflow(page, `image-${viewport.width}`);
+              await page.locator("#category-select").selectOption("Animal");
+              const values = await page.locator("#mode-select option").evaluateAll(nodes => nodes.map(n => n.value));
+              assert(JSON.stringify(values) === JSON.stringify(["dog", "cat"]), `Animal set ${JSON.stringify(values)}`);
+              const body = await page.locator("body").innerText();
+              assert(!body.includes("Bee-like") && !body.includes("Bird-like"), "removed animal mode still visible");
+              for (const mode of ["dog", "cat"]) {
+                await page.locator("#mode-select").selectOption(mode);
+                await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
+              }
+              await page.locator("#category-select").selectOption("Reference");
+              const refs = await page.locator("#mode-select option").evaluateAll(nodes => nodes.map(n => n.value));
+              assert(JSON.stringify(refs) === JSON.stringify(["age"]), `Reference set ${JSON.stringify(refs)}`);
+              assert(errors.length === 0, `image-${viewport.width} errors: ${errors.join(" | ")}`);
+              await context.close();
+            }
+
+            for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+              const context = await browser.newContext({ viewport, isMobile: viewport.width === 390, hasTouch: viewport.width === 390 });
+              const page = await context.newPage();
+              const errors = watch(page);
+              await page.goto(`${BASE}/?view=spatial`, { waitUntil: "networkidle" });
+              await page.locator("canvas.spatial-canvas").waitFor({ timeout: 30000 });
+              await noOverflow(page, `spatial-${viewport.width}`);
+              const labels = await page.getByRole("group", { name: "Spatial perception mode" }).getByRole("button").allTextContents();
+              assert(JSON.stringify(labels) === JSON.stringify(expectedSpatial), `spatial set ${JSON.stringify(labels)}`);
+              assert(errors.length === 0, `spatial-${viewport.width} errors: ${errors.join(" | ")}`);
+              await context.close();
+            }
+          } finally {
+            await browser.close();
+          }
+          JS
+          node /tmp/r7-bird-check.mjs
+
+      - name: Commit clean implementation
+        shell: bash
+        run: |
+          rm .github/workflows/apply-r7-bird-image.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/production-smoke.mjs README.md docs src
+          git status --short
+          git commit -m "Remove unsupported Bird-like image mode"
+          git push origin HEAD:feat/r7-remove-bird-image
