@@ -57,13 +57,14 @@ The strength control changes the degree of transformation applied.
 ### Spatial comparison
 Spatial comparison uses the same rendered scene from the same camera state while only the perception renderer changes.
 
-Accepted baseline spatial modes:
+Accepted spatial modes:
 - Normal;
 - Tunnel Vision;
+- Central Loss;
 - Cataract-like.
 
 Current expansion target:
-- Central Loss.
+- Night / Low Light.
 
 Mode switching must preserve camera position and view direction so the comparison isolates the modeled visual difference.
 
@@ -80,6 +81,11 @@ It should:
 - avoid implying that the chosen central-loss shape, size, opacity, or severity maps to an individual patient.
 
 The implementation may combine localized softness, desaturation, and partial obscuration to communicate loss of central detail. The exact visual form remains a renderer model and must be rated separately from the evidence for central vision loss itself.
+
+## Night / Low Light spatial model
+The current spatial target is a luminance-dependent low-light communication model. It uses relative displayed luminance in the rendered 360° view so darker regions can lose more color, contrast, and fine detail than brighter regions.
+
+The source panorama is tone-mapped RGB rather than calibrated radiometric data. The spatial mode therefore does not model physical cd/m², full rod/cone spectral sensitivity, pupil response, or the time course of dark adaptation. Those limitations are part of the model definition, not hidden implementation details.
 
 ## Evidence display model
 Each mode can expose a mode-level evidence panel in the UI.
@@ -151,7 +157,7 @@ These should not be interpreted as personal diagnosis or exact individual simula
 
 ## Spatial implementation approach
 - Three.js runs browser-side;
-- the accepted controlled night-street scene is reused while the current field-loss expansion is evaluated;
+- the accepted fixed-viewpoint 360° photographic night-city reference is reused while post-pilot modes are evaluated;
 - scene-aware / view-relative post-processing is used where required by the mode;
 - no accounts or server-side user data requirement;
 - no game mechanics required;

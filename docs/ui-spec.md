@@ -41,9 +41,10 @@ Current 3D mode controls:
 - Normal
 - Tunnel Vision
 - Central Loss
+- Night / Low Light
 - Cataract-like
 
-Central Loss is the active expansion target; its control is included only with the live view-relative implementation, not as an unimplemented placeholder.
+Night / Low Light is the active expansion target. Its control is included only with the live luminance-dependent implementation, not as an unimplemented placeholder.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 
@@ -94,6 +95,13 @@ When Central Loss is selected:
 - do not draw a world-space marker suggesting the loss belongs to one scene object;
 - explanatory copy should state that straight-ahead detail is degraded while surrounding information remains more available;
 - evidence / limitation copy should state that the profile is generic, not an individual's measured scotoma.
+
+## Night / Low Light UI behavior
+When Night / Low Light is selected:
+- keep the current camera position and direction;
+- explain that darker rendered regions lose more color, contrast, and fine detail while brighter regions remain more available;
+- do not describe the output as calibrated scotopic vision or a patient's measured night-vision deficit;
+- make the tone-mapped RGB / non-calibrated-luminance boundary available in the evidence panel.
 
 ## Labels
 Each existing mode should display one of:

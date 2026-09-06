@@ -69,6 +69,9 @@ await assertNoHorizontalOverflow(desktop, "spatial-desktop");
 
 // Forward view: hold camera fixed and compare each renderer against Normal.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
+await assertMode(desktop, "Night / Low Light");
+await desktop.screenshot({ path: `${outDir}/desktop-night-forward.png`, fullPage: true });
+await assertMode(desktop, "Normal");
 await assertMode(desktop, "Central Loss");
 await desktop.screenshot({ path: `${outDir}/desktop-central-forward.png`, fullPage: true });
 await assertMode(desktop, "Normal");
@@ -88,6 +91,9 @@ if (!(await dragCanvas(desktop, desktopCanvas, 250, -45))) {
 // Turned view: preserve the exact new camera direction across Normal, Central Loss and Cataract-like.
 await assertMode(desktop, "Normal");
 await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });
+await assertMode(desktop, "Night / Low Light");
+await desktop.screenshot({ path: `${outDir}/desktop-night-turned.png`, fullPage: true });
+await assertMode(desktop, "Normal");
 await assertMode(desktop, "Central Loss");
 await desktop.screenshot({ path: `${outDir}/desktop-central-turned.png`, fullPage: true });
 await assertMode(desktop, "Normal");
@@ -149,6 +155,8 @@ await mobile.screenshot({ path: `${outDir}/mobile-central-turned.png`, fullPage:
 
 await assertMode(mobile, "Normal");
 await mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });
+await assertMode(mobile, "Night / Low Light");
+await mobile.screenshot({ path: `${outDir}/mobile-night-turned.png`, fullPage: true });
 await assertMode(mobile, "Tunnel Vision");
 await mobile.screenshot({ path: `${outDir}/mobile-tunnel-turned.png`, fullPage: true });
 await assertMode(mobile, "Cataract-like");

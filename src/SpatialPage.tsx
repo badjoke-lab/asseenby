@@ -9,7 +9,7 @@ import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
 import { MODES } from "./modes";
 import { getSpatialModeEvidence } from "./spatialEvidence";
 
-type SpatialMode = "normal" | "tunnel" | "central_loss" | "cataract";
+type SpatialMode = "normal" | "tunnel" | "central_loss" | "night" | "cataract";
 
 type SpatialController = {
   setMode: (mode: SpatialMode) => void;
@@ -94,6 +94,66 @@ const CENTRAL_LOSS_SHADER = {
       vec3 result = mix(source.rgb, scotoma, affected * 0.94);
 
       gl_FragColor = vec4(result, source.a);
+    }
+  `,
+};
+
+const NIGHT_LOW_LIGHT_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    float lumaAt(vec2 uv) {
+      vec3 color = texture2D(tDiffuse, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
+      return dot(color, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    void main() {
+      vec2 px = 1.0 / max(resolution, vec2(1.0));
+      vec3 source = texture2D(tDiffuse, vUv).rgb;
+      float localLuma = dot(source, vec3(0.2126, 0.7152, 0.0722));
+
+      float viewLuma = (
+        lumaAt(vec2(0.50, 0.50)) +
+        lumaAt(vec2(0.24, 0.28)) +
+        lumaAt(vec2(0.76, 0.28)) +
+        lumaAt(vec2(0.24, 0.72)) +
+        lumaAt(vec2(0.76, 0.72))
+      ) / 5.0;
+
+      float dimView = 1.0 - smoothstep(0.16, 0.48, viewLuma);
+      float localDark = 1.0 - smoothstep(0.08, 0.52, localLuma);
+      float lowLightWeight = clamp(localDark * 0.72 + dimView * 0.46, 0.0, 1.0);
+
+      float blurRadius = mix(0.7, 2.8, lowLightWeight);
+      vec3 soft = source * 0.48;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x * blurRadius, 0.0)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv - vec2(px.x * blurRadius, 0.0)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv + vec2(0.0, px.y * blurRadius)).rgb * 0.13;
+      soft += texture2D(tDiffuse, vUv - vec2(0.0, px.y * blurRadius)).rgb * 0.13;
+
+      float softLuma = dot(soft, vec3(0.2126, 0.7152, 0.0722));
+      float desaturation = mix(0.18, 0.78, lowLightWeight);
+      vec3 muted = mix(soft, vec3(softLuma), desaturation);
+
+      float contrastScale = mix(0.94, 0.68, lowLightWeight);
+      vec3 reducedContrast = vec3(0.065) + (muted - vec3(0.065)) * contrastScale;
+      float shadowLoss = localDark * mix(0.08, 0.26, dimView);
+      vec3 result = reducedContrast * (1.0 - shadowLoss);
+
+      gl_FragColor = vec4(result, 1.0);
     }
   `,
 };
@@ -192,7 +252,7 @@ export default function SpatialPage() {
           <SpatialRenderer mode={mode} setMode={setMode} />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the 360° photographic reference scene. Tunnel Vision and Central Loss are generic field-loss models; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction.
+            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the 360° photographic reference scene. Tunnel Vision and Central Loss are generic field-loss models; Night / Low Light is a luminance-dependent low-light proxy; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction, and the low-light mode does not infer physical scene luminance from the tone-mapped panorama.
           </section>
 
           {evidenceModeKey && evidenceMode ? (
@@ -235,6 +295,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
     let tunnelPass: ShaderPass | null = null;
     let centralLossPass: ShaderPass | null = null;
     let cataractPass: ShaderPass | null = null;
+    let nightPass: ShaderPass | null = null;
     let bloomPass: UnrealBloomPass | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
@@ -282,6 +343,10 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       cataractPass.enabled = false;
       composer.addPass(cataractPass);
 
+      nightPass = new ShaderPass(NIGHT_LOW_LIGHT_SHADER);
+      nightPass.enabled = false;
+      composer.addPass(nightPass);
+
       centralLossPass = new ShaderPass(CENTRAL_LOSS_SHADER);
       centralLossPass.enabled = false;
       composer.addPass(centralLossPass);
@@ -301,6 +366,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       const applyMode = (nextMode: SpatialMode) => {
         if (bloomPass) bloomPass.enabled = false;
         if (cataractPass) cataractPass.enabled = nextMode === "cataract";
+        if (nightPass) nightPass.enabled = nextMode === "night";
         if (centralLossPass) centralLossPass.enabled = nextMode === "central_loss";
         if (tunnelPass) tunnelPass.enabled = nextMode === "tunnel";
         renderScene();
@@ -312,7 +378,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       };
 
       const resize = () => {
-        if (!renderer || !composer || !tunnelPass || !centralLossPass || !cataractPass) return;
+        if (!renderer || !composer || !tunnelPass || !centralLossPass || !nightPass || !cataractPass) return;
         const width = Math.max(1, host.clientWidth);
         const height = Math.max(300, Math.round(width * 0.58));
         renderer.setSize(width, height, false);
@@ -321,6 +387,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         camera.updateProjectionMatrix();
         (tunnelPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         (centralLossPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
+        (nightPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         (cataractPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         renderScene();
       };
@@ -388,6 +455,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         resizeObserver?.disconnect();
         tunnelPass?.material.dispose();
         centralLossPass?.material.dispose();
+        nightPass?.material.dispose();
         cataractPass?.material.dispose();
         bloomPass?.dispose();
         composer?.dispose();
@@ -401,7 +469,8 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       controllerRef.current = null;
       resizeObserver?.disconnect();
       tunnelPass?.material.dispose();
-        centralLossPass?.material.dispose();
+      centralLossPass?.material.dispose();
+      nightPass?.material.dispose();
       cataractPass?.material.dispose();
       bloomPass?.dispose();
       composer?.dispose();
@@ -415,7 +484,9 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       ? "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice."
       : mode === "central_loss"
         ? "Live screen-relative central field loss. Center a shop sign, window, lamp, or other detail, then look elsewhere to see the disrupted region stay with straight-ahead vision."
-        : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";
+        : mode === "night"
+          ? "Luminance-dependent low-light proxy. Darker scene regions lose more color, contrast, and fine detail while brighter shopfronts and lamps remain more available. It does not model calibrated scotopic luminance or dark-adaptation time."
+          : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";
 
   if (error) {
     return (
@@ -441,6 +512,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         <button type="button" className={mode === "normal" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "normal"} onClick={() => setMode("normal")}>Normal</button>
         <button type="button" className={mode === "tunnel" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "tunnel"} onClick={() => setMode("tunnel")}>Tunnel Vision</button>
         <button type="button" className={mode === "central_loss" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "central_loss"} onClick={() => setMode("central_loss")}>Central Loss</button>
+        <button type="button" className={mode === "night" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "night"} onClick={() => setMode("night")}>Night / Low Light</button>
         <button type="button" className={mode === "cataract" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "cataract"} onClick={() => setMode("cataract")}>Cataract-like</button>
       </div>
 

@@ -238,8 +238,20 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
         kind: "organization",
         note: "Lists trouble seeing in low lighting as a symptom in intermediate or late AMD.",
       },
+      {
+        title: "NCBI Bookshelf — Functional Specialization of the Rod and Cone Systems",
+        url: "https://www.ncbi.nlm.nih.gov/books/NBK10850/",
+        kind: "reference",
+        note: "Explains that rod-mediated scotopic vision trades spatial resolution and color discrimination for sensitivity at very low light levels.",
+      },
+      {
+        title: "NCBI Bookshelf — Light and Dark Adaptation",
+        url: "https://www.ncbi.nlm.nih.gov/books/NBK11525/",
+        kind: "reference",
+        note: "Documents the mesopic/scotopic transition and the time-dependent nature of dark adaptation.",
+      },
     ],
-    lastReviewed: REVIEWED_ON,
+    lastReviewed: "2026-09-06",
   },
   fatigue: {
     summary: "Approximation of visual softness and reduced comfort associated with sustained visual effort or digital eye strain.",

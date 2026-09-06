@@ -57,12 +57,34 @@ Final clean-head Chromium regression `34007622720` passed. Review confirmed that
 
 PR build `34007624784` passed. PR #3 was then squash-merged to main as `48dbda797ac287170dc02444771e8ee0ce1e38d0`. Main build `34007765671` passed.
 
+## Step 12 — Night / Low Light evidence boundary and renderer candidate
+Status: **evidence boundary complete / implementation candidate awaiting rendered review**
+
+Evidence/source-data boundary:
+- low-light vision involves a shift toward rod contribution, reduced color information, and lower spatial resolution at sufficiently low luminance;
+- dark adaptation is time-dependent rather than an instant filter;
+- the current Hansaplatz source is a tone-mapped RGB panorama, not calibrated scene photometry;
+- this phase therefore uses relative displayed luminance only and does not claim physical scotopic/mesopic reconstruction.
+
+Renderer candidate:
+- darker rendered regions receive stronger desaturation, contrast reduction, and fine-detail loss;
+- brighter rendered regions remain comparatively available;
+- the same camera and panorama are preserved across mode switching;
+- spatial Model remains C pending rendered acceptance.
+
+Rendered gate:
+- compare Normal vs Night / Low Light at the identical forward view;
+- repeat at a turned view with a different bright/dark composition;
+- confirm the output is not a uniform dark tint;
+- verify existing spatial modes and image comparison remain unchanged;
+- verify 390px mobile interaction, no overflow, and no captured page/console errors;
+- accept, revise, or reject before beginning Dog-like.
+
 ## Ordered next spatial candidates
-1. Night / Low Light
-2. Dog-like
-3. Cat-like
-4. Bird-like as a separate evaluation
-5. Bee-like only with additional UV-reflectance scene data
+1. Dog-like
+2. Cat-like
+3. Bird-like as a separate evaluation
+4. Bee-like only with additional UV-reflectance scene data
 
 ## Current next action
-Begin `Night / Low Light` as a separate evaluated mode. First define its evidence boundary and what the current photographic reference can and cannot support before implementing a shader. Do not alter the accepted reference scene merely to force the new mode to work.
+Run build and the existing desktop / 390px Chromium capture on the Night / Low Light candidate. Inspect identical-camera Normal/Night forward and turned views, then either correct the renderer or mark Step 12 accepted. Do not begin Dog-like yet.

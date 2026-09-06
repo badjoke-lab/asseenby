@@ -26,8 +26,11 @@ Accepted functional examples:
 1. **Tunnel Vision** — active scanning shows the consequence of losing peripheral information while the field-loss region remains tied to the viewer's field.
 2. **Cataract-like** — actual bright scene sources produce stronger glare / spread when they enter the rendered view.
 
+Accepted post-pilot example:
+3. **Central Loss** — active scanning shows that disrupted straight-ahead detail remains tied to the viewer's central field.
+
 Current expansion target:
-3. **Central Loss** — active scanning should show that disrupted straight-ahead detail remains tied to the viewer's central field. Looking directly at a target can make that target harder to inspect, while turning the view moves a different scene target into the affected center.
+4. **Night / Low Light** — the rendered comparison should respond to luminance differences in the current view, with darker regions losing more color, contrast, and fine detail than brighter regions, without claiming calibrated scotopic photometry.
 
 A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
@@ -69,6 +72,13 @@ Boundary:
 - generic field-loss profile;
 - not an individual's measured perimetry result.
 
+### Central Loss
+Live screen/view-relative central-field-loss simulation.
+
+Boundary:
+- generic central-loss profile;
+- not an individual's measured scotoma or perimetry result.
+
 ### Cataract-like
 Live scene-dependent model combining softness, lower contrast, warming / veil, and high-luminance-gated local light spread.
 
@@ -106,6 +116,40 @@ This behavior must be visible in rendered validation before the mode is accepted
 - assess the spatial renderer implementation separately from the image renderer;
 - initial spatial Model assessment must remain conservative at **C** until rendered review is completed;
 - state explicitly that the model is generic and not a measured scotoma / perimetry reconstruction.
+
+## Post-pilot expansion — Night / Low Light
+
+### Purpose
+Show how a scene can become less informative as available light falls, while preserving the same viewpoint and allowing the user to scan between brighter and darker parts of the 360° environment.
+
+### Current source-data boundary
+The accepted Hansaplatz reference is a tone-mapped RGB panorama. It contains useful relative brightness differences, but it does not provide calibrated scene luminance, spectral radiance, exposure metadata sufficient for photometry, or a physiological adaptation state.
+
+Therefore the current spatial mode may use **displayed/rendered luminance as a relative signal**, but must not claim:
+- calibrated scotopic or mesopic luminance;
+- a validated rod/cone response curve;
+- dark-adaptation timing;
+- pupil dynamics;
+- patient-specific night blindness or ocular-disease severity.
+
+### Requirements
+- darker rendered regions lose more chromatic separation than bright regions;
+- darker regions lose more fine detail / effective sharpness;
+- darker regions show reduced usable contrast without simply blacking out the entire scene;
+- bright shopfronts and lamps remain comparatively more available than dark sky/street regions;
+- the effect changes naturally as the user turns toward differently lit parts of the same panorama;
+- switching Normal <-> Night / Low Light preserves camera position, direction, and source scene exactly;
+- no uniform blue/black tint standing in for low-light vision;
+- no claim that the display output is what a specific person literally sees at night.
+
+### Why this is spatial
+The value is the interaction with the current view's brightness distribution. The same low-light model should treat a bright storefront differently from a dark street or sky, and turning the camera should change the mix of bright and dark information under the model without changing the source scene.
+
+### Evidence / model rule
+- reuse the existing Night / Low Light evidence set for the broad low-light phenomenon;
+- add direct rod/cone and dark-adaptation references to make the physiological boundary explicit;
+- rate the spatial implementation separately from the image transform;
+- keep the spatial Model score at **C** during this phase unless stronger validation is added.
 
 ## Camera and interaction
 Spatial interaction remains:
@@ -180,3 +224,19 @@ Central Loss is successful only if all of the following are true:
 11. Normal-mode rendered review passes the scene-quality requirements above and no longer reads as placeholder geometry or a cheap demo environment.
 
 If criterion 10 or 11 is not met, do not merge the spatial Central Loss phase merely because the shader works.
+
+## Night / Low Light acceptance gate
+Night / Low Light is successful only if all of the following are true:
+1. Existing Compare image behavior remains unchanged.
+2. Normal, Tunnel Vision, Central Loss, and Cataract-like remain functional.
+3. Night / Low Light can be selected without camera reset.
+4. Darker rendered regions visibly lose more color, contrast, and fine detail than bright regions.
+5. The mode does not collapse into a uniform global dark tint.
+6. Same-camera Normal / Night captures show that only the perception renderer changed.
+7. Turned-view captures demonstrate that the effect responds to the brightness distribution of the new view.
+8. Evidence and limitation text explicitly state the tone-mapped RGB / non-calibrated-luminance boundary.
+9. Desktop and 390px mobile remain usable with no horizontal overflow or captured page/console errors.
+10. `npm run build` passes.
+11. Rendered review shows that the mode adds explanatory value beyond simply lowering image brightness.
+
+If criterion 4, 5, 7, or 11 fails, reject or revise the spatial mode rather than merging it because the shader merely runs.

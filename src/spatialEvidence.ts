@@ -3,7 +3,7 @@ import { getModeEvidence } from "./modeEvidence";
 
 const SPATIAL_REVIEWED_ON = "2026-09-06";
 
-type SpatialEvidenceMode = "tunnel" | "central_loss" | "cataract";
+type SpatialEvidenceMode = "tunnel" | "central_loss" | "night" | "cataract";
 
 export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEvidence {
   const base = getModeEvidence(modeKey);
@@ -24,6 +24,16 @@ export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEviden
       modelScore: "C",
       modelNote: "The spatial Central Loss implementation uses a live screen-relative central-field shader so straight-ahead scene detail is degraded while surrounding information remains more available. The affected region stays tied to the viewer's visual center while the camera turns, allowing active scanning to change which world-space target falls inside the disrupted center. The current shape and strength are generic renderer choices, not measured patient data.",
       caveat: "Real central vision loss and scotomas vary in shape, completeness, distortion, progression, and individual experience. This spatial mode is an educational central-field-loss model, not an individual's measured scotoma or perimetry reconstruction.",
+      lastReviewed: SPATIAL_REVIEWED_ON,
+    };
+  }
+
+  if (modeKey === "night") {
+    return {
+      ...base,
+      modelScore: "C",
+      modelNote: "The spatial Night / Low Light renderer uses displayed scene luminance from the current rendered view to increase desaturation, contrast loss, and fine-detail loss in darker regions while leaving brighter sources more available. Because the 360° panorama is a tone-mapped RGB photograph rather than calibrated radiometric scene data, this is a luminance-dependent communication model, not a physical scotopic or mesopic reconstruction.",
+      caveat: "Real low-light vision changes with absolute luminance, rod/cone contribution, adaptation state, pupil size, glare, ocular health, and individual differences. The current spatial mode does not model dark-adaptation timing, calibrated cd/m², or full rod/cone spectral sensitivity.",
       lastReviewed: SPATIAL_REVIEWED_ON,
     };
   }
