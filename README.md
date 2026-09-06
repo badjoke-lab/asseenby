@@ -1,6 +1,6 @@
 # AsSeenBy
 
-AsSeenBy is a research-based visual comparison tool for translating commonly described visual differences into image-based comparison views across human visual conditions, animal-inspired approximations, and reference profiles.
+AsSeenBy is a research-based visual comparison tool for translating commonly described visual differences into image-based comparison views across human visual conditions and animal-inspired approximations.
 
 It is designed for comparison, illustration, and discussion rather than exact perceptual reproduction, diagnosis, or medical judgment.
 
@@ -104,7 +104,7 @@ npm run preview
 * Human and animal outputs are research-based approximations.
 * Animal modes are visible-range approximations only.
 * UV, polarization, and full species-specific perception are not reproduced in v0.1.
-* Reference modes are averaged profiles only and should not be treated as individual-level predictions.
+* The current public release has no Reference modes; any future reference dataset must define its population and mapping explicitly.
 * Evidence and model badges help communicate claim strength and implementation maturity, not certainty.
 
 ## Product positioning

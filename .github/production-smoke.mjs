@@ -57,6 +57,19 @@ async function noHorizontalOverflow(page, label) {
   assert(metrics.bodyWidth <= metrics.innerWidth + 1, `${label}: body horizontal overflow ${JSON.stringify(metrics)}`);
 }
 
+async function assertTouchTargets(locator, label) {
+  const count = await locator.count();
+  assert(count > 0, `${label}: no touch targets found`);
+  for (let index = 0; index < count; index += 1) {
+    const box = await locator.nth(index).boundingBox();
+    assert(box, `${label}: target ${index + 1} has no bounding box`);
+    assert(
+      box.width >= 44 && box.height >= 44,
+      `${label}: target ${index + 1} is ${box.width.toFixed(1)}x${box.height.toFixed(1)}; expected at least 44x44`,
+    );
+  }
+}
+
 async function waitForCurrentProduction(page) {
   const file = {
     name: "production-smoke.svg",
@@ -196,6 +209,7 @@ async function mobileImageSmoke(browser) {
   await page.goto(`${BASE}/?production_smoke=mobile-image-${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
   await page.locator("#workspace").waitFor();
   await noHorizontalOverflow(page, "mobile image");
+  await assertTouchTargets(page.locator(".topbar a"), "mobile image header");
   const mobileCompareBox = await page.locator(".compare-card").boundingBox();
   const mobileControlBox = await page.locator(".control-rail").boundingBox();
   const mobileCategoryBox = await page.locator("#modes").boundingBox();
@@ -273,6 +287,7 @@ async function mobileSpatialSmoke(browser) {
   const canvas = page.locator("canvas.spatial-canvas");
   await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "mobile spatial");
+  await assertTouchTargets(page.locator(".topbar a"), "mobile spatial header");
   const spatialNav = page.getByRole("navigation", { name: "Spatial navigation" });
   assert((await spatialNav.getByRole("link", { name: "Compare image", exact: true }).count()) === 1, "mobile spatial: Compare image navigation is missing or duplicated");
   assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "mobile spatial: duplicate Back to image action is still exposed");
