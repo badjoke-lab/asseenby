@@ -103,6 +103,8 @@ Priority order:
 Do not strengthen a transform merely to make it look more dramatic. Prefer removal or narrower labeling when the current source data cannot support a stronger model.
 
 ### R7-1 — Sex-difference Profile
+Status: **PASS / removed / production verified**
+
 Decision: **REMOVE from the product**
 
 Reason:
@@ -125,5 +127,36 @@ Acceptance:
 - accepted spatial modes remain unchanged;
 - build and browser regression pass.
 
+Validation:
+- removal/build/full local browser regression workflow `34015800962` — **success**;
+- production smoke `34015953222` — **success**, detected Reference = Age Profile only on attempt 1;
+- matching main build `34015953216` — **success**.
+
+### R7-2 — Bee-like image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE from the public image product until UV/spectral source data exists**
+
+Reason:
+- honeybee UV/blue/green color vision is well supported, so the phenomenon Evidence remains strong;
+- the current image implementation is Model D because a conventional RGB image has already discarded ultraviolet/spectral information;
+- the public transform only remaps visible RGB channels and cannot reconstruct UV response, nectar-guide structure, receptor catches, or bee-specific scene coding;
+- strengthening the RGB color shift would make the output more dramatic without making it more biologically defensible;
+- the spatial Bee-like gate is already blocked for the same missing-source-data reason, so keeping a weaker image-only pseudo-bee view is inconsistent.
+
+Removal scope:
+- remove Bee-like from the public Animal mode list;
+- remove the arbitrary RGB bee transform branch;
+- remove the public Bee-specific Evidence entry;
+- update README, MVP/mode documentation, and limitations to state Bee-like is unavailable until a spectral/UV data path exists;
+- keep the scientific/source-data decision in this schedule and spatial documentation.
+
+Acceptance:
+- Animal image category exposes Dog-like, Cat-like, and Bird-like only;
+- no `bee` image transform or Bee-like Evidence entry remains;
+- production smoke confirms Bee-like is absent from the public image UI;
+- accepted spatial controls remain unchanged;
+- build and desktop/390px browser regression pass.
+
 ## Current next action
-Complete R7-1 removal and validation. Then audit the remaining public Model D animal image modes in this order: Bee-like, Bird-like.
+Complete R7-2 removal and production verification. Then audit Bird-like, the remaining public Model D animal image mode.

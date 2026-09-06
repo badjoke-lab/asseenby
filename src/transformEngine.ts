@@ -135,18 +135,6 @@ export function applyTransform(
   } else if (modeKey === "cat") {
     applyColorDeficiency(data, amount * 0.7, [[0.7, 0.3, 0], [0.25, 0.75, 0], [0.05, 0.25, 0.7]]);
     desaturateData(data, 0.14 + amount * 0.12);
-  } else if (modeKey === "bee") {
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const nr = mix(r, g * 0.55, amount * 0.7);
-      const ng = mix(g, clamp255(g * 1.06 + b * 0.06), amount * 0.4);
-      const nb = mix(b, clamp255(b * 1.12 + g * 0.08), amount * 0.45);
-      data[i] = clamp255(nr);
-      data[i + 1] = clamp255(ng);
-      data[i + 2] = clamp255(nb);
-    }
   } else if (modeKey === "bird") {
     saturateData(data, 0.08 + amount * 0.18);
     boostMicroContrast(data, 0.02 + amount * 0.05);

@@ -369,29 +369,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  bee: {
-    summary: "Visible-range approximation inspired by honeybee color vision, with strong evidence for ultraviolet-, blue-, and green-sensitive channels but a deliberately weak implementation claim.",
-    evidenceScore: "A",
-    modelScore: "D",
-    basisNote: "Honeybee color vision is well studied and includes ultraviolet, blue, and green sensitivity, making it much richer than a standard human-visible RGB transform.",
-    modelNote: "The current bee mode only shifts visible-range relationships inside a standard image. It does not reproduce ultraviolet information, nectar-guide structure, or bee-specific scene coding, so the implementation score remains deliberately low.",
-    caveat: "This mode is not a bee-vision simulation in the full biological sense. It is only a visible-range comparison proxy.",
-    primarySource: {
-      title: "Mechanisms, functions and ecology of colour vision in the honeybee",
-      url: "https://pubmed.ncbi.nlm.nih.gov/24828676/",
-      kind: "paper",
-      note: "Comprehensive review of honeybee color vision and its ecological significance.",
-    },
-    supportingSources: [
-      {
-        title: "Honeybee blue- and ultraviolet-sensitive opsins",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9502802/",
-        kind: "paper",
-        note: "Photoreceptor evidence for ultraviolet and blue sensitivity in honeybee vision.",
-      },
-    ],
-    lastReviewed: REVIEWED_ON,
-  },
   bird: {
     summary: "Visible-range avian-inspired image proxy with strong evidence that many birds use visual systems outside human RGB, but deliberately weak implementation confidence because a generic bird observer cannot be reconstructed from a standard image.",
     evidenceScore: "A",

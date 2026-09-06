@@ -95,11 +95,6 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - image status: current cautious visible-range image proxy remains available
 - spatial status: rejected after rendered evaluation; candidate was not distinct enough from Dog-like to justify a separate live spatial claim from the current RGB source
 
-### Bee
-- class: Estimated
-- goal: bee-like visible-range approximation
-- limitation: UV is not reproduced by the current image mode
-- spatial status: blocked; requires additional UV-reflectance/spectral scene/material data and a documented false-color observer mapping before implementation
 
 ### Bird-like
 - class: Estimated

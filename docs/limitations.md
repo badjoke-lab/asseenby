@@ -62,9 +62,9 @@ Animal modes in v0.1 are visible-range approximations only.
 They should be read as comparison aids rather than complete reproductions.
 
 Examples:
-- bee mode does not reproduce ultraviolet vision;
 - bird-like mode does not reproduce ultraviolet response or full avian perception;
 - dog and cat modes are simplified visible-range approximations.
+- Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.
 
 ### Dog-like specific limitation
 Canine dichromacy is well supported, but a conventional RGB panorama cannot recover the original scene spectra or exact canine cone catches. The spatial Dog-like output therefore translates broad two-channel color relationships onto a human RGB display and adds mild non-calibrated detail softening.
@@ -81,8 +81,10 @@ Generic Bird-like spatial has been rejected/blocked for the current RGB panorama
 
 A future avian spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.
 
-### Bee-like spatial source-data limitation
-A future spatial scene does not create missing UV information automatically. Bee-like UV work requires additional UV-reflectance/spectral scene/material data and an explicit false-color translation for human displays. Until those inputs exist, Bee-like spatial is blocked and no purple/blue RGB filter should be presented as bee vision.
+### Bee-like source-data limitation
+Bee-like image and spatial rendering are both blocked from ordinary RGB. A conventional image has already collapsed the ultraviolet/spectral information needed to estimate honeybee UV/blue/green receptor relationships, so a visible RGB color shift is not retained as a public bee-view proxy.
+
+Future Bee-like work requires additional UV-reflectance/spectral scene or material data and an explicit false-color translation for human displays. Until those inputs exist, no purple/blue RGB filter should be presented as bee vision.
 
 ## Reference-mode limitation
 Reference modes are averaged profiles, not individual predictions.
