@@ -63,14 +63,16 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Strong
 - goal: central field loss approximation
 - image renderer: current localized central-loss transform
-- spatial status: active post-pilot expansion target
-- spatial renderer target: live view-relative central-field-loss simulation; straight-ahead detail is degraded while surrounding scene information remains more available, and the affected region stays centered in the viewer's field during look-around
+- spatial status: accepted post-pilot mode
+- spatial renderer: live view-relative central-field-loss simulation; straight-ahead detail is degraded while surrounding scene information remains more available, and the affected region stays centered in the viewer's field during look-around
 - spatial limitation: generic central-loss / scotoma-style profile, not an individual's measured scotoma or perimetry result
 
 ### Night / Low Light
 - class: Estimated
 - goal: low-light viewing approximation
-- spatial status: next candidate only after Central Loss acceptance
+- spatial status: active post-pilot expansion target
+- spatial renderer target: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker rendered regions while brighter regions remain comparatively available
+- spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction
 
 ### Fatigue-like
 - class: Estimated

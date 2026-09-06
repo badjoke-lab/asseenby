@@ -34,9 +34,10 @@ If code and documentation disagree, do not silently invent a new direction. Pres
 - Interaction remains look-around first; no walking simulation, collision system, scoring, or game mechanics are required.
 - Reuse existing mode evidence and limitations wherever applicable instead of creating separate unsupported claims.
 - Add post-pilot spatial modes one at a time in the order defined by `docs/spatial-pilot-schedule.md` and require a rendered acceptance check before starting the following mode.
-- Current expansion target remains `Central Loss`, but scene-quality correction blocks its acceptance. Do not begin Night / Low Light, Dog-like, Cat-like, Bird-like, or Bee-like until this gate passes.
-- Central Loss must be a live view-relative central-field-loss simulation. It must remain centered in the viewer's field while the camera turns and must not be attached to a world-space object or position.
-- Central Loss is a generic field-loss model, not an individual's measured scotoma or perimetry result.
+- Central Loss and the photographic 360° reference scene are accepted and merged. The current expansion target is `Night / Low Light`; do not begin Dog-like, Cat-like, Bird-like, or Bee-like until its rendered acceptance gate passes or it is explicitly rejected.
+- Night / Low Light must respond to luminance differences in the current rendered view rather than acting as a uniform dark tint. Darker regions should lose more color, contrast, and fine detail while brighter regions remain comparatively available.
+- The current panorama is tone-mapped RGB, not calibrated radiometric data. Do not claim physical scotopic/mesopic luminance, dark-adaptation timing, pupil response, or full rod/cone spectral reproduction from it.
+- Central Loss remains a generic field-loss model, not an individual's measured scotoma or perimetry result.
 - Bee-like UV work still requires additional UV-reflectance scene data and must not be faked with an RGB color filter.
 
 ## Engineering rules
