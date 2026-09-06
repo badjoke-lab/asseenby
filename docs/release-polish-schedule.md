@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R8 active / R8-1 production verified / R8-2 implementation**
+Status: **Step R8 active / R8-2 production verified / R8-3 implementation**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -453,7 +453,7 @@ Validation:
 - production artifact `9991858538` was manually reviewed: desktop/mobile image captures retain the styled experience switch with no raw-text regression, and image/spatial smoke result is fully green.
 
 ### R8-2 — Spatial header duplicate image navigation
-Status: **ACTIVE — implementation**
+Status: **PASS / production verified**
 
 Finding:
 - accepted production spatial captures expose both `Compare image` in the primary navigation and a separate `Back to image` button;
@@ -473,5 +473,35 @@ Acceptance:
 - build passes;
 - after merge, production smoke and screenshot review confirm the cleaner header before R8-2 is marked PASS.
 
+Validation:
+- full local image + spatial browser smoke `34042685234` — **success**;
+- PR #23 build `34042922365` — **success**;
+- merge SHA `4d244f6f5779e326e37f0e5c74ad84678298e1e3`;
+- matching main build `34042960952` — **success**;
+- first production smoke attempt `34042960947` correctly failed while Pages still exposed stale `Back to image`;
+- rerun of the same production smoke after deployment — **success**;
+- production artifact `9992273386` was manually reviewed: desktop/mobile spatial headers expose only Compare image / Explore spatial / Support, with no duplicate Back to image action.
+
+### R8-3 — Desktop image workspace flow after Reference removal
+Status: **ACTIVE — implementation**
+
+Finding:
+- the desktop production image capture leaves a large empty area below the compare card because the taller sticky ControlRail determines the `workspace-grid` row height while the Human/Animal cards live outside that grid;
+- after Reference removal, `.category-grid` still reserves three desktop columns even though only Human and Animal remain, leaving an unused third column.
+
+Implementation:
+- group CompareStage + Human/Animal cards + footer into a primary desktop column independent of the sticky ControlRail height;
+- use exactly two desktop category columns;
+- at <=960px use `display: contents` plus explicit ordering so the existing mobile sequence remains Compare -> controls/evidence -> Human/Animal -> footer;
+- add browser-smoke geometry assertions for the desktop compare-to-category gap, two-column fill, and mobile content order.
+
+Acceptance:
+- Human/Animal cards begin within 48px of the compare card bottom on desktop;
+- the two cards fill the available primary-column width with no obsolete empty third column;
+- 390px order remains Compare -> controls/evidence -> category cards;
+- no horizontal overflow or console/page errors;
+- all existing image and six spatial mode regression paths remain green;
+- production screenshot review is required after merge before R8-3 is marked PASS.
+
 ## Current next action
-Run the patched full browser smoke at desktop/390px, open a clean R8-2 PR only if it passes, then require main build and production smoke after merge.
+Run build + full desktop/390px image/spatial browser smoke, inspect captures, then open a clean R8-3 PR only if the workspace flow is improved without mobile regression.

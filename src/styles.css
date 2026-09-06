@@ -166,6 +166,10 @@ input {
   align-items: start;
 }
 
+.workspace-primary {
+  min-width: 0;
+}
+
 .compare-card,
 .control-rail,
 .category-card,
@@ -495,7 +499,7 @@ input {
 .category-grid {
   margin-top: 20px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -709,6 +713,27 @@ input {
   .category-grid,
   .support-grid {
     grid-template-columns: 1fr;
+  }
+
+
+  .workspace-primary {
+    display: contents;
+  }
+
+  .workspace-grid .compare-card {
+    order: 1;
+  }
+
+  .workspace-grid > .control-rail {
+    order: 2;
+  }
+
+  .workspace-grid .category-grid {
+    order: 3;
+  }
+
+  .workspace-grid .footer-strip {
+    order: 4;
   }
 
   .hero-title,

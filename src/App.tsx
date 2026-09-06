@@ -127,17 +127,31 @@ function HomePage() {
           <Hero />
 
           <section id="workspace" className="workspace-grid">
-            <CompareStage
-              originalUrl={imageSrc}
-              transformedUrl={transformedUrl}
-              compareMode={compareMode}
-              setCompareMode={setCompareMode}
-              divider={divider}
-              setDivider={setDivider}
-              isBusy={renderPending}
-              currentMode={currentMode}
-              currentModeEvidence={currentModeEvidence}
-            />
+            <div className="workspace-primary">
+              <CompareStage
+                originalUrl={imageSrc}
+                transformedUrl={transformedUrl}
+                compareMode={compareMode}
+                setCompareMode={setCompareMode}
+                divider={divider}
+                setDivider={setDivider}
+                isBusy={renderPending}
+                currentMode={currentMode}
+                currentModeEvidence={currentModeEvidence}
+              />
+
+              <section id="modes" className="category-grid">
+                <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
+                <CategoryPanel title="Animal" subtitle="Animal-inspired comparison profiles." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
+              </section>
+
+              <footer className="footer-strip">
+                <div className="footer-line" />
+                <p>Approximations only. See the mode notes and evidence panel for methodology and limitations.</p>
+                <div className="footer-line" />
+              </footer>
+            </div>
+
             <ControlRail
               category={category}
               setCategory={setCategory}
@@ -161,16 +175,6 @@ function HomePage() {
             />
           </section>
 
-          <section id="modes" className="category-grid">
-            <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
-            <CategoryPanel title="Animal" subtitle="Animal-inspired comparison profiles." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
-          </section>
-
-          <footer className="footer-strip">
-            <div className="footer-line" />
-            <p>Approximations only. See the mode notes and evidence panel for methodology and limitations.</p>
-            <div className="footer-line" />
-          </footer>
         </main>
       </div>
 
