@@ -14,8 +14,8 @@ Status: **complete / merged**
 
 - PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`.
 - main post-merge build `34000040892` passed.
-- Three.js `Explore 3D`, fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally accepted.
-- Later user-visible review showed that the original primitive street itself was not presentation-quality. That presentation defect now blocks further spatial expansion.
+- Three.js fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally accepted.
+- Later user-visible review showed that the original primitive street itself was not presentation-quality. That presentation defect blocks further spatial expansion.
 
 ## Step 9 — Central Loss definition and evidence boundary
 Status: **complete**
@@ -34,71 +34,57 @@ Already passed functional checks:
 - PR build `34000459038`;
 - Chromium browser validation `34000441484`.
 
-Central Loss is still blocked because the surrounding 3D scene must pass the presentation gate first.
+Central Loss is still blocked because the surrounding spatial reference scene must pass the presentation gate first.
 
-## Step 10A — Night-street presentation rebuild
-Status: **v4 implemented / rendered review now running / blocking**
+## Step 10A — Spatial reference scene presentation rebuild
+Status: **v5 implemented / rendered review running / blocking**
 
-### Original scene review
+### Original through v3
 Result: **FAIL**.
-The first public screenshot read as a sparse prototype: bare dark building boxes, crude car, mannequin pedestrian, flat surfaces, weak lighting hierarchy and little useful side-view information.
 
-### v1
-Commit `1ffd3dcfdfcf6497ae2059f42c354974350c1100`; build workflow `34006118735` passed.
-
-Added facade/window/storefront details, road/sidewalk detail, improved vehicle and pedestrian, street furniture, distant layers and stronger lighting.
-
-Rendered result: **FAIL** because turning away from the forward view exposed mostly empty darkness.
-
-### v2
-Commit `2ec9a883aae7c24a80d78e369643e294a3fc19e7`; build workflow `34006314644` passed.
-
-Added near-camera architecture, NIGHT MARKET storefront, apartment entrance, bench, scooter, side-facing windows and procedural asphalt/concrete/brick/plaster textures.
-
-Rendered result: improved side views, but still visibly procedural / primitive-heavy and not accepted as public quality.
-
-### v3
-Commit `54daffe36aa49e9882e90387834cbd701e6b6295`; build workflow `34006591840` passed. Browser review `34006654513` passed technically.
-
-Added:
-- soft PCF shadows;
-- gradient night sky;
-- rounded vehicle body / lamps / tail lights;
-- more organic pedestrian limbs;
-- explicit screenshots for both horizontal look-around directions.
-
-Rendered result: both directions now contain useful street structure, but the scene still reads too strongly as self-built primitive geometry. **Not accepted.**
+The first public screenshot read as a sparse prototype. v1–v3 progressively added facade detail, side-view architecture, procedural textures, better vehicle/pedestrian geometry, shadows and lighting. Browser checks passed technically, but rendered review still showed a self-built low-poly/procedural scene rather than a convincing environment.
 
 ### v4 — real CC0 building assets
-Commit `61ce2e103d745fe9e1c2590dc4faa81dd633640c`.
+Commit `61ce2e103d745fe9e1c2590dc4faa81dd633640c`; corrected build workflow `34007002239` passed.
 
-The first v4 attempt failed only because an unnecessary Meshopt decoder import did not match the installed Three.js typings. The three building downloads themselves succeeded. The source asset's own implementation uses ordinary `GLTFLoader`, so the decoder dependency was removed.
+Three Quaternius Downtown City MegaKit GLB buildings were bundled locally and integrated with `GLTFLoader`. The forward view improved, but rendered review still failed the product-quality test: the scene retained primitive foreground geometry and side turns still read like looking at stage-set facades rather than inhabiting a real place. **v4 rejected.**
 
-Corrected v4 workflow `34007002239` passed:
-- downloaded and locally bundled three optimized Quaternius Downtown City MegaKit GLB buildings;
-- bundled the Quaternius license file;
-- integrated the models with local `/assets/models/...` URLs using `GLTFLoader`;
-- retained local procedural street, vehicle, pedestrian and perception-test targets;
-- enabled shadows on loaded meshes;
-- `npm ci` and `npm run build` passed.
+### v5 — photographic 360° reference stimulus
+Commit `b194bd652ee67340140e52675d6956d9b0993464`; patch/build workflow `34007320447` passed.
 
-Asset-backed head before this schedule trigger: `61ce2e103d745fe9e1c2590dc4faa81dd633640c`.
+Decision: stop spending effort trying to make a fixed-position perception pilot look realistic through hand-built geometry. Because this pilot allows rotation but no camera translation, a real equirectangular 360° photographic stimulus is a better technical and perceptual fit than fake geometry.
 
-### v4 rendered acceptance questions
-1. Does Normal immediately read as an intentional night street rather than a primitive test corridor?
-2. Do the real building assets materially improve architectural depth and silhouette quality?
-3. Do forward, right-turn and opposite-turn views all contain useful environment information?
-4. Are the vehicle, pedestrian, storefront, road, sidewalk, signal and light sources still clearly readable as controlled perception targets?
-5. Do Tunnel Vision, Cataract-like and Central Loss still work without camera reset or scene mutation?
-6. Does 390px mobile remain usable, with no horizontal overflow or captured page/console errors?
-7. Is the result good enough to show publicly without explaining that it is merely a technical prototype?
+Implemented:
+- locally bundled Poly Haven `Hansaplatz` tonemapped 360° panorama;
+- source author/license note bundled beside the asset;
+- source is CC0 and does not require a runtime CDN;
+- Three.js now uses the panorama as an equirectangular scene background;
+- the camera remains fixed and only direction changes;
+- existing screen-relative Tunnel Vision / Central Loss / Cataract-like passes remain unchanged;
+- primitive procedural street geometry is no longer instantiated for the active reference scene;
+- UI copy no longer claims the active reference stimulus is a literal 3D street; it is described as a spatial / 360° photographic reference scene.
+
+Why this is not a shortcut:
+- the current interaction never translates the camera, so parallax from scene geometry was not being used;
+- the perception effects under test are screen/view-relative and operate correctly on the photographic stimulus;
+- real architecture, lighting, material detail, depth cues, signage and 360° coverage now come from one coherent captured environment instead of hand-built approximations;
+- future modes that genuinely require geometric depth or camera translation must introduce a separate depth/geometry requirement rather than pretending the panorama supplies it.
+
+### v5 rendered acceptance questions
+1. Does Normal immediately read as a real night-city environment rather than a prototype scene?
+2. Do forward, right-turn and opposite-turn views all remain visually rich and coherent?
+3. Do bright shopfronts/streetlights and dark sky/streets provide useful high-contrast targets for Cataract-like and field-loss comparison?
+4. Do Tunnel Vision, Cataract-like and Central Loss still work without camera reset or source-scene mutation?
+5. Does 390px mobile remain usable with touch look-around and no horizontal overflow or page/console errors?
+6. Does the photographic source remove the low-poly / stage-set problem that caused the original rejection?
+7. Is the result good enough to show publicly without apologizing for the environment quality?
 
 All seven must pass. Build success alone is insufficient.
 
 ## Step 11 — Central Loss rendered acceptance
 Status: **blocked by Step 10A rendered review**
 
-After the asset-backed scene passes:
+After the v5 scene passes:
 - compare Normal vs Central Loss at the identical forward view;
 - compare the identical turned view;
 - verify the disrupted center follows the viewer rather than a world-space object;
@@ -116,4 +102,4 @@ Only after this gate passes may PR #3 become ready and merge.
 5. Bee-like only with additional UV-reflectance scene data
 
 ## Current next action
-Run the full desktop / 390px Chromium capture on the v4 asset-backed head, inspect forward and both horizontal directions plus Central Loss / Cataract-like output, and either reject again or mark Step 10A passed. Do not begin Night / Low Light yet.
+Run the full desktop / 390px Chromium capture on the v5 panorama-backed head, inspect forward and both horizontal directions plus Central Loss / Cataract-like output, then either reject again or mark Step 10A passed. Do not begin Night / Low Light yet.
