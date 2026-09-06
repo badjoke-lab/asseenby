@@ -108,7 +108,6 @@ jobs:
             };
 
             for (const scenario of ["built-in sample", "controlled color-detail chart"]) {
-              window;
               if (scenario === "controlled color-detail chart") {
                 await page.locator('input[type="file"]').setInputFiles(chart);
                 await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute("src")?.startsWith("blob:"));
