@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R11 ACTIVE / CVD model fidelity / R10 Strength semantics production verified**
+Status: **Step R11 PASS / CVD model fidelity production verified / R10 Strength semantics production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -625,7 +625,7 @@ Validation:
 - R10-aware production smoke `34051951021` — **success on first attempt**.
 
 ## Step R11 — CVD model fidelity
-Status: **ACTIVE — implementation / validation**
+Status: **PASS / production verified**
 
 Finding:
 - Protan-like / Deutan-like / Tritan-like cite Machado, Oliveira & Fernandes as the implementation anchor, and the evidence text explicitly refers to color-deficiency matrices and severity interpolation;
@@ -643,12 +643,20 @@ Implementation target:
 - keep Model B and the non-diagnostic / non-patient-specific claim boundary; document the tritan-model limitation explicitly.
 
 Acceptance:
-- controlled browser color patches for Protan / Deutan / Tritan at Strength 10/40/70/100 agree with an independent Machado pre-computed-matrix calculation within the small tolerance required by the JPEG output path;
-- Strength 0 remains exact Original through the R10 invariant;
-- no custom red-green/blue-yellow post-compression is applied to the three Human CVD modes;
-- Dog-like renderer behavior remains on its existing separate proxy path;
-- build and full desktop/390px image + spatial browser regression remain green;
-- matching main build and production smoke pass after merge before R11 is marked production verified.
+- controlled browser color patches for Protan / Deutan / Tritan at Strength 10/40/70/100 agree with an independent Machado pre-computed-matrix calculation within the small tolerance required by the JPEG output path — **PASS**;
+- Strength 0 remains exact Original through the R10 invariant — **PASS**;
+- no custom red-green/blue-yellow post-compression is applied to the three Human CVD modes — **PASS**;
+- Dog-like renderer behavior remains on its existing separate proxy path — **PASS**;
+- build and full desktop/390px image + spatial browser regression remain green — **PASS**;
+- matching main build and production smoke pass after merge before R11 is marked production verified — **PASS**.
+
+Validation:
+- corrected R11 CVD fidelity validation v2 `34052635954` — **success**; browser output matched an independent Machado calculation for Protan / Deutan / Tritan at Strength 10 / 15 / 40 / 70 / 100, including interpolation between adjacent 0.1 matrices at 15%;
+- the same run completed the full desktop/390px image + spatial browser regression — **success**;
+- PR #31 build `34066924253` — **success**;
+- PR #31 squash-merged as `cb41cca5ebd2641602b7f3bb6867ad2086b43063`;
+- matching main build `34066953225` — **success**;
+- production smoke `34066953211` — **success**.
 
 ## Current next action
-Validate the R11 Protan/Deutan/Tritan browser outputs against an independent Machado matrix calculation at Strength 10/40/70/100, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.
+R11 is closed. Re-read the roadmap and audit the remaining retained image transforms one by one for a concrete evidence/implementation mismatch. Do not create a new numbered release step unless an actual defect or unsupported model behavior is found.
