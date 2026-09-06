@@ -9,7 +9,7 @@ import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
 import { MODES } from "./modes";
 import { getSpatialModeEvidence } from "./spatialEvidence";
 
-type SpatialMode = "normal" | "tunnel" | "central_loss" | "night" | "cataract";
+type SpatialMode = "normal" | "tunnel" | "central_loss" | "night" | "dog" | "cataract";
 
 type SpatialController = {
   setMode: (mode: SpatialMode) => void;
@@ -158,6 +158,54 @@ const NIGHT_LOW_LIGHT_SHADER = {
   `,
 };
 
+const DOG_LIKE_SHADER = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    void main() {
+      vec2 px = 1.0 / max(resolution, vec2(1.0));
+      float blurRadius = clamp(resolution.y / 420.0, 0.8, 2.8);
+      vec3 source = texture2D(tDiffuse, vUv).rgb;
+
+      vec3 soft = source * 0.44;
+      soft += texture2D(tDiffuse, vUv + vec2(px.x * blurRadius, 0.0)).rgb * 0.14;
+      soft += texture2D(tDiffuse, vUv - vec2(px.x * blurRadius, 0.0)).rgb * 0.14;
+      soft += texture2D(tDiffuse, vUv + vec2(0.0, px.y * blurRadius)).rgb * 0.14;
+      soft += texture2D(tDiffuse, vUv - vec2(0.0, px.y * blurRadius)).rgb * 0.14;
+
+      // Human-display translation of a simplified two-channel visible-range model.
+      // Standard RGB cannot reconstruct canine cone catches for arbitrary real spectra.
+      float longChannel = soft.r * 0.56 + soft.g * 0.44;
+      float shortChannel = soft.r * 0.04 + soft.g * 0.13 + soft.b * 0.83;
+      vec3 dichromatic = vec3(
+        longChannel * 0.84 + shortChannel * 0.03,
+        longChannel * 0.72 + shortChannel * 0.18,
+        shortChannel * 0.86 + longChannel * 0.14
+      );
+
+      float sourceLuma = dot(soft, vec3(0.2126, 0.7152, 0.0722));
+      float mappedLuma = max(0.02, dot(dichromatic, vec3(0.2126, 0.7152, 0.0722)));
+      dichromatic *= clamp((sourceLuma + 0.025) / mappedLuma, 0.72, 1.32);
+      vec3 reducedContrast = vec3(0.055) + (dichromatic - vec3(0.055)) * 0.92;
+
+      gl_FragColor = vec4(clamp(reducedContrast, 0.0, 1.0), 1.0);
+    }
+  `,
+};
+
 const CATARACT_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
@@ -252,7 +300,7 @@ export default function SpatialPage() {
           <SpatialRenderer mode={mode} setMode={setMode} />
 
           <section className="spatial-note" aria-label="Spatial pilot limitation">
-            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the 360° photographic reference scene. Tunnel Vision and Central Loss are generic field-loss models; Night / Low Light is a luminance-dependent low-light proxy; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's measured visual reconstruction, and the low-light mode does not infer physical scene luminance from the tone-mapped panorama.
+            <strong>Comparison rule:</strong> switching the perception mode does not move the camera or alter the 360° photographic reference scene. Tunnel Vision and Central Loss are generic field-loss models; Night / Low Light is a luminance-dependent low-light proxy; Dog-like is a visible-range dichromatic/acuity comparison proxy; Cataract-like is a generic scene-dependent glare and haze model. None are an individual's or animal's literal visual reconstruction. The RGB panorama cannot recover full canine spectral information, and the low-light mode does not infer physical scene luminance.
           </section>
 
           {evidenceModeKey && evidenceMode ? (
@@ -296,6 +344,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
     let centralLossPass: ShaderPass | null = null;
     let cataractPass: ShaderPass | null = null;
     let nightPass: ShaderPass | null = null;
+    let dogPass: ShaderPass | null = null;
     let bloomPass: UnrealBloomPass | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
@@ -347,6 +396,10 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       nightPass.enabled = false;
       composer.addPass(nightPass);
 
+      dogPass = new ShaderPass(DOG_LIKE_SHADER);
+      dogPass.enabled = false;
+      composer.addPass(dogPass);
+
       centralLossPass = new ShaderPass(CENTRAL_LOSS_SHADER);
       centralLossPass.enabled = false;
       composer.addPass(centralLossPass);
@@ -367,6 +420,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         if (bloomPass) bloomPass.enabled = false;
         if (cataractPass) cataractPass.enabled = nextMode === "cataract";
         if (nightPass) nightPass.enabled = nextMode === "night";
+        if (dogPass) dogPass.enabled = nextMode === "dog";
         if (centralLossPass) centralLossPass.enabled = nextMode === "central_loss";
         if (tunnelPass) tunnelPass.enabled = nextMode === "tunnel";
         renderScene();
@@ -378,7 +432,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       };
 
       const resize = () => {
-        if (!renderer || !composer || !tunnelPass || !centralLossPass || !nightPass || !cataractPass) return;
+        if (!renderer || !composer || !tunnelPass || !centralLossPass || !nightPass || !dogPass || !cataractPass) return;
         const width = Math.max(1, host.clientWidth);
         const height = Math.max(300, Math.round(width * 0.58));
         renderer.setSize(width, height, false);
@@ -388,6 +442,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         (tunnelPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         (centralLossPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         (nightPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
+        (dogPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         (cataractPass.uniforms.resolution.value as THREE.Vector2).set(width, height);
         renderScene();
       };
@@ -456,6 +511,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         tunnelPass?.material.dispose();
         centralLossPass?.material.dispose();
         nightPass?.material.dispose();
+        dogPass?.material.dispose();
         cataractPass?.material.dispose();
         bloomPass?.dispose();
         composer?.dispose();
@@ -471,6 +527,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
       tunnelPass?.material.dispose();
       centralLossPass?.material.dispose();
       nightPass?.material.dispose();
+      dogPass?.material.dispose();
       cataractPass?.material.dispose();
       bloomPass?.dispose();
       composer?.dispose();
@@ -486,7 +543,9 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         ? "Live screen-relative central field loss. Center a shop sign, window, lamp, or other detail, then look elsewhere to see the disrupted region stay with straight-ahead vision."
         : mode === "night"
           ? "Luminance-dependent low-light proxy. Darker scene regions lose more color, contrast, and fine detail while brighter shopfronts and lamps remain more available. It does not model calibrated scotopic luminance or dark-adaptation time."
-          : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";
+          : mode === "dog"
+            ? "Visible-range Dog-like proxy. It compresses red/green distinctions toward a two-channel blue/yellow-like display translation and softens fine detail. It does not reproduce canine spectral catches, breed-dependent field of view, motion processing, or low-light advantages."
+            : "Scene-aware haze, softness, lower contrast, warming, and bright-source glare. Turn toward bright shopfronts or streetlights, then toward the dark sky to compare.";
 
   if (error) {
     return (
@@ -513,6 +572,7 @@ function SpatialRenderer({ mode, setMode }: { mode: SpatialMode; setMode: (mode:
         <button type="button" className={mode === "tunnel" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "tunnel"} onClick={() => setMode("tunnel")}>Tunnel Vision</button>
         <button type="button" className={mode === "central_loss" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "central_loss"} onClick={() => setMode("central_loss")}>Central Loss</button>
         <button type="button" className={mode === "night" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "night"} onClick={() => setMode("night")}>Night / Low Light</button>
+        <button type="button" className={mode === "dog" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "dog"} onClick={() => setMode("dog")}>Dog-like</button>
         <button type="button" className={mode === "cataract" ? "spatial-mode-button spatial-mode-button--active" : "spatial-mode-button"} aria-pressed={mode === "cataract"} onClick={() => setMode("cataract")}>Cataract-like</button>
       </div>
 

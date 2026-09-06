@@ -29,32 +29,31 @@ Accepted:
 
 The word `approximation` remains a scientific/product claim boundary. It does not mean the 3D implementation should be a simple static screen filter.
 
-## Spatial expansion — Night / Low Light
+## Spatial expansion — Dog-like
 Status: **active**
 
 Goal:
-Add a scene-luminance-dependent low-light comparison that becomes more restrictive in darker rendered regions while preserving the same camera and photographic reference scene.
+Add a conservative visible-range canine comparison to the live 360° scene using two well-supported differences from human vision: dichromatic color discrimination and lower spatial acuity.
 
 Required characteristics:
-- darker regions lose more color separation, contrast, and fine detail than bright regions;
-- the effect uses the currently rendered view rather than a uniform global tint;
-- mode switching preserves camera and source-scene state;
-- the model is explicitly a display-luminance proxy, not calibrated scotopic/mesopic photometry;
-- no dark-adaptation timing or patient-specific night-vision claim;
+- compress red/green distinctions into a human-display two-channel translation while keeping blue/yellow-like distinctions more available;
+- soften fine detail without claiming a calibrated acuity value for an individual dog;
+- preserve exact camera position, direction, scene and field of view when switching modes;
+- explicitly state that standard RGB cannot reconstruct canine cone catches for arbitrary real spectra;
+- do not add breed-dependent field-of-view claims, motion sensitivity, tapetal/rod low-light advantages, or neural interpretation without source data and a separate validated model;
 - renderer-specific Model assessment remains separate from the 2D transform;
 - desktop/mobile rendered acceptance is required before merge.
 
 ## Ordered next spatial candidates
-After the active Night / Low Light phase:
-1. Dog-like;
-2. Cat-like;
-3. Bird-like separate evaluation;
-4. Bee-like only with additional UV-reflectance scene data.
+After the active Dog-like phase:
+1. Cat-like;
+2. Bird-like separate evaluation;
+3. Bee-like only with additional UV-reflectance scene data.
 
 ## Near-term priority order
-1. define the Night / Low Light scientific and source-data boundary;
-2. implement the luminance-dependent spatial pass;
+1. define the Dog-like spectral/acuity boundary for RGB input;
+2. implement the conservative dichromatic + soft-detail spatial pass;
 3. run build plus desktop/mobile browser regression;
-4. inspect same-camera Normal / Night comparisons across bright and dark view directions;
-5. accept, correct, or reject the spatial mode;
-6. begin Dog-like only after Night / Low Light is resolved.
+4. inspect same-camera Normal / Dog-like comparisons across multiple view directions;
+5. verify red/green compression and detail loss are visible without overclaiming canine perception;
+6. accept, correct, or reject Dog-like before Cat-like begins.

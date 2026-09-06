@@ -29,8 +29,11 @@ Accepted functional examples:
 Accepted post-pilot example:
 3. **Central Loss** — active scanning shows that disrupted straight-ahead detail remains tied to the viewer's central field.
 
+Accepted post-pilot examples:
+4. **Night / Low Light** — the rendered comparison responds to relative displayed luminance in the current view while remaining explicitly non-calibrated.
+
 Current expansion target:
-4. **Night / Low Light** — the rendered comparison should respond to luminance differences in the current view, with darker regions losing more color, contrast, and fine detail than brighter regions, without claiming calibrated scotopic photometry.
+5. **Dog-like** — a visible-range human-display proxy for canine dichromacy plus lower spatial acuity, with no claim of full canine spectral, field-of-view, motion, low-light, or neural reconstruction.
 
 A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
@@ -151,6 +154,35 @@ The value is the interaction with the current view's brightness distribution. Th
 - rate the spatial implementation separately from the image transform;
 - keep the spatial Model score at **C** during this phase unless stronger validation is added.
 
+## Post-pilot expansion — Dog-like
+
+### Purpose
+Let users scan the same 360° scene through a conservative canine-visible-range comparison grounded in two relatively well-supported differences from human vision: dichromatic color discrimination and lower spatial acuity.
+
+### Source-data boundary
+The Hansaplatz panorama is standard tone-mapped RGB. RGB values are display primaries, not spectral reflectance/radiance measurements. Different real spectra can map to the same RGB value for a human camera/display while producing different catches in another species' photoreceptors.
+
+Therefore the current Dog-like spatial mode may provide a **human-display translation** of broad canine dichromacy, but must not claim to reconstruct exact canine cone catches or literal color qualia.
+
+### Requirements
+- compress red/green distinctions into a conservative two-channel visible-range display translation;
+- keep blue-versus-yellow-like distinctions comparatively available;
+- reduce fine-detail availability with mild angularly scaled softening;
+- preserve exact camera position, direction and source scene on mode switching;
+- preserve the same camera field of view rather than inventing one breed's anatomy as universal;
+- do not add motion sensitivity because the reference scene is static;
+- do not add tapetal/rod-mediated low-light enhancement because the tone-mapped RGB panorama lacks the required physiological/radiometric state;
+- do not present the output as what every dog literally sees.
+
+### Why this is spatial
+The user can actively scan one coherent environment and compare how signs, foliage, shop colors, lamps, pavement and fine architectural detail remain or collapse across view directions. The spatial value is persistent same-scene exploration, not a claim that the shader models every spatial property of canine vision.
+
+### Evidence / model rule
+- canine dichromacy has strong behavioral and photopigment support;
+- canine acuity is measurably lower than human acuity in comparative studies, but varies materially between dogs and methods;
+- keep the spatial Model score at **C** because the RGB-to-canine translation and blur remain simplified display models;
+- maintain a clear distinction between Evidence A for the broad phenomenon and Model C for this renderer.
+
 ## Camera and interaction
 Spatial interaction remains:
 - drag / pointer movement to look around;
@@ -240,3 +272,19 @@ Night / Low Light is successful only if all of the following are true:
 11. Rendered review shows that the mode adds explanatory value beyond simply lowering image brightness.
 
 If criterion 4, 5, 7, or 11 fails, reject or revise the spatial mode rather than merging it because the shader merely runs.
+
+## Dog-like acceptance gate
+Dog-like is successful only if all of the following are true:
+1. Existing Compare image behavior remains unchanged.
+2. Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like remain functional.
+3. Dog-like can be selected without camera reset or field-of-view mutation.
+4. Red/green distinctions are visibly compressed while blue/yellow-like distinctions remain comparatively available.
+5. Fine-detail loss is visible but does not turn the scene into indiscriminate heavy blur.
+6. Same-camera Normal / Dog-like captures show that only the perception renderer changed.
+7. Forward and turned views both remain coherent and useful for comparison.
+8. Evidence and limitation text explicitly state the RGB/spectral-metamer boundary and excluded canine capabilities.
+9. Desktop and 390px mobile remain usable with no horizontal overflow or captured page/console errors.
+10. `npm run build` passes.
+11. Rendered review shows explanatory value beyond a generic deuteranopia filter or arbitrary color tint.
+
+If criterion 4, 5, 8, or 11 fails, revise or reject the spatial mode rather than merging it because the shader merely runs.

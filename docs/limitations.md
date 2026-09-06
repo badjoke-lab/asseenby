@@ -66,6 +66,11 @@ Examples:
 - bird-like mode does not reproduce ultraviolet response or full avian perception;
 - dog and cat modes are simplified visible-range approximations.
 
+### Dog-like specific limitation
+Canine dichromacy is well supported, but a conventional RGB panorama cannot recover the original scene spectra or exact canine cone catches. The spatial Dog-like output therefore translates broad two-channel color relationships onto a human RGB display and adds mild non-calibrated detail softening.
+
+It does not model breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, or neural interpretation. It should not be read as literal canine color qualia or as one universal view shared by all dogs.
+
 A future spatial scene does not create missing UV information automatically. Bee-like UV work requires additional UV-reflectance scene/material data and an explicit false-color translation for human displays.
 
 ## Reference-mode limitation

@@ -61,10 +61,11 @@ Accepted spatial modes:
 - Normal;
 - Tunnel Vision;
 - Central Loss;
+- Night / Low Light;
 - Cataract-like.
 
 Current expansion target:
-- Night / Low Light.
+- Dog-like.
 
 Mode switching must preserve camera position and view direction so the comparison isolates the modeled visual difference.
 
@@ -86,6 +87,11 @@ The implementation may combine localized softness, desaturation, and partial obs
 The current spatial target is a luminance-dependent low-light communication model. It uses relative displayed luminance in the rendered 360° view so darker regions can lose more color, contrast, and fine detail than brighter regions.
 
 The source panorama is tone-mapped RGB rather than calibrated radiometric data. The spatial mode therefore does not model physical cd/m², full rod/cone spectral sensitivity, pupil response, or the time course of dark adaptation. Those limitations are part of the model definition, not hidden implementation details.
+
+## Dog-like spatial model
+The active Dog-like target combines a simplified visible-range dichromatic translation with mild loss of fine detail. The phenomenon basis is stronger than the renderer: canine dichromacy and lower acuity are supported by behavioral/physiological literature, but a standard RGB panorama does not contain the spectral information needed to calculate exact canine photoreceptor catches for arbitrary real-world materials and lights.
+
+For that reason the renderer keeps Evidence and Model separate: the broad canine visual differences can retain strong evidence while the spatial implementation remains Model C. Field of view, motion processing, tapetal/rod low-light advantages and neural interpretation are intentionally excluded from this phase.
 
 ## Evidence display model
 Each mode can expose a mode-level evidence panel in the UI.
