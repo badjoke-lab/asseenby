@@ -23,6 +23,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Compare Dog-like and Cat-like image outputs
         shell: bash
+        timeout-minutes: 5
         run: |
           npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/asseenby-vite.log 2>&1 &
           PREVIEW_PID=$!
@@ -36,45 +37,8 @@ jobs:
           const BASE = "http://127.0.0.1:4173";
           const strengths = [40, 70, 100];
 
-          function summarizeDiff(a, b) {
-            let sum = 0;
-            let changed10 = 0;
-            let changed25 = 0;
-            let maxDelta = 0;
-            const pixels = a.length / 4;
-            for (let i = 0; i < a.length; i += 4) {
-              const dr = Math.abs(a[i] - b[i]);
-              const dg = Math.abs(a[i + 1] - b[i + 1]);
-              const db = Math.abs(a[i + 2] - b[i + 2]);
-              const pixelMax = Math.max(dr, dg, db);
-              sum += dr + dg + db;
-              if (pixelMax >= 10) changed10 += 1;
-              if (pixelMax >= 25) changed25 += 1;
-              if (pixelMax > maxDelta) maxDelta = pixelMax;
-            }
-            return {
-              meanAbsChannelDelta: sum / (pixels * 3),
-              changedPixelsPct10: changed10 * 100 / pixels,
-              changedPixelsPct25: changed25 * 100 / pixels,
-              maxChannelDelta: maxDelta,
-            };
-          }
-
-          async function readImagePixels(page, alt) {
-            return await page.locator(`img[alt="${alt}"]`).first().evaluate(async (img) => {
-              if (!img.complete) await new Promise(resolve => img.addEventListener("load", resolve, { once: true }));
-              const canvas = document.createElement("canvas");
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-              const ctx = canvas.getContext("2d", { willReadFrequently: true });
-              ctx.drawImage(img, 0, 0);
-              return Array.from(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
-            });
-          }
-
           async function setStrength(page, value) {
-            const input = page.locator("#strength-range");
-            await input.evaluate((el, v) => {
+            await page.locator("#strength-range").evaluate((el, v) => {
               el.value = String(v);
               el.dispatchEvent(new Event("input", { bubbles: true }));
               el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -83,11 +47,50 @@ jobs:
             await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
           }
 
-          async function renderMode(page, mode, strength) {
+          async function saveFrame(page, alt, key) {
+            await page.locator(`img[alt="${alt}"]`).first().evaluate(async (img, frameKey) => {
+              if (!img.complete) await new Promise(resolve => img.addEventListener("load", resolve, { once: true }));
+              const canvas = document.createElement("canvas");
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              ctx.drawImage(img, 0, 0);
+              window.__r7Frames ??= {};
+              window.__r7Frames[frameKey] = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            }, key);
+          }
+
+          async function renderAndSave(page, mode, strength, key) {
             await page.locator("#mode-select").selectOption(mode);
             await setStrength(page, strength);
             await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
-            return await readImagePixels(page, "Approximation");
+            await saveFrame(page, "Approximation", key);
+          }
+
+          async function compareSaved(page, keyA, keyB) {
+            return await page.evaluate(([aKey, bKey]) => {
+              const a = window.__r7Frames[aKey];
+              const b = window.__r7Frames[bKey];
+              if (!a || !b || a.length !== b.length) throw new Error(`missing/mismatched frames ${aKey}/${bKey}`);
+              let sum = 0, changed10 = 0, changed25 = 0, maxDelta = 0;
+              const pixels = a.length / 4;
+              for (let i = 0; i < a.length; i += 4) {
+                const dr = Math.abs(a[i] - b[i]);
+                const dg = Math.abs(a[i + 1] - b[i + 1]);
+                const db = Math.abs(a[i + 2] - b[i + 2]);
+                const m = Math.max(dr, dg, db);
+                sum += dr + dg + db;
+                if (m >= 10) changed10 += 1;
+                if (m >= 25) changed25 += 1;
+                if (m > maxDelta) maxDelta = m;
+              }
+              return {
+                meanAbsChannelDelta: sum / (pixels * 3),
+                changedPixelsPct10: changed10 * 100 / pixels,
+                changedPixelsPct25: changed25 * 100 / pixels,
+                maxChannelDelta: maxDelta,
+              };
+            }, [keyA, keyB]);
           }
 
           const browser = await chromium.launch({ headless: true });
@@ -98,44 +101,34 @@ jobs:
             await page.goto(BASE, { waitUntil: "networkidle" });
             await page.locator("#category-select").selectOption("Animal");
 
-            const scenarios = [
-              { name: "built-in sample", upload: null },
-              {
-                name: "controlled color-detail chart",
-                upload: {
-                  name: "cat-dog-audit.svg",
-                  mimeType: "image/svg+xml",
-                  buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-                    <rect width="1200" height="800" fill="#ddd"/>
-                    <rect x="0" y="0" width="200" height="280" fill="#e51b23"/><rect x="200" y="0" width="200" height="280" fill="#25a244"/><rect x="400" y="0" width="200" height="280" fill="#1769ff"/><rect x="600" y="0" width="200" height="280" fill="#f4d03f"/><rect x="800" y="0" width="200" height="280" fill="#00c7c7"/><rect x="1000" y="0" width="200" height="280" fill="#d946ef"/>
-                    <defs><pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M 12 0 L 0 0 0 12" fill="none" stroke="#111" stroke-width="2"/></pattern></defs>
-                    <rect x="0" y="300" width="600" height="300" fill="url(#grid)"/><rect x="600" y="300" width="600" height="300" fill="#fff"/>
-                    <g font-family="Arial" font-size="24" fill="#111"><text x="630" y="350">Fine detail / acuity reference</text>${Array.from({length: 12}, (_,i)=>`<text x="${630+(i%3)*180}" y="${400+Math.floor(i/3)*45}">${String.fromCharCode(65+i)}${i+1} 8px 12px 18px</text>`).join("")}</g>
-                    ${Array.from({length: 12},(_,i)=>`<rect x="${i*100}" y="650" width="100" height="150" fill="rgb(${i*23},${i*23},${i*23})"/>`).join("")}
-                  </svg>`),
-                },
-              },
-            ];
+            const chart = {
+              name: "cat-dog-audit.svg",
+              mimeType: "image/svg+xml",
+              buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600"><rect width="900" height="600" fill="#ddd"/><rect width="150" height="220" x="0" fill="#e51b23"/><rect width="150" height="220" x="150" fill="#25a244"/><rect width="150" height="220" x="300" fill="#1769ff"/><rect width="150" height="220" x="450" fill="#f4d03f"/><rect width="150" height="220" x="600" fill="#00c7c7"/><rect width="150" height="220" x="750" fill="#d946ef"/><defs><pattern id="g" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="#111" stroke-width="1.5"/></pattern></defs><rect y="240" width="450" height="230" fill="url(#g)"/><rect x="450" y="240" width="450" height="230" fill="#fff"/><g font-family="Arial" fill="#111"><text x="475" y="285" font-size="24">Fine detail</text><text x="475" y="330" font-size="12">small text 12 px</text><text x="475" y="380" font-size="20">medium text 20 px</text><text x="475" y="440" font-size="32">large text 32 px</text></g>${Array.from({length:9},(_,i)=>`<rect x="${i*100}" y="500" width="100" height="100" fill="rgb(${i*31},${i*31},${i*31})"/>`).join("")}</svg>`),
+            };
 
-            for (const scenario of scenarios) {
-              if (scenario.upload) {
-                await page.locator('input[type="file"]').setInputFiles(scenario.upload);
+            for (const scenario of ["built-in sample", "controlled color-detail chart"]) {
+              window;
+              if (scenario === "controlled color-detail chart") {
+                await page.locator('input[type="file"]').setInputFiles(chart);
                 await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute("src")?.startsWith("blob:"));
               } else {
                 await page.getByRole("button", { name: "Use sample image" }).click();
                 await page.waitForTimeout(120);
               }
-
-              const original = await readImagePixels(page, "Original");
+              await page.evaluate(() => { window.__r7Frames = {}; });
+              await saveFrame(page, "Original", "original");
               for (const strength of strengths) {
-                const dog = await renderMode(page, "dog", strength);
-                const cat = await renderMode(page, "cat", strength);
+                const dogKey = `dog-${strength}`;
+                const catKey = `cat-${strength}`;
+                await renderAndSave(page, "dog", strength, dogKey);
+                await renderAndSave(page, "cat", strength, catKey);
                 results.cases.push({
-                  scenario: scenario.name,
+                  scenario,
                   strength,
-                  dogVsOriginal: summarizeDiff(dog, original),
-                  catVsOriginal: summarizeDiff(cat, original),
-                  dogVsCat: summarizeDiff(dog, cat),
+                  dogVsOriginal: await compareSaved(page, dogKey, "original"),
+                  catVsOriginal: await compareSaved(page, catKey, "original"),
+                  dogVsCat: await compareSaved(page, dogKey, catKey),
                 });
               }
             }
