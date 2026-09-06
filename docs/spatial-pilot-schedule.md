@@ -1,11 +1,23 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-PR #8 — **draft / Bird-like rejected at evidence gate / final clean-head validation before merge**
-Branch: `feat/spatial-bird-evaluation`
-Status: **Bird-like rejected/blocked at evidence gate / Bee-like blocked by source data**
+Status: **ordered spatial evaluation complete under the current RGB source boundary**
 
-Cat-like rejection was merged to main as `b28262f65ca8358aecbb4b76175e786423cf93fe`; post-merge main build `34010635740` passed. Bird-like was then reviewed as a source-data/evidence question before any shader work. The current RGB panorama cannot support a defensible generic Bird-like spatial observer, and Bee-like remains blocked without UV-reflectance/spectral scene data.
+Accepted and merged spatial set:
+- Normal;
+- Tunnel Vision;
+- Central Loss;
+- Night / Low Light;
+- Dog-like;
+- Cataract-like;
+- photographic Hansaplatz 360° reference scene.
+
+Rejected / blocked:
+- Cat-like — rejected after rendered review because the current RGB source did not support enough distinct explanatory value beyond Dog-like;
+- Bird-like — rejected/blocked at evidence/source-data gate;
+- Bee-like — blocked pending UV-reflectance/spectral scene data.
+
+PR #8, which recorded the Bird/Bee decision, was merged as `9fc0407c45981cc9fa73c4193412a96d794bc99b`. Active product work has since returned to image/release polish. The current release execution state is now tracked in `docs/release-polish-schedule.md`.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -75,13 +87,13 @@ Dog-like remains a human-display visible-range dichromatic/acuity proxy with spa
 ## Step 14 — Cat-like spatial evaluation
 Status: **REJECTED after rendered review**
 
-Candidate implementation `dd6df2295f2e3efe480913035a6db3da116ae3ee` built successfully in patch workflow `34010195587`. PR build `34010245847` passed. Chromium browser run `34010239767` also passed with `result.json` reporting no browser failures, overflow, page errors, or console errors.
+Candidate implementation `dd6df2295f2e3efe480913035a6db3da116ae3ee` built successfully in patch workflow `34010195587`. PR build `34010245847` passed. Chromium browser run `34010239767` also passed with no browser failures, overflow, page errors, or console errors.
 
 Manual same-camera review compared Normal / Dog-like / Cat-like in forward and turned desktop views plus the 390px mobile Cat-like view. The Cat-like candidate remained coherent and technically usable, but its visible separation from Dog-like was primarily a modest further desaturation/chromatic compression and slightly stronger fine-detail softening.
 
 Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. The existing image-track Cat-like approximation remains separately available and conservatively labeled.
 
-The rejected candidate was removed before the merge head. Comparison against main contains documentation/evidence updates only; no Cat-like shader, spatial evidence branch, control, or browser capture addition remains. Cleanup build `34010475440` passed.
+The rejected candidate was removed before merge. PR #7 recorded the rejection and was merged as `b28262f65ca8358aecbb4b76175e786423cf93fe`.
 
 ## Step 15 — Bird-like evidence/source-data evaluation
 Status: **REJECTED / BLOCKED before implementation**
@@ -99,8 +111,7 @@ Evidence anchors reviewed for this decision include:
 - `The phylogenetic distribution of ultraviolet sensitivity in birds` (PMID 23394614);
 - `Ecological and morphological correlates of visual acuity in birds` (PMID 38126722), which compiled acuity data for 94 species in 38 families and reported variation across roughly two orders of magnitude.
 
-Decision:
-**Do not implement a generic Bird-like spatial shader/control from the current RGB panorama.** A saturation/contrast boost would be decorative, not an avian observer model. A future avian spatial mode must either target a specific species with a documented visual model or add spectral/UV scene data sufficient for the intended observer transform.
+Decision: **do not implement a generic Bird-like spatial shader/control from the current RGB panorama.** A saturation/contrast boost would be decorative, not an avian observer model. A future avian spatial mode must either target a specific species with a documented visual model or add spectral/UV scene data sufficient for the intended observer transform.
 
 ## Step 16 — Bee-like source-data gate
 Status: **BLOCKED / not implemented**
@@ -119,8 +130,10 @@ Unblock requirements:
 - Bird-like — **rejected/blocked at evidence/source-data gate**;
 - Bee-like — **blocked pending UV-reflectance/spectral scene data**.
 
-## Final merge gate
-Run the normal PR build and the existing full desktop / 390px Chromium spatial regression on this clean evidence/documentation head. If both are green, mark PR #8 ready and squash-merge it. No Bird-like or Bee-like spatial control should be introduced during this gate.
+PR #8 recorded the Bird-like/Bee-like gate and was squash-merged as `9fc0407c45981cc9fa73c4193412a96d794bc99b`.
+
+## Spatial maintenance gate
+The accepted spatial set must remain covered by desktop and 390px browser regression while release-polish work continues. Do not reopen generic Cat/Bird/Bee filters without satisfying the documented source-data/model requirements.
 
 ## Current next action
-Complete PR #8 validation and merge the evidence/source-data decision. After that, return active product work to the existing image track / release-polish priorities unless a new spatial data/model requirement is explicitly introduced.
+No new spatial mode is active. Follow `docs/release-polish-schedule.md` for the current production-smoke and release-polish sequence. Reopen this schedule only for a new explicitly accepted spatial data/model requirement or a regression affecting the accepted spatial set.
