@@ -40,7 +40,7 @@ Human modes are simplified visual proxies or generic simulations.
 They are useful for comparative viewing, but they are not exact reconstructions of lived perception.
 
 Examples:
-- color-deficiency-like image modes are matrix-based approximations;
+- Protan-like / Deutan-like / Tritan-like image modes use the Machado pre-computed matrix families in linear RGB, but remain display- and source-dependent approximations rather than patient-specific reconstructions;
 - image blur and contrast modes are image-space approximations;
 - Fatigue-like is no longer public because digital eye strain is a symptom cluster rather than one validated visual phenotype, and the former renderer only combined generic blur with contrast reduction;
 - Dry-eye-like is no longer public because blur/fluctuating clarity are real symptoms but the former static renderer added fixed localized artifacts that were not derived from tear-film measurements or a validated dry-eye observer model;
@@ -102,6 +102,11 @@ Important reading rule:
 - a higher model score does not mean patient-level accuracy;
 - lower scores may reflect unfinished review rather than a false phenomenon;
 - spatial model maturity must be assessed separately from the existing 2D transform quality.
+
+### Color-vision-deficiency specific limitation
+For Protan-like, Deutan-like, and Tritan-like, Strength selects the 0–1 parameter used to interpolate the Machado pre-computed matrices. That improves fidelity to the cited implementation reference, but the percentage must not be read as a diagnosis or a measured severity for the person viewing the result.
+
+The source image is ordinary sRGB, output is clipped to the displayable RGB range, display primaries are not measured per user, and individual cone fundamentals / adaptation are not supplied. The Machado tritanomaly model also has its own documented approximation boundary. These modes therefore remain comparison simulations even when the matrix implementation follows the cited reference closely.
 
 ## Strength control limitation
 The strength slider changes degree within the current image approximation model. At 0%, the image comparison uses the Original source without a perception transform; 100% applies the mode's full configured transform.

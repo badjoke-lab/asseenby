@@ -78,6 +78,13 @@ Mode switching must preserve camera position and view direction so the compariso
 
 For field-loss modes, the affected field is view-relative rather than attached to a world-space object. This is central to the spatial comparison value: looking around changes which scene content falls inside the affected part of vision.
 
+## Color-vision-deficiency image model
+The Protan-like, Deutan-like, and Tritan-like image modes use the pre-computed Machado color-vision-deficiency matrix families. The uploaded sRGB image is decoded to linear RGB, the matrix for the selected renderer Strength is obtained by interpolating between the neighboring 0.1 reference steps, and the result is encoded back to sRGB for display.
+
+This deliberately avoids adding separate hand-tuned red/green or blue/yellow compression after the published matrix. It also avoids mixing a full-severity result in gamma-encoded display space, which is not equivalent to the reference model's matrix interpolation.
+
+The public Strength percentage is still an interaction control, not an inferred clinical measurement. The renderer uses the reference model's 0–1 parameter internally, but AsSeenBy does not know an individual viewer's measured deficiency, display calibration, adaptation state, or complete spectral environment. Tritan-like remains especially cautious because the underlying Machado tritanomaly construction is itself an approximation and is not presented here as a literal patient-specific tritanopic reconstruction.
+
 ## Central Loss spatial model
 The current design target is a generic central-field-loss simulation.
 
