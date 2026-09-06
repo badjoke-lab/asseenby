@@ -11,10 +11,10 @@ It is not a diagnostic or medical product.
 AsSeenBy has two distinct implementation tracks.
 
 ### Image comparison
-The current v0.1 experience starts from a standard RGB image and performs browser-side image transforms.
+The v0.1 experience starts from a standard RGB image and performs browser-side image transforms.
 
-### Spatial comparison pilot
-The experimental spatial track starts from a live rendered 3D scene. Where a visual phenomenon depends on space or lighting, the renderer should use scene-aware variables such as:
+### Spatial comparison
+The spatial track starts from a live rendered 3D scene. Where a visual phenomenon depends on space or lighting, the renderer should use scene-aware variables such as:
 - view direction;
 - camera state;
 - depth;
@@ -28,9 +28,10 @@ The spatial track must not be reduced to applying a pre-rendered 2D filter over 
 
 A spatial mode can use a detailed dynamic renderer and still be an approximation because AsSeenBy is not supplied with patient-specific measurements, full biological sensing data, or a validated reconstruction of neural perception.
 
-For example:
+Examples:
 - Tunnel Vision can model live screen-relative peripheral field loss while remaining a generic field-loss profile rather than an individual's measured perimetry result;
-- Cataract-like can make glare respond to actual bright scene sources while remaining a generic optical impairment model rather than a reconstruction of a particular person's lens scattering.
+- Cataract-like can make glare respond to actual bright scene sources while remaining a generic optical impairment model rather than a reconstruction of a particular person's lens scattering;
+- Central Loss can keep a disrupted region tied to straight-ahead vision while the user scans the scene, while still remaining a generic central-field-loss profile rather than an individual's measured scotoma.
 
 ## Core limitation of the image track
 All transformations in v0.1 image comparison start from a standard RGB image.
@@ -54,14 +55,31 @@ The user can compare them through:
 The strength control changes the degree of transformation applied.
 
 ### Spatial comparison
-The pilot compares the same rendered scene from the same camera state while only the perception renderer changes.
+Spatial comparison uses the same rendered scene from the same camera state while only the perception renderer changes.
 
-The initial spatial modes are:
+Accepted baseline spatial modes:
 - Normal;
 - Tunnel Vision;
 - Cataract-like.
 
+Current expansion target:
+- Central Loss.
+
 Mode switching must preserve camera position and view direction so the comparison isolates the modeled visual difference.
+
+For field-loss modes, the affected field is view-relative rather than attached to a world-space object. This is central to the spatial comparison value: looking around changes which scene content falls inside the affected part of vision.
+
+## Central Loss spatial model
+The current design target is a generic central-field-loss simulation.
+
+It should:
+- degrade or obscure straight-ahead detail more strongly than surrounding scene information;
+- remain centered in the viewer's field as camera direction changes;
+- operate on the live rendered scene;
+- demonstrate that centering a target can make that target harder to inspect;
+- avoid implying that the chosen central-loss shape, size, opacity, or severity maps to an individual patient.
+
+The implementation may combine localized softness, desaturation, and partial obscuration to communicate loss of central detail. The exact visual form remains a renderer model and must be rated separately from the evidence for central vision loss itself.
 
 ## Evidence display model
 Each mode can expose a mode-level evidence panel in the UI.
@@ -131,16 +149,14 @@ These should not be interpreted as personal diagnosis or exact individual simula
 - static-image only;
 - per-mode evidence metadata attached in the UI layer.
 
-This keeps the product lightweight and privacy-friendly for the initial release.
-
-## Spatial pilot implementation approach
+## Spatial implementation approach
 - Three.js runs browser-side;
-- one controlled night-street scene first;
-- scene-aware post-processing where required by the mode;
+- the accepted controlled night-street scene is reused while the current field-loss expansion is evaluated;
+- scene-aware / view-relative post-processing is used where required by the mode;
 - no accounts or server-side user data requirement;
 - no game mechanics required;
 - the current 2D transform engine remains in place;
-- spatial expansion is conditional on the acceptance gate in `docs/spatial-pilot-spec.md`.
+- new spatial modes are added one at a time and require their own rendered acceptance gate.
 
 ## Practical reading rule
 Users should treat each output as:
