@@ -30,30 +30,37 @@ Accepted:
 The word `approximation` remains a scientific/product claim boundary. It does not mean the 3D implementation should be a simple static screen filter.
 
 ## Spatial expansion — Dog-like
-Status: **active**
+Status: **accepted / merged**
+
+Dog-like passed same-camera desktop/mobile rendered review and is now part of the accepted spatial set. It remains a conservative human-display visible-range dichromatic/acuity proxy, not a complete canine visual reconstruction.
+
+## Spatial evaluation — Cat-like
+Status: **rejected after rendered review**
+
+A conservative Cat-like candidate was implemented and compared against Normal and Dog-like on the same 360° camera states. Browser regression passed, but the visible difference from Dog-like was dominated by slightly lower chroma and slightly stronger softening. Keeping a separate spatial Cat-like control would therefore imply a species-specific distinction that the current RGB source and evidence boundary do not justify strongly enough.
+
+The image-track Cat-like mode remains available as an explicitly cautious visible-range approximation. The rejected spatial candidate is not added to the public spatial controls.
+
+## Spatial evaluation — Bird-like
+Status: **active next evaluation**
 
 Goal:
-Add a conservative visible-range canine comparison to the live 360° scene using two well-supported differences from human vision: dichromatic color discrimination and lower spatial acuity.
+Determine whether an honest Bird-like spatial comparison is possible from the current tone-mapped RGB panorama, and reject it rather than inventing ultraviolet/tetrachromatic information if the source data is insufficient.
 
-Required characteristics:
-- compress red/green distinctions into a human-display two-channel translation while keeping blue/yellow-like distinctions more available;
-- soften fine detail without claiming a calibrated acuity value for an individual dog;
-- preserve exact camera position, direction, scene and field of view when switching modes;
-- explicitly state that standard RGB cannot reconstruct canine cone catches for arbitrary real spectra;
-- do not add breed-dependent field-of-view claims, motion sensitivity, tapetal/rod low-light advantages, or neural interpretation without source data and a separate validated model;
-- renderer-specific Model assessment remains separate from the 2D transform;
-- desktop/mobile rendered acceptance is required before merge.
+Required evaluation:
+- review avian cone classes, ultraviolet/violet sensitivity, oil-droplet filtering and species variation;
+- separate what can be communicated from ordinary RGB from what requires spectral/UV scene data;
+- do not treat saturation or contrast boost as a sufficient Bird-like simulation;
+- preserve the exact camera/source scene for any candidate that survives the evidence boundary;
+- require rendered explanatory value beyond a decorative filter before adding a public control.
 
 ## Ordered next spatial candidates
-After the active Dog-like phase:
-1. Cat-like;
-2. Bird-like separate evaluation;
-3. Bee-like only with additional UV-reflectance scene data.
+1. Bird-like evidence/source-data evaluation;
+2. Bee-like only with additional UV-reflectance scene data.
 
 ## Near-term priority order
-1. define the Dog-like spectral/acuity boundary for RGB input;
-2. implement the conservative dichromatic + soft-detail spatial pass;
-3. run build plus desktop/mobile browser regression;
-4. inspect same-camera Normal / Dog-like comparisons across multiple view directions;
-5. verify red/green compression and detail loss are visible without overclaiming canine perception;
-6. accept, correct, or reject Dog-like before Cat-like begins.
+1. define the Bird-like spectral/source-data boundary;
+2. decide whether the current RGB panorama supports any non-misleading spatial Bird-like renderer;
+3. if yes, implement one restrained candidate and run same-camera desktop/mobile review;
+4. if no, record Bird-like as rejected/blocked rather than faking missing UV/tetrachromatic information;
+5. do not begin Bee-like until Bird-like is resolved.

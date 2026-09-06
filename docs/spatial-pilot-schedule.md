@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-PR #5 — **draft / rendered acceptance passed / final clean-head regression before merge**
-Branch: `feat/spatial-dog-like`
+PR #6 — **Cat-like spatial rejection recorded / final clean-head regression before merge**
+Branch: `feat/spatial-cat-like`
 
-The public main branch includes the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like comparison modes. PR #5 adds the accepted Dog-like candidate while preserving the separate image comparison experience.
+Dog-like is merged on main as `5bdd0d39f963b498fcf2f7f379f07b50adf79e25`; post-merge main build `34009808490` passed. Cat-like candidate browser run `34010239767` passed technically, but manual same-camera review rejected the spatial mode as insufficiently distinct from Dog-like without unsupported assumptions. Rejection/cleanup commit `2497db8d6143c13155be4b477e3ec017216549d4` contains no Cat-like spatial renderer/control changes; patch/build workflow `34010475440` passed.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -64,35 +64,37 @@ Rendered-review browser run `34009009894` passed and its Normal/Night forward, t
 
 The accepted model remains a relative displayed-luminance proxy with spatial Model C. It does not claim calibrated scotopic/mesopic reconstruction or dark-adaptation timing.
 
-## Step 13 — Dog-like evidence boundary and renderer
-Status: **PASS / accepted / pending merge**
+## Step 13 — Dog-like
+Status: **PASS / accepted / merged**
 
-Implementation candidate commit: `0c72120a5ba7fed80581c2337d06073211fa9103`.
-Patch/build workflow `34009455739` passed, including `npm ci` and `npm run build`.
-PR build `34009500541` passed on the rendered-review head.
-Chromium rendered review `34009491932` passed technically with no captured browser failures, and its screenshots were manually reviewed.
+Rendered review `34009491932` passed and was manually accepted. Final clean-head build `34009690754` and browser regression `34009688930` passed. PR #5 was squash-merged to main as `5bdd0d39f963b498fcf2f7f379f07b50adf79e25`; post-merge main build `34009808490` passed.
 
-Evidence boundary:
-- behavioral and photopigment studies strongly support canine dichromatic color vision;
-- comparative studies support lower canine spatial acuity than human acuity, with meaningful individual and methodological variation;
-- a standard RGB panorama cannot reconstruct exact canine cone catches for arbitrary spectra;
-- breed-dependent visual field, motion processing, tapetal/rod low-light advantages and neural interpretation are excluded from this phase.
+Dog-like remains a human-display visible-range dichromatic/acuity proxy with spatial Model C. It does not claim exact canine cone catches, breed-dependent field of view, motion processing, tapetal/rod low-light reconstruction, or literal canine qualia.
 
-Renderer behavior accepted in manual review:
-- the forward Dog-like view visibly compresses yellow/orange/red/green relationships toward a restrained yellow/gray two-channel translation while blue information remains comparatively distinct;
-- the turned Dog-like view preserves the exact camera direction while compressing foliage, facade and warm-light color differences without collapsing the scene into monochrome;
-- red/orange distinctions are materially reduced while blue signs/window elements remain available, giving explanatory value beyond an arbitrary global tint;
-- fine-detail softening is visible but restrained: architecture, signage and the overall scene remain readable rather than becoming indiscriminately blurred;
-- the effect remains coherent across both forward and turned directions and does not mutate field of view or source scene;
-- 390px mobile keeps all six spatial controls usable, preserves same-view comparison, and the automated browser result reports no horizontal overflow or captured page/console failures;
-- accepted Normal, Tunnel Vision, Central Loss, Night / Low Light and Cataract-like regressions plus the separate image workflow remain green.
+## Step 14 — Cat-like spatial evaluation
+Status: **REJECTED after rendered review**
 
-Spatial Model remains **C** because the output is a human-display translation from standard RGB rather than a spectral canine observer model, and the detail softening is not calibrated to an individual dog's acuity.
+Candidate implementation `dd6df2295f2e3efe480913035a6db3da116ae3ee` built successfully in patch workflow `34010195587`. PR build `34010245847` passed. Chromium browser run `34010239767` also passed with `result.json` reporting no browser failures, overflow, page errors, or console errors.
+
+Manual same-camera review compared Normal / Dog-like / Cat-like in forward and turned desktop views plus the 390px mobile Cat-like view. The Cat-like candidate remained coherent and technically usable, but its visible separation from Dog-like was primarily a modest further desaturation/chromatic compression and slightly stronger fine-detail softening.
+
+Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. The existing image-track Cat-like approximation remains separately available and conservatively labeled.
+
+The rejected candidate was removed before the merge head. Comparison against main contains documentation/evidence updates only; no Cat-like shader, spatial evidence branch, control, or browser capture addition remains. Cleanup build `34010475440` passed.
+
+## Step 15 — Bird-like evidence/source-data boundary
+Status: **next / not yet implemented**
+
+Before any Bird-like renderer is added, determine which avian characteristics can be represented from the current tone-mapped RGB panorama and which require additional spectral/UV scene data. Many avian visual systems involve four cone classes, ultraviolet/violet sensitivity, species-specific oil-droplet filtering and other properties that ordinary RGB cannot reconstruct.
+
+Acceptance rule for beginning implementation:
+- a candidate must have a documented visible-range component that is both supported and meaningfully different from simply increasing saturation/contrast;
+- missing UV/tetrachromatic information must not be fabricated from RGB;
+- if the current source cannot support a useful non-misleading Bird-like spatial comparison, record the mode as rejected/blocked instead of implementing a decorative filter.
 
 ## Ordered next spatial candidates
-1. Cat-like
-2. Bird-like as a separate evaluation
-3. Bee-like only with additional UV-reflectance scene data
+1. Bird-like evidence/source-data evaluation
+2. Bee-like only with additional UV-reflectance scene data
 
 ## Final merge gate
-Run the existing full build and desktop / 390px Chromium regression once more on this accepted documentation head. If both are green, mark PR #5 ready and squash-merge it. Do not begin Cat-like before that merge completes.
+Run the existing PR build and full desktop / 390px Chromium regression on this clean rejection/documentation head. If both are green, mark PR #6 ready and squash-merge it. Then begin Bird-like evidence/source-data evaluation from the new main.

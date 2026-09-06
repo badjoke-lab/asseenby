@@ -45,7 +45,7 @@ Current 3D mode controls:
 - Dog-like
 - Cataract-like
 
-Dog-like is the active expansion target. Its control is included only with the live visible-range dichromatic/acuity implementation, not as an unimplemented placeholder.
+Dog-like is accepted and public. Cat-like spatial was evaluated and rejected, so there is intentionally no Cat-like control in Explore spatial. Bird-like is the next evidence/source-data evaluation and must not receive a control until a renderer candidate passes its scientific and rendered acceptance gates.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 

@@ -71,6 +71,14 @@ Canine dichromacy is well supported, but a conventional RGB panorama cannot reco
 
 It does not model breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, or neural interpretation. It should not be read as literal canine color qualia or as one universal view shared by all dogs.
 
+### Cat-like spatial evaluation limitation
+The separate spatial Cat-like candidate was rejected after same-camera review because its visible distinction from Dog-like was mainly a small increase in chromatic compression/desaturation and fine-detail softening. The current RGB source does not justify manufacturing a stronger feline-specific distinction.
+
+The image-track Cat-like mode remains an explicitly cautious visible-range approximation. There is no accepted public Cat-like spatial renderer at this stage.
+
+### Bird-like spatial source-data limitation
+Many avian visual systems include ultraviolet/violet-sensitive and tetrachromatic mechanisms plus species-specific filtering that ordinary RGB scene data cannot reconstruct. A future Bird-like spatial mode must not substitute a saturation or contrast boost for missing spectral information. If no supported RGB-visible component adds genuine explanatory value, Bird-like should remain rejected/blocked until additional data is available.
+
 A future spatial scene does not create missing UV information automatically. Bee-like UV work requires additional UV-reflectance scene/material data and an explicit false-color translation for human displays.
 
 ## Reference-mode limitation

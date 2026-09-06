@@ -32,8 +32,14 @@ Accepted post-pilot example:
 Accepted post-pilot examples:
 4. **Night / Low Light** — the rendered comparison responds to relative displayed luminance in the current view while remaining explicitly non-calibrated.
 
-Current expansion target:
+Accepted post-pilot example:
 5. **Dog-like** — a visible-range human-display proxy for canine dichromacy plus lower spatial acuity, with no claim of full canine spectral, field-of-view, motion, low-light, or neural reconstruction.
+
+Evaluated and rejected spatial candidate:
+6. **Cat-like** — technically valid color/acuity candidate, but same-camera review did not show enough distinct explanatory value beyond Dog-like to justify a separate spatial claim from the current RGB source.
+
+Current expansion target:
+7. **Bird-like** — evidence/source-data evaluation first. Do not create a Bird-like shader until a supported visible-range component is identified that adds value beyond a generic saturation/contrast filter without fabricating UV/tetrachromatic information.
 
 A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
@@ -182,6 +188,24 @@ The user can actively scan one coherent environment and compare how signs, folia
 - canine acuity is measurably lower than human acuity in comparative studies, but varies materially between dogs and methods;
 - keep the spatial Model score at **C** because the RGB-to-canine translation and blur remain simplified display models;
 - maintain a clear distinction between Evidence A for the broad phenomenon and Model C for this renderer.
+
+## Post-pilot evaluation — Cat-like (rejected)
+
+A conservative Cat-like candidate was implemented and passed automated desktop/mobile browser checks. Same-camera rendered review compared it directly with Normal and Dog-like. The remaining visible distinction was mainly slightly lower chroma/chromatic separation plus slightly stronger fine-detail softening.
+
+The project rejected the spatial Cat-like control because keeping it would encourage unsupported species-specific differentiation from a tone-mapped RGB source. Historical feline cone literature is also less straightforward than the canine case. The image-track Cat-like approximation remains separately available and conservatively labeled.
+
+Rejection rule established by this step: a species mode is not accepted merely because a shader can be made visually different. It must add documented explanatory value that the available source data can support.
+
+## Bird-like evaluation boundary
+
+Bird-like starts with evidence and source-data review. Many birds use four cone classes and ultraviolet- or violet-sensitive vision, often with species-specific oil-droplet filtering. The current panorama contains human-camera RGB values, not spectral radiance/reflectance or UV data.
+
+Therefore:
+- do not infer UV or tetrachromatic cone catches from RGB;
+- do not use a generic saturation/contrast boost as a stand-in for avian vision;
+- identify any supported RGB-visible component before implementation;
+- if no such component justifies a distinct spatial comparison, reject/block Bird-like until additional data is available.
 
 ## Camera and interaction
 Spatial interaction remains:

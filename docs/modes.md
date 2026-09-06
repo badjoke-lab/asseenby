@@ -86,12 +86,14 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Dog
 - class: Estimated
 - goal: dog-like visible-range approximation
-- spatial status: deferred until the ordered human spatial expansion reaches it
+- spatial status: accepted post-pilot mode
+- spatial renderer: conservative human-display visible-range dichromatic translation plus non-calibrated fine-detail softening
 
 ### Cat
 - class: Estimated
 - goal: cat-like visible-range approximation
-- spatial status: deferred until the ordered human spatial expansion reaches it
+- image status: current cautious visible-range image proxy remains available
+- spatial status: rejected after rendered evaluation; candidate was not distinct enough from Dog-like to justify a separate live spatial claim from the current RGB source
 
 ### Bee
 - class: Estimated
@@ -102,8 +104,8 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Bird-like
 - class: Estimated
 - goal: bird-like visible-range approximation
-- limitation: UV is not reproduced
-- spatial status: deferred for separate evaluation after earlier spatial candidates
+- limitation: UV and full tetrachromatic response are not reproduced by ordinary RGB
+- spatial status: next evidence/source-data evaluation; no spatial control until a non-misleading renderer candidate is justified
 
 ## Reference modes
 ### Age Profile
