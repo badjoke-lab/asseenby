@@ -1,0 +1,83 @@
+name: R11 CVD fidelity validation
+
+on:
+  push:
+    branches:
+      - fix/r11-cvd-machado-fidelity
+    paths:
+      - .github/workflows/r11-cvd-fidelity-validate.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/r11-cvd-machado-fidelity
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply R11 product patch
+        run: python3 scripts/r11_patch.py
+
+      - name: Build
+        run: npm run build
+
+      - name: Install browser validation runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Validate CVD output against Machado matrices
+        shell: bash
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 > /tmp/r11-preview.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          node scripts/r11_cvd_audit.mjs
+
+      - name: Run full local browser regression
+        shell: bash
+        env:
+          ASSEENBY_PRODUCTION_URL: http://127.0.0.1:4173
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 > /tmp/r11-smoke-preview.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          node .github/production-smoke.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r11-cvd-fidelity-validation
+          path: |
+            r11-cvd-audit.json
+            production-smoke/
+          if-no-files-found: warn
+
+      - name: Commit validated R11 product changes
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add src/transformEngine.ts src/modeEvidence.ts docs/methodology.md docs/limitations.md docs/modes.md docs/release-polish-schedule.md
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'No R11 product changes to commit'; exit 1; }
+          git commit -m "Align CVD image modes with Machado matrices"
+          git push origin HEAD:fix/r11-cvd-machado-fidelity
