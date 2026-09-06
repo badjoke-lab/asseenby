@@ -21,13 +21,13 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Red-green color-vision differences are well described in vision science and public clinical resources.",
-    modelNote: "The current output uses a linear-RGB deficiency transform with additional red-green axis compression. It is stronger than a naive RGB mix, but still remains a screen-space approximation rather than a patient-specific perceptual model.",
+    modelNote: "The current image renderer applies the Machado pre-computed protanomaly matrices to linear RGB and interpolates between adjacent 0.1 severity steps. The public Strength control selects the renderer parameter; it is not a patient-specific or measured clinical severity.",
     caveat: "This mode represents a viewing proxy for comparison. It does not reproduce an individual person's exact perception.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
       url: "https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html",
       kind: "paper",
-      note: "Core simulation reference used as the main implementation anchor for color-deficiency-style transforms.",
+      note: "Core implementation reference for the linear-RGB protanomaly matrix family and its severity interpolation.",
     },
     supportingSources: [
       {
@@ -50,13 +50,13 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Deutan-type differences are among the best-described color-vision-deficiency categories.",
-    modelNote: "The transform now combines a linear-RGB deficiency mapping with additional red-green axis compression. This improves the visible comparison behavior, but it is still constrained by source-image gamut and display conditions.",
+    modelNote: "The current image renderer applies the Machado pre-computed deuteranomaly matrices to linear RGB and interpolates between adjacent 0.1 severity steps. Display gamut, source encoding, and the lack of an individual measurement still limit the result.",
     caveat: "Use this output to compare tendencies, not to infer exact lived perception.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
       url: "https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html",
       kind: "paper",
-      note: "Primary simulation reference for red-green and blue-yellow deficiency approximations.",
+      note: "Primary implementation reference for the deuteranomaly matrix family; the same work also provides the project's tritanomaly reference matrices.",
     },
     supportingSources: [
       {
@@ -79,13 +79,13 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Blue-yellow color-vision differences are clinically recognized and described in reference material alongside red-green differences.",
-    modelNote: "The current transform uses a linear-RGB deficiency mapping plus blue-yellow axis compression. It is a stronger comparison aid than a simple tint shift, but still not a full spectral or observer-specific simulation.",
-    caveat: "This is an image transform for comparison. It does not model all spectral or individual differences.",
+    modelNote: "The current image renderer applies the Machado pre-computed tritanomaly matrices to linear RGB and interpolates between adjacent 0.1 severity steps. The reference itself treats tritanomaly with an approximate shift model, so the output remains a comparison proxy rather than a literal tritanopic observer reconstruction.",
+    caveat: "This is an image transform for comparison. The Machado tritanomaly model is itself approximate and the output does not reproduce all spectral or individual differences.",
     primarySource: {
       title: "Machado, Oliveira, Fernandes (2009) — A physiologically-based model for simulation of color vision deficiency",
       url: "https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html",
       kind: "paper",
-      note: "Primary simulation reference for color-vision-deficiency matrices and severity interpolation.",
+      note: "Primary implementation reference for the pre-computed tritanomaly matrices and adjacent-matrix severity interpolation; the source model also documents its tritan limitation.",
     },
     supportingSources: [
       {

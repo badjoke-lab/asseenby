@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R10 ACTIVE / Strength semantics correction / R9 evidence accuracy validated**
+Status: **Step R11 ACTIVE / CVD model fidelity / R10 Strength semantics production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -596,7 +596,7 @@ Validation:
 - corrected evidence-accuracy build + full browser validation `34046158078` — **success** (this commit is emitted only after all validation gates pass).
 
 ## Step R10 — Strength semantics
-Status: **ACTIVE — implementation / validation**
+Status: **PASS / production verified**
 
 Finding:
 - the public image Strength control exposes 0–100%, and methodology defines it as the degree of transformation;
@@ -611,14 +611,44 @@ Implementation:
 - add permanent production-smoke coverage that checks exact Original/Approximation source identity at 0% for all 8 Human modes plus Dog-like;
 - document 0%=Original, 100%=full configured transform, with intermediate values explicitly non-clinical.
 
+Validation:
+- R10 corrected output/build/full browser validation `34051388047` — **success**; all 9 public image modes passed Strength 0/1/40/70/100 checks, monotonic output change, Tunnel edge dominance, Central Loss center dominance, and desktop/390px image + spatial regression;
+- PR #29 build `34051549838` — **success**;
+- PR #29 squash-merged as `15def04f65dc91586d6bece14b466a462daf2578`;
+- matching main build `34051584742` — **success**;
+- first production-smoke attempt `34051584808` ran before renderer deployment propagation and exposed that the old release detector could misclassify the previous deployment as current;
+- rerun of the same production smoke after propagation — **success**, confirming the R10 product behavior itself;
+- PR #30 hardened release detection so a deployment is considered current only after the accepted image-mode set **and** Strength-0 identity are present;
+- PR #30 build `34051905958` — **success**;
+- PR #30 squash-merged as `439bf14a5a26f3d8f2fff912cfe8254e653bfe8f`;
+- matching main build `34051950964` — **success**;
+- R10-aware production smoke `34051951021` — **success on first attempt**.
+
+## Step R11 — CVD model fidelity
+Status: **ACTIVE — implementation / validation**
+
+Finding:
+- Protan-like / Deutan-like / Tritan-like cite Machado, Oliveira & Fernandes as the implementation anchor, and the evidence text explicitly refers to color-deficiency matrices and severity interpolation;
+- the current renderer contains the published full-severity matrices, but it does not use the reference severity-matrix path at intermediate Strength values: it applies only the 1.0 matrix, adds a custom luminance rebalance, mixes the encoded result back toward Original, then adds custom red-green or blue-yellow compression;
+- on a 17×17×17 controlled RGB grid, current output versus the published Machado matrix at the same Strength has mean absolute channel deltas of 9.36 / 9.61 / 9.23 for Protan / Deutan / Tritan at Strength 40, with 25–34% of grid colors differing by at least 25 in one channel;
+- even at 100%, custom post-processing keeps the output from the published endpoint, with Tritan reaching a maximum channel delta of about 32.6 on the controlled grid;
+- the extra post-processing has no separate source/model justification in the repository, so implementation and cited model should be brought back into alignment rather than preserving an undocumented visual exaggeration.
+
+Implementation target:
+- retain the published Machado pre-computed 0.0–1.0 matrix families for Protan-like, Deutan-like, and Tritan-like;
+- interpolate between adjacent 0.1 matrices for intermediate Strength values;
+- decode sRGB to linear RGB, apply the interpolated matrix, and encode back to sRGB;
+- remove CVD-only custom luminance rebalance / axis-compression behavior from the three Human CVD modes;
+- keep Dog-like separate: it intentionally reuses a deutan-style matrix as one component of a broader conservative canine human-display proxy and is not being redefined as a Machado human CVD mode;
+- keep Model B and the non-diagnostic / non-patient-specific claim boundary; document the tritan-model limitation explicitly.
+
 Acceptance:
-- every public image mode is exact Original at Strength 0;
-- Strength 1 produces only a small departure from Original rather than the former fixed minimum effect;
-- controlled output delta increases monotonically through 1/40/70/100 for every public image mode;
-- Tunnel Vision remains edge-dominant and Central Loss remains center-dominant;
-- each mode's 100% configured endpoint is preserved;
-- full desktop/390px image + spatial regression remains green;
-- after merge, matching main build and production smoke must pass before R10 is marked production verified.
+- controlled browser color patches for Protan / Deutan / Tritan at Strength 10/40/70/100 agree with an independent Machado pre-computed-matrix calculation within the small tolerance required by the JPEG output path;
+- Strength 0 remains exact Original through the R10 invariant;
+- no custom red-green/blue-yellow post-compression is applied to the three Human CVD modes;
+- Dog-like renderer behavior remains on its existing separate proxy path;
+- build and full desktop/390px image + spatial browser regression remain green;
+- matching main build and production smoke pass after merge before R11 is marked production verified.
 
 ## Current next action
-Validate the corrected 0/1/40/70/100 output curves for all 9 public image modes, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.
+Validate the R11 Protan/Deutan/Tritan browser outputs against an independent Machado matrix calculation at Strength 10/40/70/100, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.

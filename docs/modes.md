@@ -22,18 +22,21 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ## Human modes
 ### Protan-like
 - class: Strong
-- goal: reduced red-channel discrimination approximation
-- note: not diagnostic; intended for visual comparison only
+- goal: protanomaly-style color-discrimination approximation
+- image renderer: Machado pre-computed protanomaly matrices, interpolated by Strength and applied in linear RGB
+- note: not diagnostic; Strength is not an individual clinical severity measurement
 
 ### Deutan-like
 - class: Strong
-- goal: reduced green-channel discrimination approximation
-- note: not diagnostic; intended for visual comparison only
+- goal: deuteranomaly-style color-discrimination approximation
+- image renderer: Machado pre-computed deuteranomaly matrices, interpolated by Strength and applied in linear RGB
+- note: not diagnostic; Strength is not an individual clinical severity measurement
 
 ### Tritan-like
 - class: Strong
-- goal: blue-yellow discrimination shift approximation
-- note: not diagnostic; intended for visual comparison only
+- goal: tritanomaly-style blue-yellow discrimination approximation
+- image renderer: Machado pre-computed tritanomaly matrices, interpolated by Strength and applied in linear RGB
+- note: not diagnostic; the cited tritan model is itself approximate and is not a literal patient-specific tritanopia reconstruction
 
 ### Blur
 - class: Strong
