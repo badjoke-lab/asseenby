@@ -135,9 +135,6 @@ export function applyTransform(
   } else if (modeKey === "cat") {
     applyColorDeficiency(data, amount * 0.7, [[0.7, 0.3, 0], [0.25, 0.75, 0], [0.05, 0.25, 0.7]]);
     desaturateData(data, 0.14 + amount * 0.12);
-  } else if (modeKey === "bird") {
-    saturateData(data, 0.08 + amount * 0.18);
-    boostMicroContrast(data, 0.02 + amount * 0.05);
   } else if (modeKey === "age") {
     applyLowContrastToData(data, 0.12 + amount * 0.16);
     warmTintData(data, 0.04 + amount * 0.08);
@@ -401,14 +398,6 @@ function desaturateData(data: Uint8ClampedArray, amount: number) {
   }
 }
 
-function saturateData(data: Uint8ClampedArray, amount: number) {
-  for (let i = 0; i < data.length; i += 4) {
-    const luma = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    data[i] = clamp255(mix(luma, data[i], 1 + amount));
-    data[i + 1] = clamp255(mix(luma, data[i + 1], 1 + amount));
-    data[i + 2] = clamp255(mix(luma, data[i + 2], 1 + amount));
-  }
-}
 
 function warmTintData(data: Uint8ClampedArray, amount: number) {
   for (let i = 0; i < data.length; i += 4) {
@@ -430,14 +419,6 @@ function softenHighlights(data: Uint8ClampedArray, threshold: number, amount: nu
   }
 }
 
-function boostMicroContrast(data: Uint8ClampedArray, amount: number) {
-  if (amount <= 0) return;
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = clamp255(data[i] + (data[i] - 127.5) * amount);
-    data[i + 1] = clamp255(data[i + 1] + (data[i + 1] - 127.5) * amount);
-    data[i + 2] = clamp255(data[i + 2] + (data[i + 2] - 127.5) * amount);
-  }
-}
 
 function addDryEyeOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, amount: number) {
   const spots = 6;

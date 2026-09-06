@@ -96,12 +96,6 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - spatial status: rejected after rendered evaluation; candidate was not distinct enough from Dog-like to justify a separate live spatial claim from the current RGB source
 
 
-### Bird-like
-- class: Estimated
-- goal: bird-like visible-range approximation
-- image status: current saturation/microcontrast proxy remains available with Model D
-- limitation: UV/tetrachromacy and broad species variation are not reproduced by ordinary RGB
-- spatial status: rejected/blocked at evidence/source-data gate; no generic Bird-like spatial control is accepted from the current RGB panorama
 
 ## Reference modes
 ### Age Profile

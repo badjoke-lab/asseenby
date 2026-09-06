@@ -4,7 +4,7 @@ import path from "node:path";
 
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
-const expectedAnimalImageModes = ["dog", "cat", "bird"];
+const expectedAnimalImageModes = ["dog", "cat"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -86,7 +86,7 @@ async function waitForCurrentProduction(page) {
 
     if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like image mode absent`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like/Bird-like image modes absent`);
       return;
     }
 
@@ -116,7 +116,9 @@ async function desktopImageSmoke(browser) {
   await page.locator("#category-select").selectOption("Animal");
   const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
   assert(JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes), `desktop image: unexpected Animal image modes ${JSON.stringify(animalValues)}`);
-  assert(!(await page.locator("body").innerText()).includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");
+  const animalBodyText = await page.locator("body").innerText();
+  assert(!animalBodyText.includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");
+  assert(!animalBodyText.includes("Bird-like"), "desktop image: removed Bird-like image mode is still visible");
   await page.locator("#category-select").selectOption("Human");
 
   const split = page.getByRole("button", { name: "Split" });
