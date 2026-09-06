@@ -1,0 +1,38 @@
+name: Retained human image output audit v2
+
+on:
+  push:
+    branches:
+      - audit/retained-human-image-output
+    paths:
+      - .github/workflows/retained-human-output-audit-v2.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Audit retained Human image outputs
+        shell: bash
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 > /tmp/preview.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.5
+          done
+          node scripts/retained-human-output-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retained-human-output-audit-v2
+          path: retained-human-output-audit.json
