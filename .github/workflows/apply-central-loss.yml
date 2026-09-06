@@ -1,0 +1,41 @@
+name: apply Central Loss spatial renderer
+
+on:
+  push:
+    branches:
+      - feat/spatial-central-loss
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/spatial-central-loss
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply Central Loss patch
+        run: python scripts/patch_central_loss.py
+
+      - name: Verify build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit renderer and remove temporary patch machinery
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/SpatialPage.tsx
+          git rm .github/workflows/apply-central-loss.yml scripts/patch_central_loss.py
+          git commit -m "Add live Central Loss spatial mode"
+          git push
