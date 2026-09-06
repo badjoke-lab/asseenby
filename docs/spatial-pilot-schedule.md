@@ -60,6 +60,9 @@ PR build `34007624784` passed. PR #3 was then squash-merged to main as `48dbda79
 ## Step 12 — Night / Low Light evidence boundary and renderer candidate
 Status: **evidence boundary complete / implementation candidate awaiting rendered review**
 
+Implementation candidate commit: `0aa83861be18d6ac77457ebe7032637aa6525944`.
+Patch/build workflow `34008903572` passed, including `npm ci` and `npm run build`.
+
 Evidence/source-data boundary:
 - low-light vision involves a shift toward rod contribution, reduced color information, and lower spatial resolution at sufficiently low luminance;
 - dark adaptation is time-dependent rather than an instant filter;
