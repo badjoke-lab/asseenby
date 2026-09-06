@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R8 active / R8-2 production verified / R8-3 implementation**
+Status: **Step R8 PASS / production polished through R8-5**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -533,11 +533,11 @@ Validation:
 - production artifact `9992706810` was manually reviewed: desktop/mobile hero copy matches the Human + Animal public scope with no layout regression.
 
 ### R8-5 — Mobile header touch targets
-Status: **ACTIVE — implementation / validation**
+Status: **PASS / production verified**
 
 Finding:
-- accepted 390px image and spatial production captures show the global header links as narrow text-only targets;
-- `.topnav` changes layout on mobile, but its anchors have no minimum touch-target size, and the mobile brand / `Open viewer` action are also below the 44px interaction-height standard already used by the R8-1 experience switch.
+- accepted 390px image and spatial production captures showed the global header links as narrow text-only targets;
+- `.topnav` changed layout on mobile, but its anchors had no minimum touch-target size, and the mobile brand / `Open viewer` action were also below the 44px interaction-height standard already used by the R8-1 experience switch.
 
 Implementation:
 - on <=960px, give header brand/nav/ghost actions at least 44px height;
@@ -545,12 +545,29 @@ Implementation:
 - add browser-smoke bounding-box assertions for every `.topbar a` on the 390px image and spatial surfaces.
 
 Acceptance:
-- every mobile image-header and spatial-header link is at least 44x44px;
-- no horizontal overflow at 390px;
-- header wrapping remains orderly and does not obscure the hero/spatial intro;
-- all existing image and six spatial mode regression paths remain green;
-- build passes;
-- after merge, production smoke and screenshot review are required before R8-5 is marked PASS.
+- every mobile image-header and spatial-header link is at least 44x44px — **PASS**;
+- no horizontal overflow at 390px — **PASS**;
+- header wrapping remains orderly and does not obscure the hero/spatial intro — **PASS**;
+- all existing image and six spatial mode regression paths remain green — **PASS**;
+- build passes — **PASS**;
+- production smoke and screenshot review after merge — **PASS**.
+
+Validation:
+- corrected full local build + desktop/390px image/spatial validation `34045008602` — **success**;
+- local validation artifact `9992838610` was manually reviewed: larger mobile image/spatial header targets preserve the editorial layout with no overflow or obstruction;
+- PR #26 build `34045168405` — **success**;
+- PR #26 squash-merged as `93a6983bfb67cee00b2c07fd08e09881be23e055`;
+- matching main build `34045189280` — **success**;
+- production smoke `34045189273` — **success**, including the permanent 44x44-or-larger bounding-box assertions on every mobile `.topbar a` target;
+- production artifact `9992890779` was manually reviewed: desktop/mobile image and spatial captures are intact, with no horizontal overflow, header wrapping defect, hero obstruction, or spatial-layout regression;
+- the freshest four accepted production captures were re-audited after R8-5 and exposed no additional concrete public-surface/responsive defect requiring an R8-6 change.
+
+## Step R8 closeout
+Status: **PASS / current release production-polished**
+
+R8 is closed for the current release because the accepted production captures and browser regression now cover the concrete public-surface defects found during this pass: experience-switch presentation, duplicate spatial navigation, desktop image workspace flow after Reference removal, stale Hero scope wording, and mobile global-header touch targets.
+
+Do not create an R8-6 merely to continue numbering. Reopen release polish only when a new concrete user-facing defect is observed in production or a later product change introduces a new responsive/accessibility requirement.
 
 ## Current next action
-Run build + full desktop/390px image/spatial browser smoke for R8-5, manually inspect the image/spatial captures, then open a clean PR only if the larger mobile header targets preserve the editorial layout without overflow or regression.
+Return to the roadmap/current product priority. Keep the production smoke as the regression gate, and open a new release-polish step only for a newly observed concrete production defect.
