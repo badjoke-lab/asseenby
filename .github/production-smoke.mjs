@@ -100,16 +100,23 @@ async function desktopImageSmoke(browser) {
   assert((await side.getAttribute("aria-pressed")) === "true", "desktop image: Side by side did not become active");
   await page.getByRole("button", { name: "Slider" }).click();
 
+  const approximation = page.locator('img[alt="Approximation"]').first();
+  await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
+  const beforeStrengthSrc = await approximation.getAttribute("src");
   const strength = page.locator("#strength-range");
-  await strength.evaluate((element) => {
-    element.value = "82";
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-  await page.locator(".compare-card[aria-busy=\"true\"]").waitFor({ timeout: 3_000 });
-  await page.locator(".compare-card[aria-busy=\"false\"]").waitFor({ timeout: 10_000 });
-  const transformedSrc = await page.locator('img[alt="Approximation"]').first().getAttribute("src");
-  assert(transformedSrc?.startsWith("blob:"), "desktop image: transformed output is not a blob URL");
+  await strength.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(
+    (previous) => {
+      const current = document.querySelector('img[alt="Approximation"]')?.getAttribute("src");
+      return Boolean(current && current.startsWith("blob:") && current !== previous);
+    },
+    beforeStrengthSrc,
+    { timeout: 10_000 },
+  );
+  assert((await page.locator(".compare-card").getAttribute("aria-busy")) === "false", "desktop image: comparison did not settle back to idle after Strength change");
 
   const upload = {
     name: "smoke-upload.svg",
@@ -138,9 +145,19 @@ async function mobileImageSmoke(browser) {
   await noHorizontalOverflow(page, "mobile image");
   await page.getByRole("button", { name: "Side by side" }).click();
   await page.getByRole("button", { name: "Slider" }).click();
+  const approximation = page.locator('img[alt="Approximation"]').first();
+  await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
+  const before = await approximation.getAttribute("src");
   await page.locator("#strength-range").focus();
   await page.keyboard.press("ArrowRight");
-  await page.locator(".compare-card[aria-busy=\"false\"]").waitFor({ timeout: 10_000 });
+  await page.waitForFunction(
+    (previous) => {
+      const current = document.querySelector('img[alt="Approximation"]')?.getAttribute("src");
+      return Boolean(current && current.startsWith("blob:") && current !== previous);
+    },
+    before,
+    { timeout: 10_000 },
+  );
   await page.screenshot({ path: path.join(OUT, "mobile-image.png"), fullPage: true });
   await noHorizontalOverflow(page, "mobile image after controls");
   assertClean(errors, "mobile image");
