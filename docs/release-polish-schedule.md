@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R11 PASS / CVD model fidelity production verified / R10 Strength semantics production verified**
+Status: **Step R12 ACTIVE / resolution-normalized image blur components / R11 CVD model fidelity production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -658,5 +658,27 @@ Validation:
 - matching main build `34066953225` — **success**;
 - production smoke `34066953211` — **success**.
 
+## Step R12 — Resolution-normalized image blur components
+Status: **ACTIVE — implementation / validation**
+
+Finding:
+- `prepareBaseCanvas()` downsizes only images larger than 1400×960; smaller uploads retain their original pixel dimensions;
+- Blur, Tunnel Vision, Central Loss, Cataract-like, and Dog-like use fixed pixel blur radii in `transformEngine.ts`;
+- therefore identical image content at different source resolutions receives a different blur radius relative to the image: a 9 px Blur endpoint occupies 4% of a 225 px short edge but 1% of a 900 px short edge;
+- the compare UI then scales either source to the same display frame, so this source-resolution dependence is user-visible and conflicts with the R10 definition of Strength as degree within one renderer model.
+
+Implementation target:
+- preserve the current 1440×900 built-in sample exactly by using its 900 px short edge as the reference scale;
+- multiply every image-track pixel blur radius by `min(width, height) / 900`;
+- apply the normalization to Blur, Tunnel Vision peripheral blur, Central Loss central blur, Cataract-like blur/bloom spread, and Dog-like fine-detail softening;
+- do not change masks, color transforms, contrast transforms, mode evidence grades, or any spatial renderer.
+
+Acceptance:
+- same-content 350×225 and 1400×900 uploads produce comparable normalized outputs for every blur-bearing public image mode at Strength 40 and 100;
+- the built-in 1440×900 sample retains scale 1.0 and therefore preserves all pre-R12 configured blur endpoints;
+- Strength 0 identity and R11 CVD fidelity remain unchanged;
+- full desktop/390px image + spatial browser regression remains green;
+- matching main build and production smoke pass after merge before R12 is marked production verified.
+
 ## Current next action
-R11 is closed. Re-read the roadmap and audit the remaining retained image transforms one by one for a concrete evidence/implementation mismatch. Do not create a new numbered release step unless an actual defect or unsupported model behavior is found.
+Run a controlled same-content resolution audit for Blur / Tunnel / Central Loss / Cataract-like / Dog-like at 350×225 versus 1400×900, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.

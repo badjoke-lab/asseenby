@@ -63,17 +63,18 @@ export function applyTransform(
   const height = baseCanvas.height;
   const ctx = outCanvas.getContext("2d");
   if (!ctx) return;
+  const blurScale = relativeBlurScale(width, height);
 
   drawBase(ctx, baseCanvas, width, height);
 
   if (modeKey === "blur") {
-    renderBlurred(ctx, baseCanvas, width, height, amount * 9);
+    renderBlurred(ctx, baseCanvas, width, height, amount * 9 * blurScale);
     return;
   }
 
   if (modeKey === "tunnel") {
     const edgeMask = createMaskCanvas(width, height, 0.44 - amount * 0.14, 0.84 - amount * 0.05, false);
-    const edgeBlur = blurCanvas(baseCanvas, amount * 8.2);
+    const edgeBlur = blurCanvas(baseCanvas, amount * 8.2 * blurScale);
     const edgeGray = grayscaleCanvas(baseCanvas);
     overlayMaskedCanvas(ctx, edgeBlur, edgeMask, amount * 0.74);
     overlayMaskedCanvas(ctx, edgeGray, edgeMask, amount * 0.18);
@@ -83,7 +84,7 @@ export function applyTransform(
 
   if (modeKey === "central_loss") {
     const centerMask = createMaskCanvas(width, height, 0.02 + amount * 0.03, 0.1 + amount * 0.16, true);
-    const centerBlur = blurCanvas(baseCanvas, amount * 9.6);
+    const centerBlur = blurCanvas(baseCanvas, amount * 9.6 * blurScale);
     const centerGray = grayscaleCanvas(baseCanvas);
     overlayMaskedCanvas(ctx, centerBlur, centerMask, amount * 0.82);
     overlayMaskedCanvas(ctx, centerGray, centerMask, amount * 0.2);
@@ -92,7 +93,7 @@ export function applyTransform(
   }
 
   if (modeKey === "cataract") {
-    renderBlurred(ctx, baseCanvas, width, height, amount * 7.2);
+    renderBlurred(ctx, baseCanvas, width, height, amount * 7.2 * blurScale);
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
     applyLowContrastToData(data, amount * 0.56);
@@ -102,8 +103,8 @@ export function applyTransform(
     ctx.putImageData(imageData, 0, 0);
     drawWarmVeil(ctx, width, height, amount * 0.2);
     const edgeMask = createMaskCanvas(width, height, 0.58, 0.94, false);
-    overlayMaskedCanvas(ctx, blurCanvas(baseCanvas, amount * 5.6), edgeMask, amount * 0.14);
-    drawHighlightBloom(ctx, baseCanvas, 172, amount * 26, amount * 0.38, 0.38);
+    overlayMaskedCanvas(ctx, blurCanvas(baseCanvas, amount * 5.6 * blurScale), edgeMask, amount * 0.14);
+    drawHighlightBloom(ctx, baseCanvas, 172, amount * 26 * blurScale, amount * 0.38, 0.38);
     return;
   }
 
@@ -132,7 +133,7 @@ export function applyTransform(
   ctx.putImageData(imageData, 0, 0);
 
   if (modeKey === "dog") {
-    mixBlurredCopy(ctx, outCanvas, width, height, amount * 1.8, 0.52);
+    mixBlurredCopy(ctx, outCanvas, width, height, amount * 1.8 * blurScale, 0.52);
   }
 }
 
@@ -203,6 +204,12 @@ function createMaskCanvas(
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   return canvas;
+}
+
+const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900;
+
+function relativeBlurScale(width: number, height: number) {
+  return Math.min(width, height) / IMAGE_BLUR_REFERENCE_SHORT_EDGE;
 }
 
 function blurCanvas(source: HTMLCanvasElement, blurPx: number) {
