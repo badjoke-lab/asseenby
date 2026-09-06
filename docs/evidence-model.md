@@ -26,7 +26,7 @@ It is not a judgment about link quality.
 
 - **Estimated**
   - the mode is useful, but more interpretive
-  - examples: night / low light, fatigue-like, dry-eye-like, animal visible-range proxies
+  - current examples: animal visible-range proxies and renderer-specific approximations such as spatial Night / Low Light
 
 - **Reference**
   - the mode is presented as an averaged profile or framing device rather than a direct individual simulation
@@ -63,12 +63,14 @@ The same named mode can have different implementation maturity in different rend
 
 For example:
 - the current 2D Tunnel Vision image transform is a simplified screen-space mask;
-- a future spatial Tunnel Vision implementation may use a live view-relative field model;
+- the current spatial Tunnel Vision implementation uses a live view-relative field model;
 - the underlying phenomenon evidence can remain the same while the `Model` assessment differs between the image and spatial implementations.
 
 Likewise, a spatial Cataract-like renderer that reacts to live scene luminance should not automatically inherit the model grade of the existing static-image transform. Its implementation must be reviewed on its own behavior.
 
-Therefore the spatial pilot must distinguish, in metadata or implementation notes, which renderer a model assessment refers to whenever there is a meaningful difference.
+Therefore spatial metadata or implementation notes must distinguish which renderer a model assessment refers to whenever there is a meaningful difference.
+
+Implementation note: `src/modeEvidence.ts` is a shared phenomenon-evidence base, not an image-mode registry. It may contain a key that is not selectable in image comparison when a spatial renderer reuses the same phenomenon sources. Currently `night` is intentionally retained for the spatial-only Night / Low Light evidence panel, while image visibility remains controlled by `src/modes.ts`.
 
 ## Reading rule
 A mode can have:

@@ -212,6 +212,8 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: REVIEWED_ON,
   },
+  // Spatial-only phenomenon basis: Night / Low Light is not in the public image MODES.
+  // getSpatialModeEvidence("night") reuses these sources and replaces the renderer-specific Model note.
   night: {
     summary: "Approximation of low-light viewing, with reduced color separation, lower contrast, and increased difficulty seeing detail.",
     evidenceScore: "B",

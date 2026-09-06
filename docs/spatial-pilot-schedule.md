@@ -91,7 +91,7 @@ Candidate implementation `dd6df2295f2e3efe480913035a6db3da116ae3ee` built succes
 
 Manual same-camera review compared Normal / Dog-like / Cat-like in forward and turned desktop views plus the 390px mobile Cat-like view. The Cat-like candidate remained coherent and technically usable, but its visible separation from Dog-like was primarily a modest further desaturation/chromatic compression and slightly stronger fine-detail softening.
 
-Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. The existing image-track Cat-like approximation remains separately available and conservatively labeled.
+Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. At the time of this Step 14 decision the image-track Cat-like approximation still existed; R7 later removed it after a separate image-output audit reached the same conclusion. Cat-like is now absent from both public tracks.
 
 The rejected candidate was removed before merge. PR #7 recorded the rejection and was merged as `b28262f65ca8358aecbb4b76175e786423cf93fe`.
 
@@ -103,7 +103,7 @@ Evidence review established:
 - UVS/VS tuning differs across avian lineages and cannot be recovered from the current three-channel tone-mapped RGB panorama;
 - measured visual acuity varies by roughly two orders of magnitude across bird species, so one generic “bird sharpness” transform would be biologically incoherent;
 - temporal resolution and other visual specializations also vary substantially across species;
-- the current image Bird-like transform only boosts visible-range saturation/microcontrast and has Model D, which does not provide a scientifically sufficient spatial mechanism.
+- the image Bird-like transform present at the time only boosted visible-range saturation/microcontrast and had Model D, which did not provide a scientifically sufficient spatial mechanism; R7 later removed that image mode as well.
 
 Evidence anchors reviewed for this decision include:
 - `Avian visual pigments: characteristics, spectral tuning, and evolution` (PMID 19426092);
