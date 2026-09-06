@@ -124,6 +124,7 @@ async function waitForCurrentProduction(page) {
 
     let currentAnimalSet = false;
     let currentHumanSet = false;
+    let currentStrengthZeroIdentity = false;
     try {
       const categoryValues = await page.locator("#category-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
       if (JSON.stringify(categoryValues) !== JSON.stringify(["Human", "Animal"])) throw new Error(`unexpected image categories ${JSON.stringify(categoryValues)}`);
@@ -133,21 +134,29 @@ async function waitForCurrentProduction(page) {
       await page.locator("#category-select").selectOption("Human");
       const humanValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
       currentHumanSet = JSON.stringify(humanValues) === JSON.stringify(expectedHumanImageModes);
+      await page.locator("#mode-select").selectOption("protan");
+      await setReactRangeValue(page, "#strength-range", 0);
+      await page.waitForTimeout(180);
+      await page.locator('.compare-card[aria-busy="false"]').waitFor({ timeout: 2_000 });
+      const zeroOriginal = await page.locator('img[alt="Original"]').first().getAttribute("src");
+      const zeroApproximation = await page.locator('img[alt="Approximation"]').first().getAttribute("src");
+      currentStrengthZeroIdentity = Boolean(zeroOriginal && zeroOriginal === zeroApproximation);
     } catch {
       currentAnimalSet = false;
       currentHumanSet = false;
+      currentStrengthZeroIdentity = false;
     }
 
-    if (src?.startsWith("blob:") && currentAnimalSet && currentHumanSet) {
+    if (src?.startsWith("blob:") && currentAnimalSet && currentHumanSet && currentStrengthZeroIdentity) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; image categories are Human/Animal only, with the audited Human set and Animal=Dog-like only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; image categories/modes match and Strength 0 is exact Original`);
       return;
     }
 
-    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Human/Animal category set, Human modes, and/or Animal modes`);
+    result.notes.push(`attempt ${attempt}: production is stale for blob upload, current image mode set, and/or Strength-0 identity`);
     if (attempt < 12) await page.waitForTimeout(15_000);
   }
-  throw new Error("Production did not reach the current blob-upload + Human/Animal-only release behavior within the retry window.");
+  throw new Error("Production did not reach the current blob-upload + image-mode-set + Strength-0-identity release behavior within the retry window.");
 }
 
 async function desktopImageSmoke(browser) {
