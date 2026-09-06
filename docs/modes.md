@@ -112,8 +112,3 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Age Profile
 - class: Reference
 - goal: age-related viewing profile approximation
-
-### Sex-difference Profile
-- class: Reference
-- goal: averaged sex-difference reference mode
-- note: should not be treated as an individual-level prediction

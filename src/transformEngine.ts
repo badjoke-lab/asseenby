@@ -153,9 +153,6 @@ export function applyTransform(
   } else if (modeKey === "age") {
     applyLowContrastToData(data, 0.12 + amount * 0.16);
     warmTintData(data, 0.04 + amount * 0.08);
-  } else if (modeKey === "sex") {
-    saturateData(data, amount * 0.04);
-    boostMicroContrast(data, amount * 0.015);
   }
 
   ctx.putImageData(imageData, 0, 0);

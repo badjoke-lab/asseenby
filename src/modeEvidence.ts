@@ -462,41 +462,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: REVIEWED_ON,
   },
-  sex: {
-    summary: "Averaged reference profile for sex-related visual differences, kept intentionally weak because reported differences are small, task-specific, and heterogeneous.",
-    evidenceScore: "C",
-    modelScore: "D",
-    basisNote: "Some studies report small sex-related differences in parts of color appearance or visual perception, while other tasks show little or no difference. The literature is not strong enough to justify a broad perceptual profile as a firm claim.",
-    modelNote: "The current sex-difference profile is only a placeholder framing tool with very light image adjustments. It does not represent a validated male-versus-female visual model and should be treated as provisional.",
-    caveat: "Do not read this mode as a statement about what all men or all women see. Reported differences are generally modest, task-dependent, and not suitable for a strong generalized simulation.",
-    primarySource: {
-      title: "Sex-related differences in peripheral human color vision: a color matching study",
-      url: "https://pubmed.ncbi.nlm.nih.gov/22275467/",
-      kind: "paper",
-      note: "Example of a reported sex-related difference in peripheral color appearance, useful as a limited basis rather than a universal rule.",
-    },
-    supportingSources: [
-      {
-        title: "Sex and vision II: color appearance of monochromatic lights",
-        url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3483194/",
-        kind: "paper",
-        note: "Reports small but measurable sex-related differences in hue appearance under tightly controlled laboratory conditions.",
-      },
-      {
-        title: "Sex-related differences in vision are heterogeneous",
-        url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC5951855/",
-        kind: "paper",
-        note: "Large study showing that sex effects across visual tasks are mixed and do not support a single simple visual-difference story.",
-      },
-      {
-        title: "Natural variation in female reproductive hormones does not affect contrast sensitivity",
-        url: "https://pubmed.ncbi.nlm.nih.gov/29515869/",
-        kind: "paper",
-        note: "Useful counterweight showing no sex difference in contrast sensitivity in that study, which supports keeping this reference mode conservative.",
-      },
-    ],
-    lastReviewed: REVIEWED_ON,
-  },
 };
 
 export function getModeEvidence(modeKey: string): ModeEvidence {

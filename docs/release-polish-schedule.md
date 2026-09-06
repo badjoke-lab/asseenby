@@ -102,5 +102,28 @@ Priority order:
 
 Do not strengthen a transform merely to make it look more dramatic. Prefer removal or narrower labeling when the current source data cannot support a stronger model.
 
+### R7-1 — Sex-difference Profile
+Decision: **REMOVE from the product**
+
+Reason:
+- Evidence score was C and Model score was D;
+- the evidence set explicitly described reported differences as small, task-specific, heterogeneous, and insufficient for one broad perceptual profile;
+- the implementation was only a tiny saturation/microcontrast adjustment and was explicitly described as a placeholder framing tool;
+- making the transform stronger would create unsupported sex-wide visual claims rather than improve explanatory accuracy.
+
+Removal scope:
+- remove the public mode definition;
+- remove the image transform branch;
+- remove the mode-specific Evidence metadata;
+- remove the mode from README and mode documentation;
+- keep the product-level statement that reference profiles are averaged and non-individual for the remaining Age Profile.
+
+Acceptance:
+- Reference category exposes Age Profile only;
+- no `sex` transform or Sex-difference Evidence entry remains;
+- existing Human / Animal image modes remain selectable;
+- accepted spatial modes remain unchanged;
+- build and browser regression pass.
+
 ## Current next action
-Start R7 by inventorying the public mode list against `modeEvidence.ts` and `transformEngine.ts`, then take the highest-risk weak mode through a keep/revise/remove decision before changing the next one.
+Complete R7-1 removal and validation. Then audit the remaining public Model D animal image modes in this order: Bee-like, Bird-like.
