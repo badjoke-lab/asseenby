@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
-PR #3 — **merged / complete**
-Merge commit: `48dbda797ac287170dc02444771e8ee0ce1e38d0`
+PR #4 — **draft / rendered acceptance passed / final clean-head regression before merge**
+Branch: `feat/spatial-night-low-light`
 
-The public spatial track now uses the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, and Cataract-like comparison modes. Image comparison remains available separately.
+The public main branch currently uses the accepted fixed-viewpoint 360° photographic night-city reference with Normal, Tunnel Vision, Central Loss, and Cataract-like comparison modes. PR #4 adds the accepted Night / Low Light candidate while preserving the separate image comparison experience.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -57,11 +57,13 @@ Final clean-head Chromium regression `34007622720` passed. Review confirmed that
 
 PR build `34007624784` passed. PR #3 was then squash-merged to main as `48dbda797ac287170dc02444771e8ee0ce1e38d0`. Main build `34007765671` passed.
 
-## Step 12 — Night / Low Light evidence boundary and renderer candidate
-Status: **evidence boundary complete / implementation candidate awaiting rendered review**
+## Step 12 — Night / Low Light evidence boundary and renderer
+Status: **PASS / accepted / pending merge**
 
 Implementation candidate commit: `0aa83861be18d6ac77457ebe7032637aa6525944`.
 Patch/build workflow `34008903572` passed, including `npm ci` and `npm run build`.
+PR build `34009020573` passed on the rendered-review head.
+Chromium rendered review `34009009894` passed technically with `result.json` reporting no failures.
 
 Evidence/source-data boundary:
 - low-light vision involves a shift toward rod contribution, reduced color information, and lower spatial resolution at sufficiently low luminance;
@@ -69,19 +71,16 @@ Evidence/source-data boundary:
 - the current Hansaplatz source is a tone-mapped RGB panorama, not calibrated scene photometry;
 - this phase therefore uses relative displayed luminance only and does not claim physical scotopic/mesopic reconstruction.
 
-Renderer candidate:
-- darker rendered regions receive stronger desaturation, contrast reduction, and fine-detail loss;
-- brighter rendered regions remain comparatively available;
-- the same camera and panorama are preserved across mode switching;
-- spatial Model remains C pending rendered acceptance.
+Renderer behavior accepted in manual review:
+- darker rendered regions lose substantially more chromatic separation, contrast and fine detail than the Normal view;
+- bright shopfronts, windows and lamps remain comparatively available instead of being uniformly blacked down;
+- the forward comparison clearly differs from Normal without collapsing into a uniform dark or blue tint;
+- the turned view contains a different bright/dark composition and the renderer follows that composition while preserving the exact camera direction;
+- the effect reads as loss of low-light information rather than simply lowering the whole image brightness;
+- 390px mobile keeps the five spatial controls usable, preserves the same-view comparison, and the automated check reports no horizontal overflow or captured page/console errors;
+- accepted Normal, Tunnel Vision, Central Loss and Cataract-like regressions plus the separate image workflow remain green.
 
-Rendered gate:
-- compare Normal vs Night / Low Light at the identical forward view;
-- repeat at a turned view with a different bright/dark composition;
-- confirm the output is not a uniform dark tint;
-- verify existing spatial modes and image comparison remain unchanged;
-- verify 390px mobile interaction, no overflow, and no captured page/console errors;
-- accept, revise, or reject before beginning Dog-like.
+Spatial Model remains **C** because the renderer uses relative displayed luminance from tone-mapped RGB rather than calibrated scene photometry or a validated physiological observer model.
 
 ## Ordered next spatial candidates
 1. Dog-like
@@ -89,5 +88,5 @@ Rendered gate:
 3. Bird-like as a separate evaluation
 4. Bee-like only with additional UV-reflectance scene data
 
-## Current next action
-Run build and the existing desktop / 390px Chromium capture on the Night / Low Light candidate. Inspect identical-camera Normal/Night forward and turned views, then either correct the renderer or mark Step 12 accepted. Do not begin Dog-like yet.
+## Final merge gate
+Run the existing full build and desktop / 390px Chromium regression once more on this accepted documentation head. If both are green, mark PR #4 ready and squash-merge it. Do not begin Dog-like before that merge completes.
