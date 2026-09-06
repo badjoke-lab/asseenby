@@ -38,8 +38,11 @@ Accepted post-pilot example:
 Evaluated and rejected spatial candidate:
 6. **Cat-like** — technically valid color/acuity candidate, but same-camera review did not show enough distinct explanatory value beyond Dog-like to justify a separate spatial claim from the current RGB source.
 
-Current expansion target:
-7. **Bird-like** — evidence/source-data evaluation first. Do not create a Bird-like shader until a supported visible-range component is identified that adds value beyond a generic saturation/contrast filter without fabricating UV/tetrachromatic information.
+Evaluated and rejected/blocked spatial candidate:
+7. **Bird-like** — no generic RGB-only renderer is accepted. Avian tetrachromatic/UV systems cannot be reconstructed from the current RGB panorama, while visual acuity and other visual traits vary too widely across bird species for one generic live observer.
+
+Blocked by source-data requirement:
+8. **Bee-like** — no spatial implementation until UV-reflectance/spectral scene data and a documented bee observer/false-color model exist.
 
 A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
@@ -197,15 +200,27 @@ The project rejected the spatial Cat-like control because keeping it would encou
 
 Rejection rule established by this step: a species mode is not accepted merely because a shader can be made visually different. It must add documented explanatory value that the available source data can support.
 
-## Bird-like evaluation boundary
+## Bird-like evaluation result — rejected / blocked
 
-Bird-like starts with evidence and source-data review. Many birds use four cone classes and ultraviolet- or violet-sensitive vision, often with species-specific oil-droplet filtering. The current panorama contains human-camera RGB values, not spectral radiance/reflectance or UV data.
+Bird-like was evaluated before implementation and failed the source-data/generic-model gate.
 
-Therefore:
-- do not infer UV or tetrachromatic cone catches from RGB;
-- do not use a generic saturation/contrast boost as a stand-in for avian vision;
-- identify any supported RGB-visible component before implementation;
-- if no such component justifies a distinct spatial comparison, reject/block Bird-like until additional data is available.
+Evidence boundary:
+- many birds use four spectrally distinct single-cone classes rather than the human three-channel system;
+- UVS and VS short-wavelength tuning varies among avian lineages;
+- colored oil droplets further alter cone spectral sensitivities;
+- ordinary RGB has already collapsed the scene spectrum into three human-camera channels and cannot reconstruct a fourth independent avian color dimension or UV reflectance;
+- avian visual acuity varies by roughly two orders of magnitude across species, so a generic sharpen/blur rule is not defensible as “Bird-like” vision.
+
+Result:
+- no Bird-like spatial control is added;
+- no saturation/contrast shader is accepted as avian vision;
+- a future avian spatial mode must be species-specific and/or use additional spectral/UV source data plus a documented observer model.
+
+## Bee-like source-data result — blocked
+
+The Bee-like special rule remains binding. The current scene has no UV-reflectance/spectral data, so there is no honest spatial Bee-like implementation path from the existing panorama alone.
+
+Unblocking Bee-like requires a separate data/model phase with UV-capable scene information and a documented false-color translation for human displays. Until then, no Bee-like spatial control or shader should exist.
 
 ## Camera and interaction
 Spatial interaction remains:

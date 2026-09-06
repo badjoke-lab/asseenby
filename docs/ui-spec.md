@@ -45,7 +45,7 @@ Current 3D mode controls:
 - Dog-like
 - Cataract-like
 
-Dog-like is accepted and public. Cat-like spatial was evaluated and rejected, so there is intentionally no Cat-like control in Explore spatial. Bird-like is the next evidence/source-data evaluation and must not receive a control until a renderer candidate passes its scientific and rendered acceptance gates.
+Dog-like is accepted and public. Cat-like spatial was rejected after rendered review. Generic Bird-like spatial was rejected/blocked at the evidence/source-data gate, and Bee-like is blocked pending UV-reflectance/spectral scene data. There are intentionally no Cat-like, Bird-like, or Bee-like controls in Explore spatial under the current source-data boundary.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 

@@ -76,10 +76,13 @@ The separate spatial Cat-like candidate was rejected after same-camera review be
 
 The image-track Cat-like mode remains an explicitly cautious visible-range approximation. There is no accepted public Cat-like spatial renderer at this stage.
 
-### Bird-like spatial source-data limitation
-Many avian visual systems include ultraviolet/violet-sensitive and tetrachromatic mechanisms plus species-specific filtering that ordinary RGB scene data cannot reconstruct. A future Bird-like spatial mode must not substitute a saturation or contrast boost for missing spectral information. If no supported RGB-visible component adds genuine explanatory value, Bird-like should remain rejected/blocked until additional data is available.
+### Bird-like spatial evaluation limitation
+Generic Bird-like spatial has been rejected/blocked for the current RGB panorama. Avian color systems include UVS/VS and tetrachromatic mechanisms with oil-droplet filtering that ordinary RGB cannot reconstruct, while measured acuity varies by roughly two orders of magnitude across bird species. A generic saturation/contrast boost or generic sharpen/blur effect would therefore imply a coherent “bird view” that the source data and taxonomic category do not support.
 
-A future spatial scene does not create missing UV information automatically. Bee-like UV work requires additional UV-reflectance scene/material data and an explicit false-color translation for human displays.
+A future avian spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.
+
+### Bee-like spatial source-data limitation
+A future spatial scene does not create missing UV information automatically. Bee-like UV work requires additional UV-reflectance/spectral scene/material data and an explicit false-color translation for human displays. Until those inputs exist, Bee-like spatial is blocked and no purple/blue RGB filter should be presented as bee vision.
 
 ## Reference-mode limitation
 Reference modes are averaged profiles, not individual predictions.
