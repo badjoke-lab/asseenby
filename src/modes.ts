@@ -19,7 +19,6 @@ export const MODES: ModeDef[] = [
   { key: "cataract", label: "Cataract-like", category: "Human", confidence: "Strong", note: "Hazy, lower-contrast, yellowed viewing approximation." },
   { key: "tunnel", label: "Tunnel Vision", category: "Human", confidence: "Strong", note: "Peripheral field loss approximation." },
   { key: "central_loss", label: "Central Loss", category: "Human", confidence: "Strong", note: "Central field loss approximation." },
-  { key: "night", label: "Night / Low Light", category: "Human", confidence: "Estimated", note: "Low-light viewing approximation." },
   { key: "dog", label: "Dog-like", category: "Animal", confidence: "Estimated", note: "Dog-like visible-range approximation based on commonly described canine characteristics." },
   { key: "age", label: "Age Profile", category: "Reference", confidence: "Reference", note: "Age-related viewing profile approximation." },
 ];

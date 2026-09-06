@@ -5,7 +5,7 @@ import path from "node:path";
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
 const expectedAnimalImageModes = ["dog"];
-const expectedHumanImageModes = ["protan", "deutan", "tritan", "blur", "low_contrast", "cataract", "tunnel", "central_loss", "night"];
+const expectedHumanImageModes = ["protan", "deutan", "tritan", "blur", "low_contrast", "cataract", "tunnel", "central_loss"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -92,7 +92,7 @@ async function waitForCurrentProduction(page) {
 
     if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet && currentHumanSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Human set excludes Fatigue-like/Dry-eye-like, Reference=Age only, Animal=Dog-like only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; image Human set excludes Fatigue-like/Dry-eye-like/Night, Reference=Age only, Animal=Dog-like only`);
       return;
     }
 
@@ -132,6 +132,7 @@ async function desktopImageSmoke(browser) {
   const humanBodyText = await page.locator("body").innerText();
   assert(!humanBodyText.includes("Fatigue-like"), "desktop image: removed Fatigue-like mode is still visible");
   assert(!humanBodyText.includes("Dry-eye-like"), "desktop image: removed Dry-eye-like mode is still visible");
+  assert(!humanBodyText.includes("Night / Low Light"), "desktop image: removed Night / Low Light image mode is still visible");
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();
