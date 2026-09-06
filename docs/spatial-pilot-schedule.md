@@ -1,6 +1,7 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
+PR #8 — **draft / Bird-like rejected at evidence gate / final clean-head validation before merge**
 Branch: `feat/spatial-bird-evaluation`
 Status: **Bird-like rejected/blocked at evidence gate / Bee-like blocked by source data**
 
@@ -118,5 +119,8 @@ Unblock requirements:
 - Bird-like — **rejected/blocked at evidence/source-data gate**;
 - Bee-like — **blocked pending UV-reflectance/spectral scene data**.
 
+## Final merge gate
+Run the normal PR build and the existing full desktop / 390px Chromium spatial regression on this clean evidence/documentation head. If both are green, mark PR #8 ready and squash-merge it. No Bird-like or Bee-like spatial control should be introduced during this gate.
+
 ## Current next action
-Close the current ordered animal spatial expansion under the RGB source-data boundary. Keep the accepted spatial modes regression-covered and return active product work to the existing image track / release-polish priorities unless a new spatial data/model requirement is explicitly introduced.
+Complete PR #8 validation and merge the evidence/source-data decision. After that, return active product work to the existing image track / release-polish priorities unless a new spatial data/model requirement is explicitly introduced.
