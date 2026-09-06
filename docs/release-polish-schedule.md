@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R8 active / R7 complete / R8-1 browser validated**
+Status: **Step R8 active / R8-1 production verified / R8-2 implementation**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -424,7 +424,7 @@ Status: **ACTIVE**
 Purpose: inspect accepted production captures as a user-facing surface and fix concrete presentation or responsive defects without changing the scientific model or spatial source-data boundary.
 
 ### R8-1 — Image experience switch presentation
-Status: **ACTIVE — browser validated**
+Status: **PASS / production verified**
 
 Finding:
 - production smoke `34040615208` exposed `ExperienceCompare imageExplore 3D` as unstyled run-together text above the image page frame on desktop and 390px mobile;
@@ -441,11 +441,37 @@ Acceptance:
 - both experience links are at least 44px high at 390px — **PASS**;
 - no horizontal overflow at 1440px or 390px — **PASS**;
 - build passes — **PASS**;
-- production smoke after merge remains required before R8-1 is marked complete.
+- production smoke after merge remains green — **PASS**.
 
-Validation before PR:
+Validation:
 - R8-1 build + Chromium desktop/390px switch check `34041365365` — **success**;
-- screenshot review confirmed the raw text defect is replaced by a compact styled control on both desktop and mobile.
+- screenshot review confirmed the raw text defect is replaced by a compact styled control on both desktop and mobile;
+- PR #22 build `34041588585` — **success**;
+- merge SHA `fbb966a8977cd996df4fff9d9b5a22fb6448a7dd`;
+- matching main build `34041626114` — **success**;
+- production smoke `34041626119` — **success**;
+- production artifact `9991858538` was manually reviewed: desktop/mobile image captures retain the styled experience switch with no raw-text regression, and image/spatial smoke result is fully green.
+
+### R8-2 — Spatial header duplicate image navigation
+Status: **ACTIVE — implementation**
+
+Finding:
+- accepted production spatial captures expose both `Compare image` in the primary navigation and a separate `Back to image` button;
+- both actions resolve to `/`, so the second control is redundant;
+- on 390px mobile the redundant button consumes a full header row before the primary navigation.
+
+Implementation:
+- remove only the redundant `Back to image` ghost-button from `SpatialPage.tsx`;
+- retain `Compare image`, `Explore spatial`, and `Support` in the semantic `Spatial navigation` nav;
+- add production-smoke assertions that exactly one `Compare image` nav action is present and no `Back to image` action is exposed on desktop or mobile.
+
+Acceptance:
+- one clear route from spatial back to image comparison;
+- no `Back to image` duplicate on desktop or 390px mobile;
+- Spatial navigation remains usable and no horizontal overflow is introduced;
+- all six accepted spatial modes and image workflows remain regression-green;
+- build passes;
+- after merge, production smoke and screenshot review confirm the cleaner header before R8-2 is marked PASS.
 
 ## Current next action
-Open the clean R8-1 PR, merge only if the normal PR build is green, then require main build and a fresh production smoke screenshot before marking R8-1 PASS.
+Run the patched full browser smoke at desktop/390px, open a clean R8-2 PR only if it passes, then require main build and production smoke after merge.

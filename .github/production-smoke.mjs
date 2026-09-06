@@ -214,6 +214,9 @@ async function desktopSpatialSmoke(browser) {
   const canvas = page.locator("canvas.spatial-canvas");
   await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "desktop spatial");
+  const spatialNav = page.getByRole("navigation", { name: "Spatial navigation" });
+  assert((await spatialNav.getByRole("link", { name: "Compare image", exact: true }).count()) === 1, "desktop spatial: Compare image navigation is missing or duplicated");
+  assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "desktop spatial: duplicate Back to image action is still exposed");
 
   const modeGroup = page.getByRole("group", { name: "Spatial perception mode" });
   const labels = await modeGroup.getByRole("button").allTextContents();
@@ -252,6 +255,9 @@ async function mobileSpatialSmoke(browser) {
   const canvas = page.locator("canvas.spatial-canvas");
   await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "mobile spatial");
+  const spatialNav = page.getByRole("navigation", { name: "Spatial navigation" });
+  assert((await spatialNav.getByRole("link", { name: "Compare image", exact: true }).count()) === 1, "mobile spatial: Compare image navigation is missing or duplicated");
+  assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "mobile spatial: duplicate Back to image action is still exposed");
   const group = page.getByRole("group", { name: "Spatial perception mode" });
   await group.getByRole("button", { name: "Central Loss", exact: true }).click();
   await page.waitForTimeout(400);

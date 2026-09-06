@@ -285,7 +285,6 @@ export default function SpatialPage() {
             <a href="/?view=spatial" aria-current="page">Explore spatial</a>
             <a href="/support/">Support</a>
           </nav>
-          <a href="/" className="ghost-button">Back to image</a>
         </header>
 
         <main className="content-area spatial-content">
