@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **production smoke pending on current main**
+Status: **Step R6 production smoke PASS / current public release verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -9,7 +9,8 @@ Current main includes:
 - image control accessibility polish;
 - lazy-loaded spatial JavaScript and CSS;
 - cached/debounced/blob-based image render pipeline;
-- synchronized pending/render state for Strength and upload/sample source switching.
+- synchronized pending/render state for Strength and upload/sample source switching;
+- repeatable production browser smoke coverage against the public Pages URL.
 
 Latest merged release-polish PRs:
 - PR #9 — image control accessibility polish;
@@ -66,27 +67,40 @@ Status: **PASS / merged**
 - image and full spatial browser regression passed.
 
 ## Step R6 — Production smoke
-Status: **ACTIVE**
+Status: **PASS / production verified**
 
 Target:
 - `https://asseenby.pages.dev/`
 - `https://asseenby.pages.dev/?view=spatial`
 
-Acceptance requirements:
-1. Production root returns and renders the current image experience.
-2. `Explore 3D` production route renders the accepted panorama rather than the discarded primitive scene.
-3. Desktop image controls work: compare mode, Strength, sample, and upload.
-4. 390px image layout has no horizontal overflow and remains operable.
-5. Desktop spatial controls work for Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like.
-6. Spatial look-around works without page/console errors.
-7. 390px spatial route remains usable and touch interaction changes view direction.
-8. Production does not expose Cat-like, Bird-like, or Bee-like spatial controls.
-9. No uncaught page error or meaningful console error occurs during the smoke path.
-10. Current main build is green.
+Acceptance requirements and result:
+1. Production root renders the current image experience — **PASS**.
+2. `Explore 3D` renders the accepted photographic panorama rather than the discarded primitive scene — **PASS**.
+3. Desktop image compare mode, Strength, sample, and upload paths — **PASS**.
+4. 390px image layout without horizontal overflow — **PASS**.
+5. Desktop spatial controls for Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like — **PASS**.
+6. Spatial desktop look-around with no page/console errors — **PASS**.
+7. 390px spatial route and actual touch look-around — **PASS**.
+8. Cat-like, Bird-like, and Bee-like spatial controls remain absent — **PASS**.
+9. No uncaught page error or meaningful console error during the smoke path — **PASS**.
+10. Matching main build green — **PASS**.
 
-If production is stale relative to main, record that as a deployment-state failure rather than treating preview success as production success.
+Production smoke run `34015593874` passed. The matching main build run `34015593899` also passed. The smoke detected current blob-upload behavior on the first production attempt, so this was not a pass against a stale pre-PR-12 deployment.
+
+The first smoke run `34015498797` was a test-harness failure, not a product failure: it tried to observe a transient 90 ms `aria-busy=true` window. The harness was corrected to verify the user-visible outcome (a newly rendered blob output that settles back to idle), then R6 passed.
+
+## Step R7 — Image transform / evidence quality audit
+Status: **ACTIVE**
+
+Purpose: review currently public image modes whose implementation confidence is weak or conservative and decide mode-by-mode whether to keep, revise, narrow, or remove them. A visually different output is not enough; each public transform must have useful explanatory value within its evidence/model boundary.
+
+Priority order:
+1. Model D public modes and placeholders;
+2. Model C modes where current transform behavior may overstate the evidence;
+3. animal modes whose RGB-only limitation needs stronger UI handling;
+4. reference profiles that risk implying population-wide truths.
+
+Do not strengthen a transform merely to make it look more dramatic. Prefer removal or narrower labeling when the current source data cannot support a stronger model.
 
 ## Current next action
-Run Step R6 against the public production URL, record the exact result, then either:
-- mark R6 PASS and close the current release-polish cycle; or
-- open the smallest corrective PR for the observed production failure and repeat R6 after deployment.
+Start R7 by inventorying the public mode list against `modeEvidence.ts` and `transformEngine.ts`, then take the highest-risk weak mode through a keep/revise/remove decision before changing the next one.
