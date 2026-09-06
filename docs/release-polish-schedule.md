@@ -345,7 +345,7 @@ Validation:
 - production smoke `34034680087` — **success**, confirming image Night is absent while spatial Night remains one of the accepted six controls.
 
 ### R7-8 — Dog-like image mode
-Status: **ACTIVE — renderer revision and output audit**
+Status: **PASS / revised / browser validated**
 
 Decision: **KEEP the public Dog-like image mode, but REVISE the renderer and narrow its model claim**
 
@@ -371,5 +371,12 @@ Acceptance:
 - build passes;
 - after merge, production smoke remains green with Animal=Dog-like only.
 
+Validation before PR:
+- renderer patch + typecheck/build + 1440px/390px Dog output + full spatial regression workflow `34035027559` — **success**;
+- controlled color/detail chart at Strength 40: mean absolute channel delta **12.75**, maximum channel delta **79**;
+- controlled color/detail chart at Strength 100: mean absolute channel delta **17.16**, maximum channel delta **89**;
+- the output therefore remains non-trivial and scales with Strength without requiring a bespoke canine RGB matrix;
+- manual capture review retained the mode as a restrained visible-range comparison proxy; image Model remains **C**.
+
 ## Current next action
-Apply and browser-test the R7-8 Dog-like renderer revision, inspect its output against Original at multiple Strength levels, then open a PR only if the revised output remains useful and restrained.
+Open the clean R7-8 PR, merge only if the normal PR build is green, then require main build and production smoke to remain green with Animal=Dog-like only and the accepted six spatial controls unchanged.
