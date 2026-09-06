@@ -32,7 +32,6 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 
 ## Animal modes
 - Dog
-- Cat
 
 ## Reference modes
 - Age Profile

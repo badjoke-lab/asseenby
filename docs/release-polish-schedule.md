@@ -161,7 +161,7 @@ Validation:
 - production smoke `34016338172` — **success**, confirming Animal image modes reached Dog-like / Cat-like / Bird-like with Bee-like absent.
 
 ### R7-3 — Bird-like image mode
-Status: **ACTIVE — branch implementation validated**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE the generic Bird-like image mode**
 
@@ -196,5 +196,40 @@ Validation so far:
 - 1440px and 390px spatial control regression — **success**;
 - earlier runs `34018291841` and `34018339466` were workflow/test-harness failures before product commit: invalid workflow formatting, then Playwright module resolution from `/tmp`; neither was a product-code failure.
 
+### R7-4 — Cat-like image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE the public Cat-like image mode**
+
+Reason:
+- domestic-cat behavioral work supports a dichromatic tendency, but it does not validate the former Cat-specific hand-tuned RGB matrix used by AsSeenBy;
+- the existing image renderer differed from Dog-like through a different ad-hoc 3×3 RGB remap, extra desaturation, and the same blur family rather than a feline cone-catch or observer model;
+- spatial Cat-like had already been rejected because its rendered distinction from Dog-like was not explanatory enough to justify a separate species claim;
+- corrected image-output audit `34019040004` reached the same conclusion on the 2D renderer.
+
+Output-audit result (`34019040004`):
+- built-in sample, Dog vs Cat mean absolute channel delta at Strength 40 / 70 / 100: **3.10 / 4.65 / 6.16**;
+- built-in sample, pixels with any channel delta >=25 between Dog and Cat: **0% at all three strengths**; maximum channel delta only **13 / 15 / 18**;
+- controlled color/detail chart, Dog vs Cat mean delta: **5.14 / 6.49 / 8.84**;
+- controlled chart, pixels with any channel delta >=25: **0.0028% / 0.0013% / 0.0011%**;
+- each mode's change from Original was materially larger than the Dog-versus-Cat separation, so the distinct Cat control mainly communicated a small renderer-specific RGB tuning difference.
+
+Removal scope:
+- remove Cat-like from the public Animal image list;
+- remove the Cat image transform and Cat-specific public Evidence entry;
+- narrow the shared post-transform blur path to Dog-like only;
+- update README, MVP/mode docs, limitations, and roadmap wording;
+- change production smoke so the complete accepted Animal image set is Dog-like only;
+- keep feline evidence and the rejection rationale documented as a future-model requirement rather than a public transform.
+
+Acceptance:
+- Animal image category exposes Dog-like only;
+- no `cat` image transform or Cat-like public Evidence entry remains;
+- Reference remains Age Profile only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px browser checks pass without overflow or page/console errors;
+- build passes;
+- after merge, production smoke confirms Cat-like is absent and Dog-like is the only public Animal image mode.
+
 ## Current next action
-Open the clean R7-3 PR, require the normal PR build, merge only if green, then require public production smoke to observe Dog-like / Cat-like as the complete Animal image set before marking R7-3 PASS.
+Complete and validate the R7-4 removal branch, open a clean PR, merge only after the normal PR build passes, then require the public production smoke to observe Dog-like as the complete Animal image set before marking R7-4 PASS.

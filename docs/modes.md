@@ -89,13 +89,6 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - spatial status: accepted post-pilot mode
 - spatial renderer: conservative human-display visible-range dichromatic translation plus non-calibrated fine-detail softening
 
-### Cat
-- class: Estimated
-- goal: cat-like visible-range approximation
-- image status: current cautious visible-range image proxy remains available
-- spatial status: rejected after rendered evaluation; candidate was not distinct enough from Dog-like to justify a separate live spatial claim from the current RGB source
-
-
 
 ## Reference modes
 ### Age Profile

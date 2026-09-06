@@ -334,41 +334,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  cat: {
-    summary: "Visible-range approximation inspired by domestic-cat color discrimination and lower spatial acuity, kept conservative because feline spectral literature contains historical disagreement.",
-    evidenceScore: "B",
-    modelScore: "C",
-    basisNote: "Modern behavioral neutral-point testing supports dichromatic feline color vision, while older physiological studies reported competing two- and three-cone interpretations. Behavioral acuity work also supports substantially lower spatial resolution than human vision.",
-    modelNote: "The current image cat mode remains a simplified visible-range proxy with remapped color relationships, reduced saturation, and softening. It does not claim exact feline cone catches from ordinary RGB input. A separate spatial Cat-like candidate was evaluated and rejected because it did not add enough distinct explanatory value beyond Dog-like.",
-    caveat: "Cat vision depends on luminance, adaptation, individual physiology, and task. This image mode does not reproduce tapetal/rod low-light advantages, exact spectral catches, field of view, motion processing, or literal feline color experience.",
-    primarySource: {
-      title: "Neutral point testing of color vision in the domestic cat",
-      url: "https://pubmed.ncbi.nlm.nih.gov/27720709/",
-      kind: "paper",
-      note: "2016 behavioral study reporting strong evidence for dichromatic color vision in domestic cats and a neutral point near the human deuteranope.",
-    },
-    supportingSources: [
-      {
-        title: "Cat colour vision: evidence for more than one cone process",
-        url: "https://pubmed.ncbi.nlm.nih.gov/5500987/",
-        kind: "paper",
-        note: "Classic behavioral and physiological evidence for more than one feline cone process.",
-      },
-      {
-        title: "The effects of time, luminance, and high contrast targets: revisiting grating acuity in the domestic cat",
-        url: "https://pubmed.ncbi.nlm.nih.gov/23978601/",
-        kind: "paper",
-        note: "Reviews behavioral feline grating-acuity estimates and demonstrates that measured acuity depends strongly on test conditions.",
-      },
-      {
-        title: "Trichromatic vision in the cat",
-        url: "https://pubmed.ncbi.nlm.nih.gov/910161/",
-        kind: "paper",
-        note: "Historical physiological evidence for a third cone mechanism, retained as a counterweight to overconfident dichromatic framing.",
-      },
-    ],
-    lastReviewed: "2026-09-06",
-  },
   age: {
     summary: "Averaged reference profile for age-related visual change, centered on reduced contrast, increased glare sensitivity, and lower clarity under challenging conditions.",
     evidenceScore: "B",

@@ -62,7 +62,8 @@ Animal modes in v0.1 are visible-range approximations only.
 They should be read as comparison aids rather than complete reproductions.
 
 Examples:
-- dog and cat modes are simplified visible-range approximations.
+- Dog-like remains a simplified visible-range approximation.
+- Cat-like is no longer publicly rendered because the former RGB proxy was not independently justified strongly enough from Dog-like.
 - Bird-like is not publicly rendered from ordinary RGB because a generic avian observer cannot be reconstructed from three camera channels.
 - Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.
 
@@ -71,10 +72,10 @@ Canine dichromacy is well supported, but a conventional RGB panorama cannot reco
 
 It does not model breed-dependent field of view, retinal topography, motion sensitivity, tapetal/rod-mediated low-light advantages, spectral metamerism, or neural interpretation. It should not be read as literal canine color qualia or as one universal view shared by all dogs.
 
-### Cat-like spatial evaluation limitation
-The separate spatial Cat-like candidate was rejected after same-camera review because its visible distinction from Dog-like was mainly a small increase in chromatic compression/desaturation and fine-detail softening. The current RGB source does not justify manufacturing a stronger feline-specific distinction.
+### Cat-like image and spatial evaluation limitation
+The separate spatial Cat-like candidate was rejected after same-camera review because its visible distinction from Dog-like was mainly small chromatic and softening changes. R7 later audited the image renderer against Dog-like on the built-in sample and a controlled color/detail chart and reached the same product conclusion: the former Cat-specific RGB matrix was a heuristic, not a transform derived from measured feline cone catches or a validated feline observer model.
 
-The image-track Cat-like mode remains an explicitly cautious visible-range approximation. There is no accepted public Cat-like spatial renderer at this stage.
+Domestic-cat dichromatic color behavior has research support, but that evidence does not validate the former hand-tuned Dog-versus-Cat RGB difference. The public Cat-like image mode was therefore removed rather than strengthened. A future Cat-like renderer requires a documented feline observer mapping and source-data assumptions strong enough to justify a separate species-specific output.
 
 ### Bird-like spatial evaluation limitation
 Generic Bird-like spatial has been rejected/blocked for the current RGB panorama. Avian color systems include UVS/VS and tetrachromatic mechanisms with oil-droplet filtering that ordinary RGB cannot reconstruct, while measured acuity varies by roughly two orders of magnitude across bird species. A generic saturation/contrast boost or generic sharpen/blur effect would therefore imply a coherent “bird view” that the source data and taxonomic category do not support.

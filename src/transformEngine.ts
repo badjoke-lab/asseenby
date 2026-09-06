@@ -132,9 +132,6 @@ export function applyTransform(
   } else if (modeKey === "dog") {
     applyColorDeficiency(data, amount * 0.85, [[0.62, 0.38, 0], [0.22, 0.78, 0], [0, 0.32, 0.68]]);
     applyLowContrastToData(data, amount * 0.12);
-  } else if (modeKey === "cat") {
-    applyColorDeficiency(data, amount * 0.7, [[0.7, 0.3, 0], [0.25, 0.75, 0], [0.05, 0.25, 0.7]]);
-    desaturateData(data, 0.14 + amount * 0.12);
   } else if (modeKey === "age") {
     applyLowContrastToData(data, 0.12 + amount * 0.16);
     warmTintData(data, 0.04 + amount * 0.08);
@@ -142,7 +139,7 @@ export function applyTransform(
 
   ctx.putImageData(imageData, 0, 0);
 
-  if (modeKey === "dog" || modeKey === "cat") {
+  if (modeKey === "dog") {
     mixBlurredCopy(ctx, outCanvas, width, height, 0.6 + amount * 2, 0.75);
   }
 }
