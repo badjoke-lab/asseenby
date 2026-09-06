@@ -5,7 +5,7 @@ import path from "node:path";
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
 const expectedAnimalImageModes = ["dog"];
-const expectedHumanImageModes = ["protan", "deutan", "tritan", "blur", "low_contrast", "cataract", "tunnel", "central_loss", "night", "dry_eye"];
+const expectedHumanImageModes = ["protan", "deutan", "tritan", "blur", "low_contrast", "cataract", "tunnel", "central_loss", "night"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -92,7 +92,7 @@ async function waitForCurrentProduction(page) {
 
     if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet && currentHumanSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Human set excludes Fatigue-like, Reference=Age only, Animal=Dog-like only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Human set excludes Fatigue-like/Dry-eye-like, Reference=Age only, Animal=Dog-like only`);
       return;
     }
 
@@ -129,7 +129,9 @@ async function desktopImageSmoke(browser) {
   await page.locator("#category-select").selectOption("Human");
   const humanValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
   assert(JSON.stringify(humanValues) === JSON.stringify(expectedHumanImageModes), `desktop image: unexpected Human image modes ${JSON.stringify(humanValues)}`);
-  assert(!(await page.locator("body").innerText()).includes("Fatigue-like"), "desktop image: removed Fatigue-like mode is still visible");
+  const humanBodyText = await page.locator("body").innerText();
+  assert(!humanBodyText.includes("Fatigue-like"), "desktop image: removed Fatigue-like mode is still visible");
+  assert(!humanBodyText.includes("Dry-eye-like"), "desktop image: removed Dry-eye-like mode is still visible");
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();

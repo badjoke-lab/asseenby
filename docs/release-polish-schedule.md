@@ -240,7 +240,7 @@ Validation:
 - production smoke `34026021476` — **success**, confirming Dog-like is the only public Animal image mode while Reference remains Age Profile and the accepted six spatial controls remain unchanged.
 
 ### R7-5 — Fatigue-like image mode
-Status: **ACTIVE — removal implementation**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE the public Fatigue-like image mode**
 
@@ -267,5 +267,40 @@ Acceptance:
 - build passes;
 - after merge, production smoke must observe the exact Human set without Fatigue-like before R7-5 is marked PASS.
 
+Validation:
+- removal/build/desktop + 390px + spatial regression `34026264093` — **success**;
+- PR #17 build `34026349097` — **success**;
+- merge SHA `8a8b300546bbddc6fcdbaa98a56e308bc3d81b49`;
+- matching main build `34026381562` — **success**;
+- production smoke `34026381544` — **success**, confirming the exact Human set without Fatigue-like while Animal=Dog-like, Reference=Age Profile, and the accepted six spatial controls remained unchanged.
+
+### R7-6 — Dry-eye-like image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE the public Dry-eye-like image mode**
+
+Reason:
+- dry eye can produce blur and fluctuating clarity, but that does not establish one stable static appearance shared by affected viewers;
+- the Evidence entry is B / Model C and already describes the renderer as heuristic;
+- the current transform applies general blur and then draws six fixed radial bright spots at deterministic positions unrelated to measured tear-film breakup, corneal optics, or patient data;
+- the static v0.1 image track cannot represent the time-varying clarity that is one of the mode's main stated phenomena;
+- strengthening the fixed artifact pattern would make the output more visually distinctive without making it more scientifically defensible.
+
+Removal scope:
+- remove Dry-eye-like from the public Human mode list;
+- remove the dry-eye transform branch, fixed artifact helper, and public dry-eye Evidence entry;
+- update README, MVP/mode documentation, and limitations;
+- strengthen production smoke so the exact Human set excludes both Fatigue-like and Dry-eye-like;
+- leave Night / Low Light as the remaining Estimated Human mode for a separate audit.
+
+Acceptance:
+- Human image modes are Protan-like, Deutan-like, Tritan-like, Blur, Low Contrast, Cataract-like, Tunnel Vision, Central Loss, and Night / Low Light;
+- no `dry_eye` transform, fixed dry-eye overlay helper, or Dry-eye-like public Evidence entry remains;
+- Animal remains Dog-like only and Reference remains Age Profile only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px image/spatial regression passes without overflow or page/console errors;
+- build passes;
+- after merge, production smoke must observe the exact Human set without Dry-eye-like before R7-6 is marked PASS.
+
 ## Current next action
-Complete and validate the R7-5 Fatigue-like removal branch, open a clean PR, merge only if the normal PR build is green, then require production smoke to observe the exact Human set with Fatigue-like absent.
+Complete and validate the R7-6 Dry-eye-like removal branch, open a clean PR, merge only if the normal PR build is green, then require production smoke to observe the exact Human set without Dry-eye-like.

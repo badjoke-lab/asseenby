@@ -75,9 +75,6 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction
 
 
-### Dry-eye-like
-- class: Estimated
-- goal: uneven blur and glare approximation
 
 ## Animal modes
 ### Dog

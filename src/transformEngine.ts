@@ -97,11 +97,6 @@ export function applyTransform(
   }
 
 
-  if (modeKey === "dry_eye") {
-    renderBlurred(ctx, baseCanvas, width, height, 0.4 + amount * 2.1);
-    addDryEyeOverlay(ctx, width, height, amount);
-    return;
-  }
 
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
@@ -410,19 +405,6 @@ function softenHighlights(data: Uint8ClampedArray, threshold: number, amount: nu
 }
 
 
-function addDryEyeOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, amount: number) {
-  const spots = 6;
-  for (let i = 0; i < spots; i += 1) {
-    const x = width * ((i * 0.17 + 0.12) % 1);
-    const y = height * ((i * 0.21 + 0.18) % 1);
-    const radius = Math.min(width, height) * (0.06 + 0.03 * i * amount);
-    const gradient = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius);
-    gradient.addColorStop(0, `rgba(255,250,235,${0.08 + amount * 0.12})`);
-    gradient.addColorStop(1, "rgba(255,250,235,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-  }
-}
 
 function srgbToLinear(value: number) {
   const normalized = value / 255;
