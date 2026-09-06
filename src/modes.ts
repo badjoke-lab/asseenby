@@ -23,6 +23,5 @@ export const MODES: ModeDef[] = [
   { key: "fatigue", label: "Fatigue-like", category: "Human", confidence: "Estimated", note: "Fatigue-related viewing softness approximation." },
   { key: "dry_eye", label: "Dry-eye-like", category: "Human", confidence: "Estimated", note: "Uneven blur and glare approximation." },
   { key: "dog", label: "Dog-like", category: "Animal", confidence: "Estimated", note: "Dog-like visible-range approximation based on commonly described canine characteristics." },
-  { key: "cat", label: "Cat-like", category: "Animal", confidence: "Estimated", note: "Cat-like visible-range approximation based on commonly described feline characteristics." },
   { key: "age", label: "Age Profile", category: "Reference", confidence: "Reference", note: "Age-related viewing profile approximation." },
 ];

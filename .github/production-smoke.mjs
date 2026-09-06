@@ -4,7 +4,7 @@ import path from "node:path";
 
 const BASE = process.env.ASSEENBY_PRODUCTION_URL || "https://asseenby.pages.dev";
 const OUT = path.resolve("production-smoke");
-const expectedAnimalImageModes = ["dog", "cat"];
+const expectedAnimalImageModes = ["dog"];
 const expectedSpatialModes = [
   "Normal",
   "Tunnel Vision",
@@ -86,7 +86,7 @@ async function waitForCurrentProduction(page) {
 
     if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Bee-like/Bird-like image modes absent`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; Reference=Age only and Animal image set=Dog-like only`);
       return;
     }
 
@@ -119,6 +119,7 @@ async function desktopImageSmoke(browser) {
   const animalBodyText = await page.locator("body").innerText();
   assert(!animalBodyText.includes("Bee-like"), "desktop image: removed Bee-like image mode is still visible");
   assert(!animalBodyText.includes("Bird-like"), "desktop image: removed Bird-like image mode is still visible");
+  assert(!animalBodyText.includes("Cat-like"), "desktop image: removed Cat-like image mode is still visible");
   await page.locator("#category-select").selectOption("Human");
 
   const split = page.getByRole("button", { name: "Split" });

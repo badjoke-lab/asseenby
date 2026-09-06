@@ -66,7 +66,6 @@ v0.1 is intentionally narrow and focused on a browser-based MVP.
 ### Animal
 
 - Dog-like
-- Cat-like
 
 ### Reference
 

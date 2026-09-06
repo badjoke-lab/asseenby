@@ -39,7 +39,7 @@ Status: **rejected after rendered review**
 
 A conservative Cat-like candidate was implemented and compared against Normal and Dog-like on the same 360° camera states. Browser regression passed, but the visible difference from Dog-like was dominated by slightly lower chroma and slightly stronger softening. Keeping a separate spatial Cat-like control would therefore imply a species-specific distinction that the current RGB source and evidence boundary do not justify strongly enough.
 
-The image-track Cat-like mode remains available as an explicitly cautious visible-range approximation. The rejected spatial candidate is not added to the public spatial controls.
+R7 subsequently audited the image-track Cat-like output against Dog-like on both the built-in sample and a controlled color/detail chart. The remaining distinction was dominated by modest hand-tuned RGB/softening differences rather than a validated feline observer mapping, so the public Cat-like image mode was also removed. Future Cat-like work must justify a separate feline renderer with an explicit observer model rather than manufacture a larger visual gap.
 
 ## Spatial evaluation — Bird-like
 Status: **rejected / blocked at evidence-source gate**
