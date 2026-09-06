@@ -15,9 +15,9 @@ Average-profile reference modes. These are not individual-level predictions.
 ## Renderer note
 A named mode can have more than one renderer implementation.
 
-Current v0.1 modes use the image renderer. The experimental spatial pilot adds separate live 3D implementations only where space, view direction, depth, or lighting materially improves the comparison.
+The v0.1 modes use the image renderer. The spatial experience adds separate live 3D implementations only where space, view direction, depth, or lighting materially improves the comparison.
 
-The existence of a spatial implementation does not change the mode's evidence class automatically, and spatial model maturity should be reviewed separately from the existing image transform.
+The existence of a spatial implementation does not change the mode's evidence class automatically, and spatial model maturity is reviewed separately from the existing image transform.
 
 ## Human modes
 ### Protan-like
@@ -47,25 +47,30 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Strong
 - goal: hazy, lower-contrast, yellowed viewing approximation
 - image renderer: current static-image transform
-- spatial pilot: scene-dependent simulation using live rendered brightness so bright sources can produce stronger glare / spread as the camera turns toward them
+- spatial status: accepted initial pilot mode
+- spatial renderer: scene-dependent simulation using live rendered high-luminance information so bright sources can produce stronger glare / spread as the camera turns toward them
 - spatial limitation: generic model, not a reconstruction of an individual's lens scattering
 
 ### Tunnel Vision
 - class: Strong
 - goal: peripheral field loss approximation
 - image renderer: current simplified screen-space mask
-- spatial pilot: live view-relative peripheral field-loss simulation on the rendered scene
+- spatial status: accepted initial pilot mode
+- spatial renderer: live view-relative peripheral field-loss simulation on the rendered scene
 - spatial limitation: generic field-loss profile, not an individual's measured perimetry result
 
 ### Central Loss
 - class: Strong
 - goal: central field loss approximation
-- spatial status: deferred until the first spatial pilot acceptance gate
+- image renderer: current localized central-loss transform
+- spatial status: active post-pilot expansion target
+- spatial renderer target: live view-relative central-field-loss simulation; straight-ahead detail is degraded while surrounding scene information remains more available, and the affected region stays centered in the viewer's field during look-around
+- spatial limitation: generic central-loss / scotoma-style profile, not an individual's measured scotoma or perimetry result
 
 ### Night / Low Light
 - class: Estimated
 - goal: low-light viewing approximation
-- spatial status: deferred until the first spatial pilot acceptance gate
+- spatial status: next candidate only after Central Loss acceptance
 
 ### Fatigue-like
 - class: Estimated
@@ -79,12 +84,12 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Dog
 - class: Estimated
 - goal: dog-like visible-range approximation
-- spatial status: deferred until the first spatial pilot acceptance gate
+- spatial status: deferred until the ordered human spatial expansion reaches it
 
 ### Cat
 - class: Estimated
 - goal: cat-like visible-range approximation
-- spatial status: deferred until the first spatial pilot acceptance gate
+- spatial status: deferred until the ordered human spatial expansion reaches it
 
 ### Bee
 - class: Estimated
@@ -96,7 +101,7 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Estimated
 - goal: bird-like visible-range approximation
 - limitation: UV is not reproduced
-- spatial status: deferred for separate evaluation after the first pilot
+- spatial status: deferred for separate evaluation after earlier spatial candidates
 
 ## Reference modes
 ### Age Profile
