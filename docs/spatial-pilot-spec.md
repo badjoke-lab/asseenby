@@ -1,159 +1,171 @@
 # AsSeenBy — Spatial Pilot Spec
 
 ## Status
-Experimental track. Additive to the existing v0.1 image comparison experience.
+The initial Three.js pilot has passed its acceptance gate. This document now also governs ordered post-pilot spatial expansion.
 
-## Purpose
-Test whether an interactive 3D environment can explain selected visual differences more clearly than a transformed still image.
-
-The pilot is not a redesign of AsSeenBy and does not replace `Compare image`.
+The spatial experience remains additive to the existing v0.1 image comparison experience and does not replace `Compare image`.
 
 ## Important terminology
 The word **approximation** is a claim boundary, not a license to use a weak visual filter.
 
-The spatial renderer must use scene, camera, depth, luminance, and view direction where those variables matter. It must not simply apply the existing 2D output as a texture or copy a static image filter over a 3D canvas.
+The spatial renderer must use scene, camera, depth, luminance, view direction, and screen-relative field position where those variables matter. It must not simply apply the existing 2D output as a texture or copy a static image filter over a 3D canvas when the phenomenon being modeled is spatially dependent.
 
-AsSeenBy still does not claim that the output is an exact reconstruction of any particular person's lived perception. Exact patient-level reproduction would require individual measurements and validated models that are outside this pilot.
+AsSeenBy does not claim that spatial output is an exact reconstruction of any particular person's lived perception. Exact patient-level reproduction would require individual measurements and validated models outside the current product.
 
 ## Product shape
 The workspace exposes two experiences:
-
 - **Compare image** — the current static-image upload / sample comparison workflow.
-- **Explore 3D** — an experimental interactive spatial comparison built with Three.js.
+- **Explore 3D** — an interactive spatial comparison built with Three.js.
 
 The 3D experience must remain visually and conceptually part of AsSeenBy: research-oriented, restrained, evidence-linked, and explicit about what is modeled versus what is not.
 
 ## Why 3D exists
 3D is justified only where spatial interaction materially improves understanding.
 
-The first pilot focuses on:
+Accepted examples:
+1. **Tunnel Vision** — active scanning shows the consequence of losing peripheral information while the field-loss region remains tied to the viewer's field.
+2. **Cataract-like** — actual bright scene sources produce stronger glare / spread when they enter the rendered view.
 
-1. **Peripheral field loss / Tunnel Vision** — the user can look around the same environment and experience how losing peripheral information changes awareness of objects outside the center.
-2. **Cataract-like glare / haze** — bright scene lights affect the result dynamically so glare, light spread, haze, blur, and contrast loss change as the user turns toward or away from them.
+Current expansion target:
+3. **Central Loss** — active scanning should show that disrupted straight-ahead detail remains tied to the viewer's central field. Looking directly at a target can make that target harder to inspect, while turning the view moves a different scene target into the affected center.
 
-A mode that is only a global color matrix or a static full-screen filter is not, by itself, a reason to add a 3D implementation.
+A mode that is only a global color matrix or static full-screen filter is not, by itself, a reason to add a 3D implementation.
 
-## Initial scene
-Build exactly one purpose-designed night street / street-corner scene.
+## Controlled scene
+Use the accepted purpose-designed night street / street-corner scene for the Central Loss phase.
 
-Required visual targets:
-- traffic signal or strong red/green signal targets;
-- road sign or text-like sign target;
-- pedestrian silhouette;
-- vehicle or vehicle-like geometry;
-- streetlight;
-- bright headlight-like sources;
-- crosswalk / high-contrast ground markings;
-- storefront or illuminated sign;
+It contains:
+- traffic signal targets;
+- road / text-like sign target;
+- pedestrian;
+- vehicle and headlights;
+- streetlights;
+- crosswalk / high-contrast markings;
+- illuminated storefront / sign;
 - mid-distance and far-distance building forms;
-- at least one darker region with lower contrast.
+- darker low-contrast regions.
 
 The scene is a controlled comparison environment, not a realistic city recreation and not a game level.
 
-## Initial spatial modes
+## Accepted baseline spatial modes
 
 ### Normal
 Baseline renderer with no perception simulation.
 
 ### Tunnel Vision
-A spatial simulation of peripheral field loss.
+Live screen/view-relative peripheral field-loss simulation.
 
-Requirements:
-- central region remains most visible;
-- peripheral scene information is progressively obscured or degraded;
-- the field-loss mask stays view-relative while the user looks around;
-- switching to/from Normal does not move the camera;
-- the implementation must work on the live rendered scene, not on a pre-rendered still.
-
-The generic mode is not a patient-specific visual-field reconstruction unless future work adds measured field data.
+Boundary:
+- generic field-loss profile;
+- not an individual's measured perimetry result.
 
 ### Cataract-like
-A physically informed scene-dependent simulation combining the product's current cataract framing: haze, lower contrast, yellowing/warming, blur, and light spread.
+Live scene-dependent model combining softness, lower contrast, warming / veil, and high-luminance-gated local light spread.
 
-Requirements:
-- global contrast is reduced;
-- moderate optical softness / blur is present;
-- bright scene sources produce stronger glare / spread than dark regions;
-- the effect changes when the camera turns toward or away from bright sources;
-- the response must use rendered luminance or bright-pass information rather than a fixed decorative glow;
-- switching to/from Normal does not move the camera.
+Boundary:
+- generic impairment model;
+- not a patient-specific lens-scatter reconstruction.
 
-The generic mode is not a patient-specific cataract optical model.
+## Post-pilot expansion — Central Loss
+
+### Purpose
+Demonstrate the practical consequence of degraded or missing straight-ahead detail in an interactive scene.
+
+### Requirements
+- central region is materially more degraded or obscured than surrounding vision;
+- surrounding / peripheral scene information remains substantially available;
+- the affected region remains centered in the viewer's field while the camera turns;
+- the effect operates on the live rendered scene;
+- switching Normal <-> Central Loss does not change camera position, direction, object placement, lighting, time, or scene state;
+- direct-fixation targets such as a pedestrian, sign, signal, or headlight become harder to inspect when they fall in the central-loss region;
+- turning the camera changes which world-space target falls under the central disruption because the disruption is view-relative;
+- use a soft generic central scotoma-style profile, optionally combining localized blur / desaturation / partial obscuration;
+- do not present the shape, size, opacity, or strength as an individual's measured field loss.
+
+### Why this is spatial rather than another image filter
+The value is not the existence of a central mask by itself. The value is the interaction between fixation and scene inspection:
+- the user attempts to center a target;
+- central detail becomes less available;
+- the user scans elsewhere;
+- the affected region remains in straight-ahead vision and a different target moves into it.
+
+This behavior must be visible in rendered validation before the mode is accepted.
+
+### Evidence / model rule
+- reuse the existing Central Loss evidence set for the underlying phenomenon;
+- assess the spatial renderer implementation separately from the image renderer;
+- initial spatial Model assessment must remain conservative at **C** until rendered review is completed;
+- state explicitly that the model is generic and not a measured scotoma / perimetry reconstruction.
 
 ## Camera and interaction
-Initial pilot interaction:
+Spatial interaction remains:
 - drag / pointer movement to look around;
 - touch drag on mobile;
-- restrained zoom or field-of-view adjustment where practical;
+- keyboard look-around when the scene has focus;
+- restrained zoom only if separately justified;
 - no free walking, collision system, scoring, character controller, or game mechanics.
 
 Mode comparison rule:
 - keep camera position and view direction unchanged when switching modes;
-- do not change object placement, lighting, time, or scene state between Normal and simulated modes;
+- do not change object placement, lighting, time, or scene state between modes;
 - only the perception renderer changes.
-
-This isolates the effect being compared.
 
 ## Relationship to the existing 2D engine
 The existing `src/transformEngine.ts` remains the image renderer for `Compare image`.
 
-The spatial pilot must be implemented as a separate renderer/component. It may share mode metadata and evidence, but it should not replace the 2D canvas engine.
-
-Target architecture:
+The spatial renderer remains separate. It may share mode metadata and evidence, but it must not replace the 2D canvas engine.
 
 ```text
 mode / evidence metadata
         |
         +-- image renderer -> current Canvas 2D transform engine
         |
-        +-- spatial renderer -> Three.js scene + scene-aware post-processing
+        +-- spatial renderer -> Three.js scene + live post-processing
 ```
 
 ## Evidence and claims
-Existing evidence and limitation concepts remain in force.
-
-For spatial modes, documentation and UI must distinguish:
+For every spatial mode, documentation and UI must distinguish:
 - evidence for the underlying visual phenomenon;
 - confidence in the current spatial implementation;
 - whether the model is generic or based on individual measurements.
 
-A visually impressive implementation must not be presented as more scientifically exact than its evidence supports.
+A visually sophisticated 3D result is not automatically more scientifically exact.
 
-## Deferred spatial modes
-Do not add these before the pilot acceptance gate:
-- Central Loss;
-- Night / Low Light;
-- Dog-like;
-- Cat-like;
-- other human modes;
-- Bird-like;
-- Bee-like.
+## Ordered expansion rule
+After the accepted initial pilot, spatial modes are evaluated one at a time in this order:
+1. Central Loss;
+2. Night / Low Light;
+3. Dog-like;
+4. Cat-like;
+5. Bird-like as a separate evaluation;
+6. Bee-like only with additional UV-reflectance scene data.
+
+Do not start the next mode until the active mode has passed its rendered acceptance gate or has been explicitly rejected.
 
 ### Bee-like special rule
-Bee-like UV work cannot be represented honestly from ordinary RGB scene color alone.
-
-A future UV-aware scene would need additional scene/material data such as UV-reflectance information and a documented false-color mapping. Do not fake UV perception with a purple/blue filter.
+Bee-like UV work cannot be represented honestly from ordinary RGB scene color alone. A future UV-aware scene requires additional scene/material data such as UV-reflectance information and a documented false-color mapping. Do not fake UV perception with a purple / blue filter.
 
 ## Performance and fallback
-The pilot must remain usable on desktop and mobile browsers supported by the current site.
+The spatial experience must remain usable on desktop and mobile browsers supported by the current site.
 
 Requirements:
 - no server-side rendering dependency for the 3D scene;
 - no account or storage requirement;
-- keep the initial scene lightweight;
-- if WebGL / Three.js initialization fails, preserve access to the existing image comparison experience and show a concise failure notice rather than breaking the page.
+- keep scene and post-processing lightweight;
+- preserve the existing image comparison experience if WebGL / Three.js initialization fails;
+- show a concise failure notice instead of breaking the page.
 
-## Acceptance gate
-The pilot is successful only if all of the following are true:
-
+## Central Loss acceptance gate
+Central Loss is successful only if all of the following are true:
 1. Existing `Compare image` behavior still works.
-2. `Explore 3D` loads one night-street test scene.
-3. Normal, Tunnel Vision, and Cataract-like can be switched without camera reset.
-4. Tunnel Vision is view-relative and clearly changes spatial awareness.
-5. Cataract-like glare responds to actual scene brightness / viewing direction instead of behaving as a static overlay.
-6. Evidence / limitation text is available for the active spatial mode.
-7. Desktop and mobile interaction are usable.
-8. `npm run build` passes.
-9. The result is clearly more informative for these two modes than showing another transformed still image.
+2. Existing accepted spatial modes still work.
+3. Central Loss can be selected without camera reset.
+4. Straight-ahead detail is clearly less usable while surrounding scene information remains available.
+5. The disrupted region remains view-relative during look-around.
+6. Same-camera Normal / Central Loss comparisons demonstrate that only the perception renderer changed.
+7. Evidence / limitation text is available for Central Loss.
+8. Desktop and mobile interaction remain usable.
+9. `npm run build` passes.
+10. Rendered review shows that active scanning explains central field loss more clearly than another transformed still image.
 
-If criterion 9 is not met, do not expand the 3D track merely because the renderer works.
+If criterion 10 is not met, do not keep the spatial Central Loss mode merely because the shader works.
