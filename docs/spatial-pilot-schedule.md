@@ -1,10 +1,10 @@
 # AsSeenBy — Spatial Pilot Schedule
 
 ## Current state
+PR #6 — **Cat-like spatial rejection recorded / final clean-head regression before merge**
 Branch: `feat/spatial-cat-like`
-Status: **Cat-like spatial rejected after rendered review / Bird-like next**
 
-Dog-like is merged on main as `5bdd0d39f963b498fcf2f7f379f07b50adf79e25`; post-merge main build `34009808490` passed. Cat-like candidate browser run `34010239767` passed technically, but manual same-camera review rejected the spatial mode as insufficiently distinct from Dog-like without unsupported assumptions.
+Dog-like is merged on main as `5bdd0d39f963b498fcf2f7f379f07b50adf79e25`; post-merge main build `34009808490` passed. Cat-like candidate browser run `34010239767` passed technically, but manual same-camera review rejected the spatial mode as insufficiently distinct from Dog-like without unsupported assumptions. Rejection/cleanup commit `2497db8d6143c13155be4b477e3ec017216549d4` contains no Cat-like spatial renderer/control changes; patch/build workflow `34010475440` passed.
 
 ## Execution rule
 At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
@@ -80,7 +80,7 @@ Manual same-camera review compared Normal / Dog-like / Cat-like in forward and t
 
 Decision: **reject the spatial Cat-like control**. The current RGB panorama and evidence boundary do not justify inventing a stronger feline-specific visual distinction merely to make the modes look different. The existing image-track Cat-like approximation remains separately available and conservatively labeled.
 
-No Cat-like shader, spatial evidence branch, control, or browser capture additions are merged to main from the rejected candidate.
+The rejected candidate was removed before the merge head. Comparison against main contains documentation/evidence updates only; no Cat-like shader, spatial evidence branch, control, or browser capture addition remains. Cleanup build `34010475440` passed.
 
 ## Step 15 — Bird-like evidence/source-data boundary
 Status: **next / not yet implemented**
@@ -96,5 +96,5 @@ Acceptance rule for beginning implementation:
 1. Bird-like evidence/source-data evaluation
 2. Bee-like only with additional UV-reflectance scene data
 
-## Current next action
-Review Bird-like evidence and source-data requirements against the current Hansaplatz RGB panorama. Decide whether a spatial renderer candidate is justified before writing any Bird-like shader. Do not begin Bee-like yet.
+## Final merge gate
+Run the existing PR build and full desktop / 390px Chromium regression on this clean rejection/documentation head. If both are green, mark PR #6 ready and squash-merge it. Then begin Bird-like evidence/source-data evaluation from the new main.
