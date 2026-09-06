@@ -1,0 +1,39 @@
+name: Evidence accuracy audit
+
+on:
+  push:
+    branches:
+      - fix/evidence-accuracy-cleanup
+    paths:
+      - .github/workflows/evidence-accuracy-audit.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare public image modes with image evidence keys
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          modes = Path('src/modes.ts').read_text()
+          evidence = Path('src/modeEvidence.ts').read_text()
+          mode_keys = re.findall(r'key:\s*"([a-z_]+)"', modes)
+          evidence_keys = re.findall(r'^\s{2}([a-z_]+):\s*\{', evidence, flags=re.M)
+          print('PUBLIC_MODE_KEYS=', mode_keys)
+          print('IMAGE_EVIDENCE_KEYS=', evidence_keys)
+          print('EXTRA_EVIDENCE_KEYS=', sorted(set(evidence_keys) - set(mode_keys)))
+          print('MISSING_EVIDENCE_KEYS=', sorted(set(mode_keys) - set(evidence_keys)))
+          if set(mode_keys) - set(evidence_keys):
+              raise SystemExit('A public mode is missing image evidence')
+          PY
+
+      - name: Find stale current-scope wording
+        shell: bash
+        run: |
+          echo '--- stale/current-scope candidate matches (historical mentions require manual classification) ---'
+          git grep -nEi 'fatigue-like|dry-eye-like|image-track Cat-like|current image Bird-like|separate image-track Cat-like|reference profiles|Age Profile|sex-difference|night / low light' -- ':!docs/release-polish-schedule.md' || true
