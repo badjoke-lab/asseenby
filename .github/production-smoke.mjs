@@ -108,6 +108,16 @@ async function desktopImageSmoke(browser) {
   await page.goto(`${BASE}/?production_smoke=image-${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
   await page.getByRole("heading", { name: /See the same image through different ways of seeing/i }).waitFor();
   await noHorizontalOverflow(page, "desktop image");
+  const compareBox = await page.locator(".compare-card").boundingBox();
+  const categoryGridBox = await page.locator("#modes").boundingBox();
+  assert(compareBox && categoryGridBox, "desktop image: workspace geometry is unavailable");
+  const workspaceGap = categoryGridBox.y - (compareBox.y + compareBox.height);
+  assert(workspaceGap >= 0 && workspaceGap <= 48, `desktop image: category cards are pushed too far below compare stage (${workspaceGap}px)`);
+  const categoryCards = page.locator("#modes .category-card");
+  assert((await categoryCards.count()) === 2, "desktop image: expected exactly Human and Animal category cards");
+  const lastCategoryBox = await categoryCards.nth(1).boundingBox();
+  assert(lastCategoryBox, "desktop image: Animal category card has no bounding box");
+  assert(Math.abs((lastCategoryBox.x + lastCategoryBox.width) - (categoryGridBox.x + categoryGridBox.width)) <= 3, "desktop image: two-category grid leaves an unused desktop column");
 
   const initialResources = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
   assert(!initialResources.some((name) => /SpatialEntry/i.test(name)), "desktop image: spatial bundle loaded before Explore 3D was opened");
@@ -183,6 +193,11 @@ async function mobileImageSmoke(browser) {
   await page.goto(`${BASE}/?production_smoke=mobile-image-${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
   await page.locator("#workspace").waitFor();
   await noHorizontalOverflow(page, "mobile image");
+  const mobileCompareBox = await page.locator(".compare-card").boundingBox();
+  const mobileControlBox = await page.locator(".control-rail").boundingBox();
+  const mobileCategoryBox = await page.locator("#modes").boundingBox();
+  assert(mobileCompareBox && mobileControlBox && mobileCategoryBox, "mobile image: workspace geometry is unavailable");
+  assert(mobileCompareBox.y < mobileControlBox.y && mobileControlBox.y < mobileCategoryBox.y, "mobile image: expected compare -> controls -> categories order");
   await page.getByRole("button", { name: "Side by side" }).click();
   await page.getByRole("button", { name: "Slider" }).click();
   const approximation = page.locator('img[alt="Approximation"]').first();
