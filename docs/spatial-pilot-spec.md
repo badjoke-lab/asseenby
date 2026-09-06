@@ -196,7 +196,7 @@ The user can actively scan one coherent environment and compare how signs, folia
 
 A conservative Cat-like candidate was implemented and passed automated desktop/mobile browser checks. Same-camera rendered review compared it directly with Normal and Dog-like. The remaining visible distinction was mainly slightly lower chroma/chromatic separation plus slightly stronger fine-detail softening.
 
-The project rejected the spatial Cat-like control because keeping it would encourage unsupported species-specific differentiation from a tone-mapped RGB source. Historical feline cone literature is also less straightforward than the canine case. The image-track Cat-like approximation remains separately available and conservatively labeled.
+The project rejected the spatial Cat-like control because keeping it would encourage unsupported species-specific differentiation from a tone-mapped RGB source. Historical feline cone literature is also less straightforward than the canine case. At the time of the spatial decision the image-track Cat-like approximation remained separately available; R7 later removed it after the image-output audit. Cat-like is now absent from both public tracks.
 
 Rejection rule established by this step: a species mode is not accepted merely because a shader can be made visually different. It must add documented explanatory value that the available source data can support.
 

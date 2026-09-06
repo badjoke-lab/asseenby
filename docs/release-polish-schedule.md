@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R8 PASS / production polished through R8-5**
+Status: **Step R9 PASS / evidence accuracy validated / R8 production-polished**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -569,5 +569,31 @@ R8 is closed for the current release because the accepted production captures an
 
 Do not create an R8-6 merely to continue numbering. Reopen release polish only when a new concrete user-facing defect is observed in production or a later product change introduces a new responsive/accessibility requirement.
 
+## Step R9 — Evidence accuracy / removed-mode consistency
+Status: **PASS / validated**
+
+Finding:
+- R7 removed Cat-like, Bird-like, Fatigue-like, Dry-eye-like, Night / Low Light image, and Reference image modes, but several methodology/evidence/spatial documents still contained pre-R7 wording that described some of those image modes as currently available;
+- `src/modeEvidence.ts` contains a `night` entry even though `night` is absent from public image `MODES`; dependency inspection confirmed this is intentional shared phenomenon evidence used by `getSpatialModeEvidence("night")`, not dead image data.
+
+Implementation:
+- keep the shared `night` phenomenon evidence and explicitly document its spatial-only reuse;
+- remove current-state Cat-like/Bird-like image availability claims from methodology and spatial documentation while preserving the historical decision sequence;
+- remove Fatigue-like / Dry-eye-like from current Estimated examples and state that public image Human modes are currently all Strong;
+- update the evidence-model Tunnel Vision example from a future spatial implementation to the accepted current live view-relative implementation;
+- document that the phenomenon-evidence base can legitimately contain spatial-only keys while image visibility is controlled by `src/modes.ts`.
+
+Acceptance:
+- every public image mode has phenomenon evidence — **PASS**;
+- every evidence-bearing spatial mode has phenomenon evidence, including spatial-only `night` — **PASS**;
+- no current methodology/spec wording claims Cat-like or Bird-like image is still public — **PASS**;
+- no current Estimated example lists removed Fatigue-like or Dry-eye-like image modes — **PASS**;
+- build and full desktop/390px image + spatial browser regression remain green — **PASS**.
+
+Validation:
+- initial audit `34045976762` — **success**; it found public image keys `protan/deutan/tritan/blur/low_contrast/cataract/tunnel/central_loss/dog`, plus shared evidence key `night`;
+- dependency check confirmed `src/spatialEvidence.ts` calls `getModeEvidence("night")`, so deleting that base entry would incorrectly downgrade the spatial Night evidence to pending D;
+- corrected evidence-accuracy build + full browser validation `34046158078` — **success** (this commit is emitted only after all validation gates pass).
+
 ## Current next action
-Return to the roadmap/current product priority. Keep the production smoke as the regression gate, and open a new release-polish step only for a newly observed concrete production defect.
+Continue the roadmap's retained-mode transform/evidence-quality audit without reopening removed modes. Prioritize the remaining public image renderers by implementation maturity and evidence/model fit, while keeping the accepted spatial set stable.

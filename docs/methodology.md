@@ -103,12 +103,12 @@ For that reason the renderer keeps Evidence and Model separate: the broad canine
 ## Cat-like spatial evaluation
 A Cat-like spatial candidate was implemented with conservative chromatic compression and slightly stronger fine-detail softening. Automated browser validation passed, but same-camera rendered review found that its explanatory difference from the accepted Dog-like mode was mostly a small degree change in chroma and blur.
 
-Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. This rejection does not remove the separate image-track Cat-like approximation; it only means the current spatial source/model does not justify a distinct live Cat-like mode.
+Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. R7 later removed the separate image-track Cat-like mode after its own rendered-output audit reached the same product conclusion: the available RGB proxy did not justify a distinct feline observer claim. Cat-like is therefore absent from both current public tracks.
 
 ## Bird-like spatial evaluation result
 Bird-like was evaluated as a source-data/evidence question before shader work and was rejected/blocked for the current generic RGB setup. Ordinary RGB cannot reconstruct ultraviolet/violet-sensitive cone catches, tetrachromatic color relationships, species-specific oil-droplet filtering, or polarization sensitivity. In addition, comparative data show very large species variation in avian acuity, making a generic spatial sharpness rule misleading.
 
-The current image Bird-like mode remains a deliberately weak visible-range proxy with Model D. That image transform is not promoted into a spatial mode merely because Three.js can reproduce the same saturation/microcontrast changes interactively.
+R7 later removed the former image Bird-like mode as well. Its visible-range saturation/microcontrast transform had Model D and could not represent avian tetrachromacy, UVS/VS variation, oil-droplet filtering, species-specific acuity, or a defensible generic avian observer. Bird-like is therefore absent from both current public tracks under the ordinary-RGB source boundary.
 
 ## Bee-like spatial source-data result
 Bee-like remains blocked until UV-reflectance/spectral scene data are available. A future implementation must model a documented bee observer and then translate that result to a human display with explicit false-color caveats; ordinary RGB cannot supply the missing UV channel after capture.
@@ -127,11 +127,10 @@ This means a mode can have strong evidence for the underlying phenomenon while s
 For spatial modes, model maturity must reflect the spatial implementation itself rather than automatically inheriting confidence from the 2D renderer.
 
 ## Human modes
-Human modes are divided into two groups.
+Human modes use Strong / Estimated classes where applicable.
 
 ### Strong
-These are first-pass public approximations that have the clearest justification for comparison.
-Examples:
+The current public image Human set contains the first-pass approximations with the clearest justification for static comparison:
 - protan-like;
 - deutan-like;
 - tritan-like;
@@ -142,11 +141,7 @@ Examples:
 - cataract-like.
 
 ### Estimated
-These are useful but more interpretive viewing profiles.
-Examples:
-- night / low light;
-- fatigue-like;
-- dry-eye-like.
+There are currently no Estimated Human modes in public image comparison. Night / Low Light remains an Estimated spatial-only mode because its live renderer can at least respond to relative displayed luminance in the accepted panorama. Fatigue-like and Dry-eye-like image modes were removed during R7 rather than retain symptom-cluster proxies that the static renderer could not justify as distinct observer models.
 
 ## Animal modes
 Animal modes in v0.1 are visible-range approximations only.
