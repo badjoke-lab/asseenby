@@ -1,0 +1,72 @@
+name: cleanup spatial v5
+
+on:
+  push:
+    branches:
+      - feat/spatial-central-loss
+    paths:
+      - .github/workflows/cleanup-spatial-v5.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/spatial-central-loss
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Remove obsolete primitive scene code
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/SpatialPage.tsx')
+          text = path.read_text()
+          text = text.replace('import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";\n', '')
+          text = text.replace('import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";\n', '')
+          text = text.replace('experimental 3D renderer', 'experimental spatial renderer')
+          start = text.find('function loadPresentationBuildings(')
+          end = text.find('function disposeScene(', start)
+          if start < 0 or end < 0 or end <= start:
+              raise SystemExit('obsolete scene block anchors not found')
+          text = text[:start] + text[end:]
+          path.write_text(text)
+          PY
+
+      - name: Remove unused v4 model assets
+        run: |
+          git rm -f \
+            public/assets/models/downtown-small.glb \
+            public/assets/models/downtown-medium.glb \
+            public/assets/models/downtown-large.glb \
+            public/assets/models/LICENSE-quaternius.txt
+
+      - name: Verify no obsolete 3D copy remains in active page
+        run: |
+          if grep -n '3D renderer\|Explore 3D\|Controlled night-street scene' src/SpatialPage.tsx; then
+            echo 'obsolete spatial copy remains'
+            exit 1
+          fi
+
+      - name: Verify build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit cleanup and remove temporary workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/SpatialPage.tsx
+          git rm .github/workflows/cleanup-spatial-v5.yml
+          git commit -m 'Remove obsolete primitive spatial scene implementation'
+          git push origin HEAD:feat/spatial-central-loss
