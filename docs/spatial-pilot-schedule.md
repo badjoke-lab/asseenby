@@ -4,149 +4,116 @@
 Branch: `feat/spatial-central-loss`
 PR: `#3` — **draft / blocked on scene quality review**
 
-The existing public product remains the v0.1 static-image comparison tool. The accepted Three.js renderer baseline contains Normal, Tunnel Vision, and Cataract-like on one controlled night-street scene.
-
-Main baseline before this expansion:
-- initial spatial pilot PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`;
-- main post-merge build run `34000040892` passed;
-- image comparison remains the default experience;
-- Three.js remains a separate `Explore 3D` experience;
-- accepted spatial interaction is fixed-position pointer/touch/keyboard look-around;
-- mode changes preserve camera position and direction;
-- spatial evidence / Model notes remain renderer-specific.
+The existing public product remains the v0.1 static-image comparison tool. The spatial track is additive. The initial Normal / Tunnel Vision / Cataract-like renderer is on main, while Central Loss and the scene-presentation rebuild remain isolated in PR #3.
 
 ## Execution rule
-At the start of every future spatial step, implementation work must re-read:
-- `AGENTS.md`;
-- `docs/spatial-pilot-spec.md`;
-- this schedule;
-- the relevant methodology / limitation / evidence documents for the active mode.
+At the start of every spatial step, re-read `AGENTS.md`, `docs/spatial-pilot-spec.md`, this schedule, and the relevant methodology / limitation / evidence documents. A step is not complete until its rendered acceptance conditions are met.
 
-A step is not complete until its acceptance condition is satisfied. Update this file whenever scope, status, claim boundaries, or rendered-review quality changes.
-
-## Steps 0–8 — Initial spatial renderer pilot
+## Steps 0–8 — Initial spatial pilot
 Status: **complete / merged**
 
-What was proven:
-- isolated Three.js integration;
-- controlled night-street renderer;
-- Normal / Tunnel Vision / Cataract-like switching;
-- fixed-position look-around;
-- desktop and mobile interaction;
-- evidence / limitations integration;
-- 2D image regression coverage;
-- scene-dependent glare and view-relative field-loss behavior.
-
-Important correction after later visual review:
-- the pilot established functional viability, but the primitive scene itself is **not** now considered an acceptable public presentation baseline;
-- later user-visible review exposed the environment as sparse placeholder-like geometry;
-- therefore all further spatial expansion is blocked until the scene-presentation gate below passes.
+- PR #2 merged at `d3673db84864e5441951cac3be51dd01cf77602e`.
+- main post-merge build `34000040892` passed.
+- Three.js `Explore 3D`, fixed-position look-around, Tunnel Vision and scene-dependent Cataract-like were functionally accepted.
+- Later user-visible review showed that the original primitive street itself was not presentation-quality. That presentation defect now blocks further spatial expansion.
 
 ## Step 9 — Central Loss definition and evidence boundary
 Status: **complete**
 
-Defined behavior:
-- `Central Loss` is the only new spatial mode in this phase;
-- same controlled street and same camera state are used for comparison;
-- central impairment is screen/view-relative;
-- surrounding scene remains more available than the center;
-- direct fixation makes a target harder to inspect;
-- turning the view moves a different world-space target into the affected center;
-- generic scotoma-style model only, not patient perimetry reconstruction;
-- spatial Model confidence starts at C.
+- Central Loss is the only new spatial mode in this phase.
+- The disrupted center is screen/view-relative and follows straight-ahead vision while the camera turns.
+- Surrounding scene information remains more available than central detail.
+- The model is generic and educational, not patient perimetry or a measured individual scotoma.
+- Spatial Model confidence remains conservative at C until final rendered review.
 
-## Step 10 — Central Loss live renderer implementation
-Status: **functionally complete, not accepted**
+## Step 10 — Central Loss live renderer
+Status: **functionally complete / not accepted**
 
-Implemented:
-- Central Loss mode union/UI;
-- live view-relative post-processing pass;
-- localized softness / desaturation / contrast reduction / partial obscuration;
-- same-camera switching;
-- renderer-specific evidence metadata;
-- browser acceptance coverage.
+Already passed functional checks:
+- implementation workflow `34000391905`;
+- PR build `34000459038`;
+- Chromium browser validation `34000441484`.
 
-Functional validation already passed:
-- renderer patch workflow `34000391905` — success;
-- PR build `34000459038` — success;
-- Chromium browser validation `34000441484` — success;
-- desktop and 390px mobile mode switching and view-relative behavior worked.
+Central Loss is still blocked because the surrounding 3D scene must pass the presentation gate first.
 
-Why this is still blocked:
-- user-visible screenshot review showed that the original environment read as a crude prototype: bare dark building boxes, simplistic car geometry, mannequin-like pedestrian, sparse surface detail, and weak street composition;
-- function correctness does not override presentation failure.
+## Step 10A — Night-street presentation rebuild
+Status: **v4 implemented / rendered review now running / blocking**
 
-## Step 10A — Rebuild the night-street scene to presentation quality
-Status: **second implementation complete / rendered review pending / blocking**
+### Original scene review
+Result: **FAIL**.
+The first public screenshot read as a sparse prototype: bare dark building boxes, crude car, mannequin pedestrian, flat surfaces, weak lighting hierarchy and little useful side-view information.
 
-First scene rebuild commit: `1ffd3dcfdfcf6497ae2059f42c354974350c1100`.
-Patch/build workflow `34006118735` passed, including `npm ci` and `npm run build`.
+### v1
+Commit `1ffd3dcfdfcf6497ae2059f42c354974350c1100`; build workflow `34006118735` passed.
 
-First rendered review result: **FAIL**.
-- forward view gained useful detail;
-- turned desktop view still became mostly empty/dark, exposing the scene as a forward-facing stage set rather than a convincing look-around environment.
+Added facade/window/storefront details, road/sidewalk detail, improved vehicle and pedestrian, street furniture, distant layers and stronger lighting.
 
-Second scene rebuild commit: `2ec9a883aae7c24a80d78e369643e294a3fc19e7`.
-Patch/build workflow `34006314644` passed, including `npm ci` and `npm run build`.
+Rendered result: **FAIL** because turning away from the forward view exposed mostly empty darkness.
 
-Second-pass additions:
-- near-camera left/right architecture so turned views encounter actual facades instead of empty darkness;
-- a right-side `NIGHT MARKET` storefront, entrance/glass/awning/sign and practical light positioned for turned-view readability;
-- a left-side apartment entrance, canopy, number sign, bench and close-range detail;
-- a scooter and additional near-field geometry for depth cues;
-- more near-window variation on both sides of the camera;
-- generated CanvasTexture surfaces for asphalt, concrete, brick and plaster;
-- brighter but still night-appropriate ambient/fog baseline to preserve side-view structure;
-- the earlier vehicle/pedestrian/facade/street-furniture/distant-layer improvements remain in place.
+### v2
+Commit `2ec9a883aae7c24a80d78e369643e294a3fc19e7`; build workflow `34006314644` passed.
 
-Acceptance questions still require a new rendered review:
-1. Does Normal mode immediately read as a believable night street rather than black boxes in a corridor?
-2. Are vehicle, pedestrian, storefront, road, sidewalk, signal, and light sources recognizable without explanation?
-3. Does looking left/right now reveal useful facade/storefront/street structure instead of an empty dark wall?
-4. Do bright/dark zones remain useful for Cataract-like and field-loss comparison?
-5. Does desktop remain responsive and does 390px mobile remain usable?
-6. Does the existing build/browser regression remain green on the second rebuilt-scene head?
+Added near-camera architecture, NIGHT MARKET storefront, apartment entrance, bench, scooter, side-facing windows and procedural asphalt/concrete/brick/plaster textures.
 
-All six must pass before Central Loss acceptance resumes.
+Rendered result: improved side views, but still visibly procedural / primitive-heavy and not accepted as public quality.
 
-## Step 11 — Central Loss rendered acceptance gate
+### v3
+Commit `54daffe36aa49e9882e90387834cbd701e6b6295`; build workflow `34006591840` passed. Browser review `34006654513` passed technically.
+
+Added:
+- soft PCF shadows;
+- gradient night sky;
+- rounded vehicle body / lamps / tail lights;
+- more organic pedestrian limbs;
+- explicit screenshots for both horizontal look-around directions.
+
+Rendered result: both directions now contain useful street structure, but the scene still reads too strongly as self-built primitive geometry. **Not accepted.**
+
+### v4 — real CC0 building assets
+Commit `61ce2e103d745fe9e1c2590dc4faa81dd633640c`.
+
+The first v4 attempt failed only because an unnecessary Meshopt decoder import did not match the installed Three.js typings. The three building downloads themselves succeeded. The source asset's own implementation uses ordinary `GLTFLoader`, so the decoder dependency was removed.
+
+Corrected v4 workflow `34007002239` passed:
+- downloaded and locally bundled three optimized Quaternius Downtown City MegaKit GLB buildings;
+- bundled the Quaternius license file;
+- integrated the models with local `/assets/models/...` URLs using `GLTFLoader`;
+- retained local procedural street, vehicle, pedestrian and perception-test targets;
+- enabled shadows on loaded meshes;
+- `npm ci` and `npm run build` passed.
+
+Asset-backed head before this schedule trigger: `61ce2e103d745fe9e1c2590dc4faa81dd633640c`.
+
+### v4 rendered acceptance questions
+1. Does Normal immediately read as an intentional night street rather than a primitive test corridor?
+2. Do the real building assets materially improve architectural depth and silhouette quality?
+3. Do forward, right-turn and opposite-turn views all contain useful environment information?
+4. Are the vehicle, pedestrian, storefront, road, sidewalk, signal and light sources still clearly readable as controlled perception targets?
+5. Do Tunnel Vision, Cataract-like and Central Loss still work without camera reset or scene mutation?
+6. Does 390px mobile remain usable, with no horizontal overflow or captured page/console errors?
+7. Is the result good enough to show publicly without explaining that it is merely a technical prototype?
+
+All seven must pass. Build success alone is insufficient.
+
+## Step 11 — Central Loss rendered acceptance
 Status: **blocked by Step 10A rendered review**
 
-After the rebuilt scene passes its own quality gate, rerun:
-- existing 2D image comparison desktop/mobile regression;
-- Normal / Tunnel Vision / Cataract-like regression;
-- Normal vs Central Loss same-camera forward comparison;
-- turned-view Normal vs Central Loss comparison;
-- real mobile touch look-around before Central Loss capture;
-- no horizontal overflow;
-- no page/console errors;
-- build.
+After the asset-backed scene passes:
+- compare Normal vs Central Loss at the identical forward view;
+- compare the identical turned view;
+- verify the disrupted center follows the viewer rather than a world-space object;
+- repeat with real mobile touch input;
+- confirm existing image workflow and accepted spatial modes still pass;
+- confirm active scanning explains central loss more clearly than another transformed still.
 
-Rendered-review questions:
-1. Does straight-ahead detail become clearly harder to inspect while the surrounding scene remains useful?
-2. When the camera turns, does the disrupted region remain centered in the viewer's field rather than staying on the previous world location?
-3. Does active scanning make the consequence of central field loss clearer than another transformed still image?
-4. Is the effect restrained enough to remain a generic educational simulation?
-5. Is the underlying scene itself now presentation-quality?
-
-Pass requires all five answers to be yes plus the browser/build checks above.
-
-If pass:
-- mark Central Loss accepted;
-- mark PR #3 ready;
-- merge cleanly;
-- only then begin `Night / Low Light`.
-
-If fail:
-- correct or reject the active implementation;
-- do not begin Night / Low Light.
+Only after this gate passes may PR #3 become ready and merge.
 
 ## Ordered next spatial candidates after Central Loss
-1. Night / Low Light;
-2. Dog-like;
-3. Cat-like;
-4. Bird-like as a separate evaluation;
-5. Bee-like only with additional UV-reflectance scene data.
+1. Night / Low Light
+2. Dog-like
+3. Cat-like
+4. Bird-like as a separate evaluation
+5. Bee-like only with additional UV-reflectance scene data
 
 ## Current next action
-Run desktop and 390px Chromium capture on the second rebuilt-scene head, inspect Normal forward/turned plus perception-mode screenshots, and reject or accept Step 10A on actual visual quality before touching the next perception mode.
+Run the full desktop / 390px Chromium capture on the v4 asset-backed head, inspect forward and both horizontal directions plus Central Loss / Cataract-like output, and either reject again or mark Step 10A passed. Do not begin Night / Low Light yet.
