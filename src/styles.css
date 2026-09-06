@@ -704,6 +704,24 @@ input {
     font-size: 11px;
   }
 
+
+.topbar .brand,
+.topbar .topnav a,
+.topbar .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.topbar .topnav a {
+  min-width: 44px;
+  justify-content: center;
+}
+
+.topbar .ghost-button {
+  justify-content: center;
+}
+
   .content-area {
     padding: 16px;
   }

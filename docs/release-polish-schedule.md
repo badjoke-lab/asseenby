@@ -483,11 +483,11 @@ Validation:
 - production artifact `9992273386` was manually reviewed: desktop/mobile spatial headers expose only Compare image / Explore spatial / Support, with no duplicate Back to image action.
 
 ### R8-3 — Desktop image workspace flow after Reference removal
-Status: **ACTIVE — implementation**
+Status: **PASS / production verified**
 
 Finding:
-- the desktop production image capture leaves a large empty area below the compare card because the taller sticky ControlRail determines the `workspace-grid` row height while the Human/Animal cards live outside that grid;
-- after Reference removal, `.category-grid` still reserves three desktop columns even though only Human and Animal remain, leaving an unused third column.
+- the desktop production image capture left a large empty area below the compare card because the taller sticky ControlRail determined the `workspace-grid` row height while the Human/Animal cards lived outside that grid;
+- after Reference removal, `.category-grid` still reserved three desktop columns even though only Human and Animal remained, leaving an unused third column.
 
 Implementation:
 - group CompareStage + Human/Animal cards + footer into a primary desktop column independent of the sticky ControlRail height;
@@ -496,12 +496,61 @@ Implementation:
 - add browser-smoke geometry assertions for the desktop compare-to-category gap, two-column fill, and mobile content order.
 
 Acceptance:
-- Human/Animal cards begin within 48px of the compare card bottom on desktop;
-- the two cards fill the available primary-column width with no obsolete empty third column;
-- 390px order remains Compare -> controls/evidence -> category cards;
-- no horizontal overflow or console/page errors;
+- Human/Animal cards begin within 48px of the compare card bottom on desktop — **PASS**;
+- the two cards fill the available primary-column width with no obsolete empty third column — **PASS**;
+- 390px order remains Compare -> controls/evidence -> category cards — **PASS**;
+- no horizontal overflow or console/page errors — **PASS**;
+- all existing image and six spatial mode regression paths remain green — **PASS**;
+- production screenshot review after merge — **PASS**.
+
+Validation:
+- PR #24 merged as `e21ef48e76357686c6a33e0e8de87e03629e6102`;
+- matching main build `34043567332` — **success**;
+- production smoke `34043567336` — **success**;
+- production artifact `9992424231` was manually reviewed: desktop no longer has the large compare/category gap or obsolete third category column, and 390px ordering remains intact.
+
+### R8-4 — Hero copy after Reference removal
+Status: **PASS / production verified**
+
+Finding:
+- the Reference category had been removed from the public product, but the image hero still advertised `reference profiles`.
+
+Implementation:
+- describe the current public image scope as human visual conditions plus animal-inspired modes;
+- permanently assert in production smoke that the hero includes the current Human/Animal scope and does not reintroduce `reference profiles`.
+
+Acceptance:
+- no removed Reference scope is advertised in the public hero — **PASS**;
+- desktop and 390px image layouts remain intact — **PASS**;
+- image and spatial regression paths remain green — **PASS**.
+
+Validation:
+- full local image + spatial browser validation `34043876824` — **success**;
+- PR #25 build `34044534190` — **success**;
+- PR #25 squash-merged as `d2630921a8d980d5de6de42ae96863f28b193396`;
+- matching main build `34044557244` — **success**;
+- production smoke `34044557155` — **success**;
+- production artifact `9992706810` was manually reviewed: desktop/mobile hero copy matches the Human + Animal public scope with no layout regression.
+
+### R8-5 — Mobile header touch targets
+Status: **ACTIVE — implementation / validation**
+
+Finding:
+- accepted 390px image and spatial production captures show the global header links as narrow text-only targets;
+- `.topnav` changes layout on mobile, but its anchors have no minimum touch-target size, and the mobile brand / `Open viewer` action are also below the 44px interaction-height standard already used by the R8-1 experience switch.
+
+Implementation:
+- on <=960px, give header brand/nav/ghost actions at least 44px height;
+- give nav links at least 44px width while retaining the existing restrained editorial presentation;
+- add browser-smoke bounding-box assertions for every `.topbar a` on the 390px image and spatial surfaces.
+
+Acceptance:
+- every mobile image-header and spatial-header link is at least 44x44px;
+- no horizontal overflow at 390px;
+- header wrapping remains orderly and does not obscure the hero/spatial intro;
 - all existing image and six spatial mode regression paths remain green;
-- production screenshot review is required after merge before R8-3 is marked PASS.
+- build passes;
+- after merge, production smoke and screenshot review are required before R8-5 is marked PASS.
 
 ## Current next action
-Run build + full desktop/390px image/spatial browser smoke, inspect captures, then open a clean R8-3 PR only if the workspace flow is improved without mobile regression.
+Run build + full desktop/390px image/spatial browser smoke for R8-5, manually inspect the image/spatial captures, then open a clean PR only if the larger mobile header targets preserve the editorial layout without overflow or regression.
