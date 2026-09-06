@@ -1,0 +1,46 @@
+name: Finalize R7 Dog-like audit
+
+on:
+  push:
+    branches:
+      - feat/r7-dog-image-audit
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/r7-dog-image-audit
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Finalize schedule and remove audit artifacts
+        run: |
+          python scripts/finalize_r7_dog.py
+          git fetch origin main
+          rm -rf dog-audit
+          git checkout origin/main -- browser-check
+          rm -f scripts/finalize_r7_dog.py .github/workflows/finalize-r7-dog-audit.yml
+
+      - name: Verify clean product build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit clean audit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Finalize Dog-like image audit"
+          git push origin HEAD:feat/r7-dog-image-audit
