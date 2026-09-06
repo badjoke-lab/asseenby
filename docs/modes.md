@@ -70,6 +70,7 @@ The existence of a spatial implementation does not change the mode's evidence cl
 ### Night / Low Light
 - class: Estimated
 - goal: low-light viewing approximation
+- image status: removed in R7; the former static RGB transform was not retained as a validated low-light observer model
 - spatial status: accepted post-pilot mode
 - spatial renderer target: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker rendered regions while brighter regions remain comparatively available
 - spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction

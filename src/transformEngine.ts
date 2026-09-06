@@ -76,25 +76,6 @@ export function applyTransform(
     return;
   }
 
-  if (modeKey === "night") {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i] / 255;
-      let g = data[i + 1] / 255;
-      let b = data[i + 2] / 255;
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      const dark = 0.42 + amount * 0.35;
-      r = mix(r, luma, 0.5 + amount * 0.35) * (1 - dark * 0.4);
-      g = mix(g, luma, 0.45 + amount * 0.3) * (1 - dark * 0.28);
-      b = mix(b, luma, 0.38 + amount * 0.25) * (1 - dark * 0.1);
-      data[i] = clamp255(r * 255);
-      data[i + 1] = clamp255(g * 255);
-      data[i + 2] = clamp255(b * 255);
-    }
-    ctx.putImageData(imageData, 0, 0);
-    return;
-  }
 
 
 

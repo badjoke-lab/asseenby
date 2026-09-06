@@ -25,9 +25,6 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 - Tunnel Vision
 - Central Loss
 
-### Estimated
-- Night / Low Light
-
 ## Animal modes
 - Dog
 

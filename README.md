@@ -59,7 +59,6 @@ v0.1 is intentionally narrow and focused on a browser-based MVP.
 - Cataract-like
 - Tunnel Vision
 - Central Loss
-- Night / Low Light
 
 ### Animal
 

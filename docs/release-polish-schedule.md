@@ -275,7 +275,7 @@ Validation:
 - production smoke `34026381544` — **success**, confirming the exact Human set without Fatigue-like while Animal=Dog-like, Reference=Age Profile, and the accepted six spatial controls remained unchanged.
 
 ### R7-6 — Dry-eye-like image mode
-Status: **ACTIVE — removal implementation**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE the public Dry-eye-like image mode**
 
@@ -302,5 +302,40 @@ Acceptance:
 - build passes;
 - after merge, production smoke must observe the exact Human set without Dry-eye-like before R7-6 is marked PASS.
 
+Validation:
+- removal/build/desktop + 390px + spatial regression `34026610348` — **success**;
+- PR #18 build `34026698193` — **success**;
+- merge SHA `d408ac2c054e54772753bd2f77ff545c1debfb58`;
+- matching main build `34026734382` — **success**;
+- production smoke `34026734384` — **success**, confirming the exact Human image set without Dry-eye-like while Animal=Dog-like, Reference=Age Profile, and all six spatial controls remained unchanged.
+
+### R7-7 — Night / Low Light image mode
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE the static-image Night / Low Light mode; KEEP the accepted spatial mode**
+
+Reason:
+- the image Evidence entry is B / Model C and explicitly calls the transform heuristic rather than a validated scotopic model;
+- an uploaded RGB image does not establish absolute scene luminance, camera exposure/tone mapping, pupil state, or dark-adaptation state;
+- the static renderer applies a global dark/desaturated color transform, so it can manufacture a low-light appearance even when the source image does not contain the information needed to define one;
+- the spatial implementation is materially different: it uses live rendered relative luminance so darker regions lose more chromatic/contrast/detail information while brighter sources remain comparatively available;
+- removing the image mode does not remove the shared scientific Evidence needed by `spatialEvidence.ts`.
+
+Removal scope:
+- remove Night / Low Light from the public Human image list;
+- remove only the static `night` transform branch;
+- retain the `night` Evidence entry because the spatial Evidence layer extends it;
+- retain the spatial Night / Low Light shader and control;
+- update README, MVP/mode docs, limitations, release schedule, and production smoke.
+
+Acceptance:
+- Human image modes are Protan-like, Deutan-like, Tritan-like, Blur, Low Contrast, Cataract-like, Tunnel Vision, and Central Loss;
+- image `night` is not selectable and the old static transform branch is gone;
+- spatial Night / Low Light remains one of the exact six accepted spatial controls and its Evidence panel still resolves;
+- Animal remains Dog-like only and Reference remains Age Profile only;
+- desktop and 390px image/spatial regression passes without overflow or page/console errors;
+- build passes;
+- after merge, production smoke must observe the exact 8-mode Human image set while still exercising the six-mode spatial set.
+
 ## Current next action
-Complete and validate the R7-6 Dry-eye-like removal branch, open a clean PR, merge only if the normal PR build is green, then require production smoke to observe the exact Human set without Dry-eye-like.
+Complete and validate R7-7, merge only after the normal PR build passes, and require production smoke to confirm image Night is absent while spatial Night remains present.

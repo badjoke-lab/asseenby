@@ -55,7 +55,9 @@ Real central vision loss can be irregular, incomplete, blurred, distorted, or ex
 The spatial Central Loss mode therefore uses a deliberately generic central disruption for education and comparison. Its purpose is to demonstrate the consequence of reduced straight-ahead detail during active scene scanning, not to claim that people with macular disease see a fixed circular patch identical to the renderer output.
 
 ### Night / Low Light specific limitation
-The current spatial Night / Low Light mode can use relative brightness differences in the rendered panorama, but the source is a tone-mapped RGB photograph rather than calibrated luminance or spectral data.
+The former static-image Night / Low Light mode was removed in R7. A conventional uploaded RGB image has unknown exposure, tone mapping, scene luminance, and adaptation context, so applying a uniform dark/desaturated transform would imply a low-light observer state that the input does not establish.
+
+The current spatial Night / Low Light mode remains because it can at least use relative brightness differences in the rendered panorama, but the source is still a tone-mapped RGB photograph rather than calibrated luminance or spectral data.
 
 It therefore does not reproduce a validated scotopic/mesopic observer, dark-adaptation timing, pupil dynamics, complete rod/cone spectral response, or a specific person's night-vision impairment. It is a luminance-dependent comparison proxy: dark regions are made less informative relative to bright regions so users can inspect the consequence across one fixed scene.
 
