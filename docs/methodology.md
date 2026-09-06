@@ -62,10 +62,14 @@ Accepted spatial modes:
 - Tunnel Vision;
 - Central Loss;
 - Night / Low Light;
+- Dog-like;
 - Cataract-like.
 
+Evaluated and rejected spatial candidate:
+- Cat-like — technically valid renderer candidate, but not distinct enough from Dog-like to justify a separate spatial claim from the current RGB source.
+
 Current expansion target:
-- Dog-like.
+- Bird-like evidence/source-data evaluation.
 
 Mode switching must preserve camera position and view direction so the comparison isolates the modeled visual difference.
 
@@ -89,9 +93,17 @@ The current spatial target is a luminance-dependent low-light communication mode
 The source panorama is tone-mapped RGB rather than calibrated radiometric data. The spatial mode therefore does not model physical cd/m², full rod/cone spectral sensitivity, pupil response, or the time course of dark adaptation. Those limitations are part of the model definition, not hidden implementation details.
 
 ## Dog-like spatial model
-The active Dog-like target combines a simplified visible-range dichromatic translation with mild loss of fine detail. The phenomenon basis is stronger than the renderer: canine dichromacy and lower acuity are supported by behavioral/physiological literature, but a standard RGB panorama does not contain the spectral information needed to calculate exact canine photoreceptor catches for arbitrary real-world materials and lights.
+The accepted Dog-like renderer combines a simplified visible-range dichromatic translation with mild loss of fine detail. The phenomenon basis is stronger than the renderer: canine dichromacy and lower acuity are supported by behavioral/physiological literature, but a standard RGB panorama does not contain the spectral information needed to calculate exact canine photoreceptor catches for arbitrary real-world materials and lights.
 
 For that reason the renderer keeps Evidence and Model separate: the broad canine visual differences can retain strong evidence while the spatial implementation remains Model C. Field of view, motion processing, tapetal/rod low-light advantages and neural interpretation are intentionally excluded from this phase.
+
+## Cat-like spatial evaluation
+A Cat-like spatial candidate was implemented with conservative chromatic compression and slightly stronger fine-detail softening. Automated browser validation passed, but same-camera rendered review found that its explanatory difference from the accepted Dog-like mode was mostly a small degree change in chroma and blur.
+
+Because the feline literature contains historical uncertainty and the RGB panorama cannot recover exact feline spectral catches, the project rejected the spatial Cat-like control rather than exaggerating unsupported differences. This rejection does not remove the separate image-track Cat-like approximation; it only means the current spatial source/model does not justify a distinct live Cat-like mode.
+
+## Bird-like spatial evaluation boundary
+Bird-like begins as a source-data/evidence question, not a shader task. Ordinary RGB cannot reconstruct ultraviolet/violet-sensitive cone catches, tetrachromatic color relationships, species-specific oil-droplet filtering, or polarization sensitivity. Any spatial Bird-like candidate must identify a supported visible-range property with explanatory value beyond a generic saturation/contrast effect, or be rejected/blocked.
 
 ## Evidence display model
 Each mode can expose a mode-level evidence panel in the UI.
