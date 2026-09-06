@@ -34,16 +34,11 @@ jobs:
 
           smoke_path = Path('.github/production-smoke.mjs')
           smoke = smoke_path.read_text()
-          marker = '''  const pageText = await page.locator("body").innerText();
-          assert(!pageText.includes("Age Profile"), "desktop image: removed Age Profile is still visible");'''
-          replacement = '''  const pageText = await page.locator("body").innerText();
-          const heroText = await page.locator(".hero-copy").innerText();
-          assert(heroText.includes("human visual conditions") && heroText.includes("animal-inspired modes"), "desktop image: hero does not describe the current Human/Animal product scope");
-          assert(!heroText.includes("reference profiles"), "desktop image: removed Reference scope is still advertised in the hero");
-          assert(!pageText.includes("Age Profile"), "desktop image: removed Age Profile is still visible");'''
-          if marker not in smoke:
-              raise SystemExit('desktop hero smoke marker not found')
-          smoke_path.write_text(smoke.replace(marker, replacement, 1))
+          needle = '  const pageText = await page.locator("body").innerText();'
+          addition = needle + '\n  const heroText = await page.locator(".hero-copy").innerText();\n  assert(heroText.includes("human visual conditions") && heroText.includes("animal-inspired modes"), "desktop image: hero does not describe the current Human/Animal product scope");\n  assert(!heroText.includes("reference profiles"), "desktop image: removed Reference scope is still advertised in the hero");'
+          if needle not in smoke:
+              raise SystemExit('desktop hero smoke anchor not found')
+          smoke_path.write_text(smoke.replace(needle, addition, 1))
 
           schedule_path = Path('docs/release-polish-schedule.md')
           schedule = schedule_path.read_text()
@@ -57,37 +52,36 @@ jobs:
               '### R8-3 — Desktop image workspace flow after Reference removal\nStatus: **PASS / production verified**',
               1,
           )
-          old_tail = '''## Current next action
-          Run build + full desktop/390px image/spatial browser smoke, inspect captures, then open a clean R8-3 PR only if the workspace flow is improved without mobile regression.'''
+          old_tail = '## Current next action\nRun build + full desktop/390px image/spatial browser smoke, inspect captures, then open a clean R8-3 PR only if the workspace flow is improved without mobile regression.'
           new_tail = '''Validation:
-          - build + full local desktop/390px image/spatial browser smoke `34043401959` — **success**;
-          - local artifact `9992371942` manually reviewed: desktop dead space removed, Human/Animal fill the primary column, and mobile order remained Compare -> controls/evidence -> Human -> Animal;
-          - PR #24 build `34043538817` — **success**;
-          - merge SHA `e21ef48e76357686c6a33e0e8de87e03629e6102`;
-          - matching main build `34043567332` — **success**;
-          - production smoke `34043567336` — **success on attempt 1**;
-          - production artifact `9992424231` manually reviewed with the same desktop/mobile layout result.
+- build + full local desktop/390px image/spatial browser smoke `34043401959` — **success**;
+- local artifact `9992371942` manually reviewed: desktop dead space removed, Human/Animal fill the primary column, and mobile order remained Compare -> controls/evidence -> Human -> Animal;
+- PR #24 build `34043538817` — **success**;
+- merge SHA `e21ef48e76357686c6a33e0e8de87e03629e6102`;
+- matching main build `34043567332` — **success**;
+- production smoke `34043567336` — **success on attempt 1**;
+- production artifact `9992424231` manually reviewed with the same desktop/mobile layout result.
 
-          ### R8-4 — Hero scope after Reference removal
-          Status: **ACTIVE — implementation**
+### R8-4 — Hero scope after Reference removal
+Status: **ACTIVE — implementation**
 
-          Finding:
-          - the public Hero still says AsSeenBy covers `reference profiles` even though R7-9 removed Age Profile and the entire public Reference category;
-          - the live category selector and cards expose only Human and Animal, so the top-level product description is stale.
+Finding:
+- the public Hero still says AsSeenBy covers `reference profiles` even though R7-9 removed Age Profile and the entire public Reference category;
+- the live category selector and cards expose only Human and Animal, so the top-level product description is stale.
 
-          Implementation:
-          - change the Hero description to the current public scope: human visual conditions and animal-inspired modes;
-          - add a production-smoke assertion that the Hero contains the current Human/Animal scope and no longer advertises `reference profiles`.
+Implementation:
+- change the Hero description to the current public scope: human visual conditions and animal-inspired modes;
+- add a production-smoke assertion that the Hero contains the current Human/Animal scope and no longer advertises `reference profiles`.
 
-          Acceptance:
-          - Hero text matches the current two-category public product;
-          - `reference profiles` is absent from the public Hero;
-          - the Human/Animal category and exact audited mode sets remain unchanged;
-          - desktop/390px image and spatial regression remain green with no overflow or page/console errors;
-          - production screenshot review is required after merge before R8-4 is marked PASS.
+Acceptance:
+- Hero text matches the current two-category public product;
+- `reference profiles` is absent from the public Hero;
+- the Human/Animal category and exact audited mode sets remain unchanged;
+- desktop/390px image and spatial regression remain green with no overflow or page/console errors;
+- production screenshot review is required after merge before R8-4 is marked PASS.
 
-          ## Current next action
-          Run the full browser regression against the R8-4 branch, inspect the Hero in desktop/mobile captures, then open a clean PR only if the current-scope wording is correct.'''
+## Current next action
+Run the full browser regression against the R8-4 branch, inspect the Hero in desktop/mobile captures, then open a clean PR only if the current-scope wording is correct.'''
           if old_tail not in schedule:
               raise SystemExit('R8-3 schedule tail not found')
           schedule_path.write_text(schedule.replace(old_tail, new_tail, 1))
