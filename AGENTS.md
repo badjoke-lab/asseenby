@@ -26,19 +26,21 @@ If code and documentation disagree, do not silently invent a new direction. Pres
 - Preserve the editorial field-guide / research-book visual language. Avoid generic dark SaaS, glow, glass, or game HUD styling.
 
 ## Spatial expansion invariants
-- The initial Normal / Tunnel Vision / Cataract-like pilot has passed its acceptance gate and is part of the accepted spatial baseline.
-- Keep the same controlled night-street scene while adding the next field-loss mode unless a documented requirement proves the scene inadequate.
+- The initial Normal / Tunnel Vision / Cataract-like pilot established the renderer and interaction baseline, but subsequent visual review showed that the current primitive night-street scene is not acceptable as a public-facing presentation baseline.
+- Scene presentation quality is now a blocking acceptance criterion. A technically correct perception shader must not be merged if the environment still reads as placeholder geometry, a cheap low-detail demo, or a debug test scene.
+- The night street must remain a controlled comparison environment, but it must also read immediately as a believable street: recognizable building facades, windows and storefront detail, credible road/sidewalk surfaces, vehicle form, pedestrian form, lighting hierarchy, street furniture, and enough near/mid/far visual information to support perception comparisons.
+- Primitive geometry is allowed when it is composed into convincing forms. Bare boxes standing in for buildings, cars, or people are not sufficient for acceptance.
 - Keep camera position and direction unchanged when switching perception modes so the comparison isolates the rendering model.
 - Interaction remains look-around first; no walking simulation, collision system, scoring, or game mechanics are required.
 - Reuse existing mode evidence and limitations wherever applicable instead of creating separate unsupported claims.
 - Add post-pilot spatial modes one at a time in the order defined by `docs/spatial-pilot-schedule.md` and require a rendered acceptance check before starting the following mode.
-- Current expansion target: `Central Loss` only. Do not implement Night / Low Light, Dog-like, Cat-like, Bird-like, or Bee-like in the same change.
+- Current expansion target remains `Central Loss`, but scene-quality correction blocks its acceptance. Do not begin Night / Low Light, Dog-like, Cat-like, Bird-like, or Bee-like until this gate passes.
 - Central Loss must be a live view-relative central-field-loss simulation. It must remain centered in the viewer's field while the camera turns and must not be attached to a world-space object or position.
 - Central Loss is a generic field-loss model, not an individual's measured scotoma or perimetry result.
 - Bee-like UV work still requires additional UV-reflectance scene data and must not be faked with an RGB color filter.
 
 ## Engineering rules
-- Prefer the smallest change that satisfies the active schedule step.
+- Prefer the smallest change that satisfies the active schedule step, except where the documented scene-quality gate explicitly requires a broader presentation pass.
 - Keep the current React + TypeScript structure unless a documented requirement needs restructuring.
 - Three.js remains an isolated spatial renderer/component and must not replace the 2D canvas transform engine.
 - Avoid unrelated refactors while a new spatial mode is being validated.
@@ -54,4 +56,4 @@ When a step is completed, blocked, rejected, or materially changed:
 - update `docs/methodology.md` / `docs/limitations.md` if the scientific or claim boundary changed;
 - keep renderer-specific Model notes separate from the existing 2D implementation assessment.
 
-Do not mark later spatial modes complete merely because scaffolding exists. Status is based on the acceptance criteria in the schedule, including actual rendered review where required.
+Do not mark later spatial modes complete merely because scaffolding exists. Status is based on the acceptance criteria in the schedule, including actual rendered review and the scene-presentation quality gate.
