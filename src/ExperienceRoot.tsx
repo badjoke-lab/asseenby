@@ -1,8 +1,7 @@
 import { lazy, Suspense } from "react";
 import App from "./App";
-import "./spatial.css";
 
-const SpatialPage = lazy(() => import("./SpatialPage"));
+const SpatialPage = lazy(() => import("./SpatialEntry"));
 
 export default function ExperienceRoot() {
   const pathname = typeof window !== "undefined"
