@@ -31,7 +31,7 @@ v0.1 is intentionally narrow and focused on a browser-based MVP.
 - static image upload
 - sample image loading
 - compare stage with slider / split / side-by-side modes
-- Human / Animal / Reference mode groups
+- Human / Animal mode groups
 - strength control
 - browser-side transformation only
 - mode-level evidence panel with badges and sources
@@ -63,10 +63,6 @@ v0.1 is intentionally narrow and focused on a browser-based MVP.
 ### Animal
 
 - Dog-like
-
-### Reference
-
-- Age Profile
 
 ## Project structure
 
@@ -105,7 +101,7 @@ npm run preview
 ## Notes and limitations
 
 * AsSeenBy is not a medical tool.
-* Human, animal, and reference outputs are research-based approximations.
+* Human and animal outputs are research-based approximations.
 * Animal modes are visible-range approximations only.
 * UV, polarization, and full species-specific perception are not reproduced in v0.1.
 * Reference modes are averaged profiles only and should not be treated as individual-level predictions.

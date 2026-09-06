@@ -86,8 +86,3 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - spatial status: accepted post-pilot mode
 - spatial renderer: conservative human-display visible-range dichromatic translation plus non-calibrated fine-detail softening
 
-
-## Reference modes
-### Age Profile
-- class: Reference
-- goal: age-related viewing profile approximation

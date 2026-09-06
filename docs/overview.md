@@ -1,7 +1,7 @@
 # AsSeenBy — Overview
 
 ## What it is
-AsSeenBy is a research-based visual comparison tool that shows how the same image may appear under different human visual conditions, animal approximations, and reference profiles.
+AsSeenBy is a research-based visual comparison tool that shows how the same image may appear under different human visual conditions and animal approximations.
 
 It is:
 - a comparison viewer
@@ -38,9 +38,6 @@ Strong and estimated approximations of human visual differences.
 ### Animal
 Visible-range approximations of how other species may see.
 
-### Reference
-Average-profile reference views that should not be treated as individual prediction.
-
 ## Brand direction
 - off-white background
 - serif-led typography
@@ -53,4 +50,3 @@ This tool provides research-based approximations of different ways of seeing. It
 
 Animal modes are visible-range approximations and do not reproduce UV, polarization, or full species-specific perception.
 
-Reference modes represent averaged profiles only and should not be treated as individual-level predictions.

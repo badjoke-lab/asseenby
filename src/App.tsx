@@ -118,7 +118,6 @@ function HomePage() {
 
   const humanModes = MODES.filter((mode) => mode.category === "Human");
   const animalModes = MODES.filter((mode) => mode.category === "Animal");
-  const referenceModes = MODES.filter((mode) => mode.category === "Reference");
 
   return (
     <div className="page-shell">
@@ -165,7 +164,6 @@ function HomePage() {
           <section id="modes" className="category-grid">
             <CategoryPanel title="Human" subtitle="Visual conditions and perceptual differences." items={humanModes.map((mode) => mode.label)} icon={<EyeSketch className="mini-plate" />} onClick={() => setCategory("Human")} />
             <CategoryPanel title="Animal" subtitle="Animal-inspired comparison profiles." items={animalModes.map((mode) => mode.label)} icon={<BirdSketch className="mini-plate" />} onClick={() => setCategory("Animal")} />
-            <CategoryPanel title="Reference" subtitle="Profiles based on research and averages." items={referenceModes.map((mode) => mode.label)} icon={<ChartSketch className="mini-plate" />} onClick={() => setCategory("Reference")} />
           </section>
 
           <footer className="footer-strip">
@@ -376,7 +374,7 @@ function ControlRail({ category, setCategory, categoryModes, modeKey, setModeKey
     <aside className="control-rail">
       <div className="control-block">
         <label className="control-label" htmlFor="category-select">Category</label>
-        <SelectLike id="category-select" value={category} options={["Human", "Animal", "Reference"]} onChange={(value) => setCategory(value as ModeCategory)} />
+        <SelectLike id="category-select" value={category} options={["Human", "Animal"]} onChange={(value) => setCategory(value as ModeCategory)} />
       </div>
       <div className="control-block">
         <label className="control-label" htmlFor="mode-select">Mode</label>

@@ -106,9 +106,6 @@ export function applyTransform(
     applyColorMatrixLinear(data, severity * 0.82, DEUTAN_MATRIX, 0.34);
     compressRedGreenAxis(data, 0.06 + severity * 0.12);
     applyLowContrastToData(data, 0.035 + severity * 0.075);
-  } else if (modeKey === "age") {
-    applyLowContrastToData(data, 0.12 + amount * 0.16);
-    warmTintData(data, 0.04 + amount * 0.08);
   }
 
   ctx.putImageData(imageData, 0, 0);

@@ -288,35 +288,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  age: {
-    summary: "Averaged reference profile for age-related visual change, centered on reduced contrast, increased glare sensitivity, and lower clarity under challenging conditions.",
-    evidenceScore: "B",
-    modelScore: "C",
-    basisNote: "Age-related changes in vision are real and well documented, especially for contrast sensitivity, glare sensitivity, and near focusing. However, the pattern varies widely across individuals and ocular conditions.",
-    modelNote: "The current age profile is a broad reference preset built from lower contrast, mild warming, and general softening tendencies. It is intentionally an averaged framing device rather than a validated aging-vision model.",
-    caveat: "This mode should not be read as a prediction of what any specific older person sees. Normal aging, cataract, presbyopia, retinal disease, and glare sensitivity can diverge substantially.",
-    primarySource: {
-      title: "National Eye Institute — Everyone’s Vision Can Change With Age",
-      url: "https://www.nei.nih.gov/learn-about-eye-health/outreach-resources/outreach-materials/everyones-vision-can-change-age",
-      kind: "organization",
-      note: "Official public-facing overview that vision commonly changes with age and that both normal aging and age-related eye disease affect viewing quality.",
-    },
-    supportingSources: [
-      {
-        title: "Adult age differences in visual acuity, stereopsis, and contrast sensitivity",
-        url: "https://pubmed.ncbi.nlm.nih.gov/3688177/",
-        kind: "paper",
-        note: "Classic evidence that contrast sensitivity is a useful measure for age-related changes in visual function.",
-      },
-      {
-        title: "Age-related effects of glare on luminance and color contrast sensitivity",
-        url: "https://pubmed.ncbi.nlm.nih.gov/7898887/",
-        kind: "paper",
-        note: "Shows that glare-related reductions in sensitivity increase with age, supporting the glare component of the reference profile.",
-      },
-    ],
-    lastReviewed: REVIEWED_ON,
-  },
 };
 
 export function getModeEvidence(modeKey: string): ModeEvidence {
