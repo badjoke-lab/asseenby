@@ -1,0 +1,154 @@
+name: R7 Cat-like image audit
+
+on:
+  push:
+    branches:
+      - feat/r7-cat-image-audit
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Compare Dog-like and Cat-like image outputs
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/asseenby-vite.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID || true' EXIT
+          for i in $(seq 1 30); do curl --fail --silent http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          mkdir -p cat-audit
+          cat > .github/r7-cat-audit.mjs <<'JS'
+          import { chromium } from "playwright";
+          import fs from "node:fs/promises";
+
+          const BASE = "http://127.0.0.1:4173";
+          const strengths = [40, 70, 100];
+
+          function summarizeDiff(a, b) {
+            let sum = 0;
+            let changed10 = 0;
+            let changed25 = 0;
+            let maxDelta = 0;
+            const pixels = a.length / 4;
+            for (let i = 0; i < a.length; i += 4) {
+              const dr = Math.abs(a[i] - b[i]);
+              const dg = Math.abs(a[i + 1] - b[i + 1]);
+              const db = Math.abs(a[i + 2] - b[i + 2]);
+              const pixelMax = Math.max(dr, dg, db);
+              sum += dr + dg + db;
+              if (pixelMax >= 10) changed10 += 1;
+              if (pixelMax >= 25) changed25 += 1;
+              if (pixelMax > maxDelta) maxDelta = pixelMax;
+            }
+            return {
+              meanAbsChannelDelta: sum / (pixels * 3),
+              changedPixelsPct10: changed10 * 100 / pixels,
+              changedPixelsPct25: changed25 * 100 / pixels,
+              maxChannelDelta: maxDelta,
+            };
+          }
+
+          async function readImagePixels(page, alt) {
+            return await page.locator(`img[alt="${alt}"]`).first().evaluate(async (img) => {
+              if (!img.complete) await new Promise(resolve => img.addEventListener("load", resolve, { once: true }));
+              const canvas = document.createElement("canvas");
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext("2d", { willReadFrequently: true });
+              ctx.drawImage(img, 0, 0);
+              return Array.from(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+            });
+          }
+
+          async function setStrength(page, value) {
+            const input = page.locator("#strength-range");
+            await input.evaluate((el, v) => {
+              el.value = String(v);
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            }, value);
+            await page.waitForTimeout(180);
+            await page.waitForFunction(() => document.querySelector('.compare-card')?.getAttribute('aria-busy') === 'false');
+          }
+
+          async function renderMode(page, mode, strength) {
+            await page.locator("#mode-select").selectOption(mode);
+            await setStrength(page, strength);
+            await page.waitForFunction(() => document.querySelector('img[alt="Approximation"]')?.getAttribute("src")?.startsWith("blob:"));
+            return await readImagePixels(page, "Approximation");
+          }
+
+          const browser = await chromium.launch({ headless: true });
+          const results = { checkedAt: new Date().toISOString(), cases: [] };
+          try {
+            const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+            const page = await context.newPage();
+            await page.goto(BASE, { waitUntil: "networkidle" });
+            await page.locator("#category-select").selectOption("Animal");
+
+            const scenarios = [
+              { name: "built-in sample", upload: null },
+              {
+                name: "controlled color-detail chart",
+                upload: {
+                  name: "cat-dog-audit.svg",
+                  mimeType: "image/svg+xml",
+                  buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+                    <rect width="1200" height="800" fill="#ddd"/>
+                    <rect x="0" y="0" width="200" height="280" fill="#e51b23"/><rect x="200" y="0" width="200" height="280" fill="#25a244"/><rect x="400" y="0" width="200" height="280" fill="#1769ff"/><rect x="600" y="0" width="200" height="280" fill="#f4d03f"/><rect x="800" y="0" width="200" height="280" fill="#00c7c7"/><rect x="1000" y="0" width="200" height="280" fill="#d946ef"/>
+                    <defs><pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M 12 0 L 0 0 0 12" fill="none" stroke="#111" stroke-width="2"/></pattern></defs>
+                    <rect x="0" y="300" width="600" height="300" fill="url(#grid)"/><rect x="600" y="300" width="600" height="300" fill="#fff"/>
+                    <g font-family="Arial" font-size="24" fill="#111"><text x="630" y="350">Fine detail / acuity reference</text>${Array.from({length: 12}, (_,i)=>`<text x="${630+(i%3)*180}" y="${400+Math.floor(i/3)*45}">${String.fromCharCode(65+i)}${i+1} 8px 12px 18px</text>`).join("")}</g>
+                    ${Array.from({length: 12},(_,i)=>`<rect x="${i*100}" y="650" width="100" height="150" fill="rgb(${i*23},${i*23},${i*23})"/>`).join("")}
+                  </svg>`),
+                },
+              },
+            ];
+
+            for (const scenario of scenarios) {
+              if (scenario.upload) {
+                await page.locator('input[type="file"]').setInputFiles(scenario.upload);
+                await page.waitForFunction(() => document.querySelector('img[alt="Original"]')?.getAttribute("src")?.startsWith("blob:"));
+              } else {
+                await page.getByRole("button", { name: "Use sample image" }).click();
+                await page.waitForTimeout(120);
+              }
+
+              const original = await readImagePixels(page, "Original");
+              for (const strength of strengths) {
+                const dog = await renderMode(page, "dog", strength);
+                const cat = await renderMode(page, "cat", strength);
+                results.cases.push({
+                  scenario: scenario.name,
+                  strength,
+                  dogVsOriginal: summarizeDiff(dog, original),
+                  catVsOriginal: summarizeDiff(cat, original),
+                  dogVsCat: summarizeDiff(dog, cat),
+                });
+              }
+            }
+            await context.close();
+          } finally {
+            await browser.close();
+          }
+          await fs.writeFile("cat-audit/results.json", JSON.stringify(results, null, 2));
+          console.log(JSON.stringify(results, null, 2));
+          JS
+          node .github/r7-cat-audit.mjs
+          rm .github/r7-cat-audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r7-cat-image-audit
+          path: cat-audit/results.json
