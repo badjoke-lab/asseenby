@@ -376,7 +376,40 @@ Validation before PR:
 - controlled color/detail chart at Strength 40: mean absolute channel delta **12.75**, maximum channel delta **79**;
 - controlled color/detail chart at Strength 100: mean absolute channel delta **17.16**, maximum channel delta **89**;
 - the output therefore remains non-trivial and scales with Strength without requiring a bespoke canine RGB matrix;
-- manual capture review retained the mode as a restrained visible-range comparison proxy; image Model remains **C**.
+- manual capture review retained the mode as a restrained visible-range comparison proxy; image Model remains **C**;
+- PR #20 build `34035301890` — **success**;
+- merge SHA `31dbf2b50fd44fd5265639c16fa123b3c043cef7`;
+- matching main build `34035329766` — **success**;
+- production smoke `34035329745` — **success**, confirming Animal=Dog-like only and the accepted six spatial controls unchanged.
+
+### R7-9 — Age Profile / Reference category
+Status: **ACTIVE — removal implementation**
+
+Decision: **REMOVE Age Profile and remove the now-empty public Reference category**
+
+Reason:
+- age-related contrast sensitivity, glare, optical density and focusing changes are real, but they are not one stable visual phenotype;
+- chromatic adaptation can compensate substantially for progressive lens yellowing, so a fixed warm tint should not be presented as a generic older-person view;
+- the current Age Profile does not specify an age, age range, ocular status, lens density, pupil state, adaptation state, or measurement source for an individual/population observer;
+- the image renderer is only a broad low-contrast + warm-tint preset, so the label implies more specificity than the transform supports;
+- Sex-difference Profile was already removed, so Age Profile is the only remaining Reference item and removing it eliminates an otherwise empty category.
+
+Removal scope:
+- remove `age` from public mode metadata, transform engine, and evidence registry;
+- remove Reference from the public image category selector and category cards;
+- update production smoke to require exactly Human + Animal image categories;
+- update README/MVP/overview/UI/methodology/modes/limitations documentation;
+- retain the generic `Reference` evidence-class concept for future explicitly defined datasets, but expose no current public Reference mode.
+
+Acceptance:
+- image category selector exposes exactly Human and Animal;
+- Age Profile and Sex-difference Profile are absent from public UI;
+- Human remains the exact audited 8-mode set;
+- Animal remains Dog-like only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px image/spatial regression passes without overflow or page/console errors;
+- build passes;
+- after merge, production smoke observes the Human/Animal-only image release.
 
 ## Current next action
-Open the clean R7-8 PR, merge only if the normal PR build is green, then require main build and production smoke to remain green with Animal=Dog-like only and the accepted six spatial controls unchanged.
+Apply R7-9 removal, run the patched production smoke against a local build at desktop/390px plus the accepted spatial controls, then open a PR only if the two-category release is clean.

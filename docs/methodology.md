@@ -152,27 +152,15 @@ Examples:
 Animal modes in v0.1 are visible-range approximations only.
 They are included for comparison and education, not as claims of full species reproduction.
 
-Included animal modes:
-- dog-like;
-- cat-like;
-- bee-like;
-- bird-like.
+Current public animal image mode:
+- dog-like.
 
-Important note:
-- bee and bird modes in v0.1 do not reproduce ultraviolet response;
-- none of the animal modes reproduce the full perceptual world of the species.
+Cat-like, Bird-like, and Bee-like image modes were removed during R7 because the former generic RGB transforms did not justify distinct species-specific observer claims. Dog-like remains a conservative visible-range proxy and does not reproduce the full canine perceptual world.
 
 A future Bee-like spatial mode must not invent UV information from RGB scene color. It requires additional scene/material data such as documented UV-reflectance information plus a false-color display mapping.
 
-## Reference modes
-Reference modes are deliberately weaker claims.
-They represent averaged profiles rather than individual prediction.
-
-Included:
-- age profile;
-- sex-difference profile.
-
-These should not be interpreted as personal diagnosis or exact individual simulation.
+## Reference-mode status
+The current public release has no Reference modes. Earlier Age Profile and sex-difference presets were removed during R7 because their broad population labels did not define a sufficiently specific observer for the renderer. The evidence model retains a Reference class only for future datasets with an explicit population, variable, and mapping.
 
 ## Implementation approach in v0.1 image comparison
 - browser-side image processing only;

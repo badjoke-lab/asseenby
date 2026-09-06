@@ -12,7 +12,7 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 - strength slider
 - off-white editorial interface
 - right-side control rail
-- human / animal / reference grouping
+- human / animal grouping
 
 ## Human modes
 ### Strong
@@ -27,9 +27,6 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 
 ## Animal modes
 - Dog
-
-## Reference modes
-- Age Profile
 
 ## Not included in v0.1
 - video processing
@@ -52,7 +49,7 @@ Ship a static-image-only public MVP with browser-side processing and a strong vi
 - visual polish
 - documentation pages
 - cleaner error states
-- stronger animal/reference explanation
+- stronger animal explanation
 
 ## Public positioning
 AsSeenBy is a research-based comparison tool, not a medical or diagnostic product.

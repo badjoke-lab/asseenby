@@ -14,7 +14,7 @@
 - hero intro block
 - main compare stage on left
 - control rail on right
-- Human / Animal / Reference panels below
+- Human / Animal panels below
 
 ### Mobile
 - stacked layout
@@ -112,10 +112,11 @@ When Dog-like is selected:
 - make the RGB spectral-data limitation and excluded field-of-view/motion/low-light claims available in the evidence panel.
 
 ## Labels
-Each existing mode should display one of:
+Each current public mode should display one of:
 - Strong
 - Estimated
-- Reference
+
+The evidence model may retain a Reference class for future explicitly defined reference datasets, but no public Reference mode is included in the current release.
 
 Spatial mode UI must also communicate that the current output is a generic research simulation unless future work explicitly provides validated individual measurement support.
 

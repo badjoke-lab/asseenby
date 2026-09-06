@@ -71,13 +71,11 @@ async function waitForCurrentProduction(page) {
     await page.waitForTimeout(250);
     const src = await page.locator('img[alt="Original"]').first().getAttribute("src");
 
-    let currentReferenceSet = false;
     let currentAnimalSet = false;
     let currentHumanSet = false;
     try {
-      await page.locator("#category-select").selectOption("Reference");
-      const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
-      currentReferenceSet = JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]);
+      const categoryValues = await page.locator("#category-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+      if (JSON.stringify(categoryValues) !== JSON.stringify(["Human", "Animal"])) throw new Error(`unexpected image categories ${JSON.stringify(categoryValues)}`);
       await page.locator("#category-select").selectOption("Animal");
       const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
       currentAnimalSet = JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes);
@@ -85,21 +83,20 @@ async function waitForCurrentProduction(page) {
       const humanValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
       currentHumanSet = JSON.stringify(humanValues) === JSON.stringify(expectedHumanImageModes);
     } catch {
-      currentReferenceSet = false;
       currentAnimalSet = false;
       currentHumanSet = false;
     }
 
-    if (src?.startsWith("blob:") && currentReferenceSet && currentAnimalSet && currentHumanSet) {
+    if (src?.startsWith("blob:") && currentAnimalSet && currentHumanSet) {
       result.productionReleaseDetected = true;
-      result.notes.push(`current production behavior detected on attempt ${attempt}; image Human set excludes Fatigue-like/Dry-eye-like/Night, Reference=Age only, Animal=Dog-like only`);
+      result.notes.push(`current production behavior detected on attempt ${attempt}; image categories are Human/Animal only, with the audited Human set and Animal=Dog-like only`);
       return;
     }
 
-    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Human set, Reference set, and/or Animal image set`);
+    result.notes.push(`attempt ${attempt}: production is stale for blob upload, Human/Animal category set, Human modes, and/or Animal modes`);
     if (attempt < 12) await page.waitForTimeout(15_000);
   }
-  throw new Error("Production did not reach the current blob-upload + Reference-mode release behavior within the retry window.");
+  throw new Error("Production did not reach the current blob-upload + Human/Animal-only release behavior within the retry window.");
 }
 
 async function desktopImageSmoke(browser) {
@@ -115,10 +112,11 @@ async function desktopImageSmoke(browser) {
   const initialResources = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
   assert(!initialResources.some((name) => /SpatialEntry/i.test(name)), "desktop image: spatial bundle loaded before Explore 3D was opened");
 
-  await page.locator("#category-select").selectOption("Reference");
-  const referenceOptions = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => ({ value: node.value, text: node.textContent })));
-  assert(JSON.stringify(referenceOptions) === JSON.stringify([{ value: "age", text: "Age Profile" }]), `desktop image: unexpected Reference modes ${JSON.stringify(referenceOptions)}`);
-  assert(!(await page.locator("body").innerText()).includes("Sex-difference Profile"), "desktop image: removed Sex-difference Profile is still visible");
+  const categoryValues = await page.locator("#category-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
+  assert(JSON.stringify(categoryValues) === JSON.stringify(["Human", "Animal"]), `desktop image: unexpected categories ${JSON.stringify(categoryValues)}`);
+  const pageText = await page.locator("body").innerText();
+  assert(!pageText.includes("Age Profile"), "desktop image: removed Age Profile is still visible");
+  assert(!pageText.includes("Sex-difference Profile"), "desktop image: removed Sex-difference Profile is still visible");
   await page.locator("#category-select").selectOption("Animal");
   const animalValues = await page.locator("#mode-select option").evaluateAll((nodes) => nodes.map((node) => node.value));
   assert(JSON.stringify(animalValues) === JSON.stringify(expectedAnimalImageModes), `desktop image: unexpected Animal image modes ${JSON.stringify(animalValues)}`);

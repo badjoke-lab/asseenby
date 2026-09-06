@@ -93,10 +93,6 @@ Bee-like image and spatial rendering are both blocked from ordinary RGB. A conve
 
 Future Bee-like work requires additional UV-reflectance/spectral scene or material data and an explicit false-color translation for human displays. Until those inputs exist, no purple/blue RGB filter should be presented as bee vision.
 
-## Reference-mode limitation
-Reference modes are averaged profiles, not individual predictions.
-They are intended as framing tools for comparison.
-
 ## Evidence-badge limitation
 The evidence panel helps communicate claim strength and implementation maturity.
 It does not convert the product into a validated medical or perceptual instrument.
