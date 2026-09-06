@@ -62,8 +62,8 @@ Animal modes in v0.1 are visible-range approximations only.
 They should be read as comparison aids rather than complete reproductions.
 
 Examples:
-- bird-like mode does not reproduce ultraviolet response or full avian perception;
 - dog and cat modes are simplified visible-range approximations.
+- Bird-like is not publicly rendered from ordinary RGB because a generic avian observer cannot be reconstructed from three camera channels.
 - Bee-like is not publicly rendered from ordinary RGB because ultraviolet/spectral scene information is absent.
 
 ### Dog-like specific limitation
@@ -79,7 +79,9 @@ The image-track Cat-like mode remains an explicitly cautious visible-range appro
 ### Bird-like spatial evaluation limitation
 Generic Bird-like spatial has been rejected/blocked for the current RGB panorama. Avian color systems include UVS/VS and tetrachromatic mechanisms with oil-droplet filtering that ordinary RGB cannot reconstruct, while measured acuity varies by roughly two orders of magnitude across bird species. A generic saturation/contrast boost or generic sharpen/blur effect would therefore imply a coherent “bird view” that the source data and taxonomic category do not support.
 
-A future avian spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.
+The former Bird-like image mode was also removed during R7 because its saturation/microcontrast adjustment could not represent tetrachromacy, UVS/VS variation, oil-droplet filtering, species-specific acuity, or a defensible generic avian observer.
+
+A future avian image or spatial mode must be species-specific and/or use additional spectral/UV scene data with a documented observer model.
 
 ### Bee-like source-data limitation
 Bee-like image and spatial rendering are both blocked from ordinary RGB. A conventional image has already collapsed the ultraviolet/spectral information needed to estimate honeybee UV/blue/green receptor relationships, so a visible RGB color shift is not retained as a public bee-view proxy.

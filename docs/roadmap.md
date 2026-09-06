@@ -51,7 +51,7 @@ Why:
 - the fourth avian color dimension cannot be reconstructed from three human-camera RGB channels after spectral information has been collapsed;
 - avian visual acuity varies by roughly two orders of magnitude across measured species, so a generic sharpen/blur rule would not describe “bird vision” coherently;
 - temporal resolution, retinal specializations, field of view and ecology also vary substantially across species;
-- the only current image Bird-like behavior is a visible-range saturation/microcontrast proxy, which is not enough to justify a separate spatial mode.
+- the former image Bird-like behavior was only a visible-range saturation/microcontrast proxy; R7 removed it rather than preserve a generic avian claim that the RGB source cannot support.
 
 Decision:
 Do not add a Bird-like spatial control or shader from the current RGB panorama. A future avian spatial mode must be species-specific and/or use additional spectral/UV source data with a documented observer model.

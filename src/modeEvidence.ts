@@ -369,47 +369,6 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     ],
     lastReviewed: "2026-09-06",
   },
-  bird: {
-    summary: "Visible-range avian-inspired image proxy with strong evidence that many birds use visual systems outside human RGB, but deliberately weak implementation confidence because a generic bird observer cannot be reconstructed from a standard image.",
-    evidenceScore: "A",
-    modelScore: "D",
-    basisNote: "Birds commonly have four spectrally distinct single-cone classes with UVS or VS short-wavelength tuning and cone oil-droplet filtering. Comparative work also shows that visual acuity varies by roughly two orders of magnitude across bird species, so there is no single generic avian sharpness profile.",
-    modelNote: "The current image Bird-like mode only boosts visible-range saturation and microcontrast. It does not reconstruct tetrachromatic cone catches, ultraviolet information, oil-droplet filtering, species-specific acuity, temporal resolution, retinal specializations, or neural interpretation. A separate generic spatial Bird-like candidate was rejected/blocked at the evidence/source-data gate rather than promoting this weak image proxy into Three.js.",
-    caveat: "Treat this as a limited visual comparison aid, not a simulation of what birds generally see. Avian vision differs materially among species, and ordinary RGB has already discarded the spectral/UV information needed for a four-channel observer model.",
-    primarySource: {
-      title: "Avian visual pigments: characteristics, spectral tuning, and evolution",
-      url: "https://pubmed.ncbi.nlm.nih.gov/19426092/",
-      kind: "review",
-      note: "Review of the four avian single-cone pigment classes, their spectral tuning, and evolutionary variation including UV/violet-sensitive systems.",
-    },
-    supportingSources: [
-      {
-        title: "Ultraviolet vision in birds: the importance of transparent eye media",
-        url: "https://pubmed.ncbi.nlm.nih.gov/24258716/",
-        kind: "paper",
-        note: "Shows UVS versus VS spectral sensitivity and ocular-media differences across 38 bird species.",
-      },
-      {
-        title: "The phylogenetic distribution of ultraviolet sensitivity in birds",
-        url: "https://pubmed.ncbi.nlm.nih.gov/23394614/",
-        kind: "paper",
-        note: "Documents repeated shifts between UVS and VS avian color-vision classes across the bird phylogeny.",
-      },
-      {
-        title: "Ecological and morphological correlates of visual acuity in birds",
-        url: "https://pubmed.ncbi.nlm.nih.gov/38126722/",
-        kind: "paper",
-        note: "Comparative review of 94 species from 38 families reporting visual-acuity variation across roughly two orders of magnitude.",
-      },
-      {
-        title: "Tetrachromacy, oil droplets and bird plumage colours",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9839454/",
-        kind: "paper",
-        note: "Explains how tetrachromacy and colored oil droplets alter avian spectral discrimination beyond a human RGB model.",
-      },
-    ],
-    lastReviewed: "2026-09-06",
-  },
   age: {
     summary: "Averaged reference profile for age-related visual change, centered on reduced contrast, increased glare sensitivity, and lower clarity under challenging conditions.",
     evidenceScore: "B",

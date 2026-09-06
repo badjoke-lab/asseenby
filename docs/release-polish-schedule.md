@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R6 production smoke PASS / current public release verified**
+Status: **Step R7 active / R7-2 production verified / R7-3 branch validated**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -10,14 +10,16 @@ Current main includes:
 - lazy-loaded spatial JavaScript and CSS;
 - cached/debounced/blob-based image render pipeline;
 - synchronized pending/render state for Strength and upload/sample source switching;
-- repeatable production browser smoke coverage against the public Pages URL.
+- repeatable production browser smoke coverage against the public Pages URL;
+- unsupported Sex-difference Profile and Bee-like image modes removed from the public product.
 
 Latest merged release-polish PRs:
 - PR #9 — image control accessibility polish;
 - PR #10 — lazy-load Three.js spatial JavaScript;
 - PR #11 — lazy-load spatial CSS;
 - PR #12 — optimize image render pipeline;
-- PR #13 — clarify image render state.
+- PR #13 — clarify image render state;
+- PR #14 — remove unsupported Bee-like image mode.
 
 ## Execution rule
 At the start of every release/polish step, re-read `AGENTS.md`, `docs/roadmap.md`, this schedule, and any feature-specific spec affected by the change. If a step touches spatial behavior, also re-read `docs/spatial-pilot-spec.md` and `docs/spatial-pilot-schedule.md`.
@@ -133,16 +135,16 @@ Validation:
 - matching main build `34015953216` — **success**.
 
 ### R7-2 — Bee-like image mode
-Status: **ACTIVE — removal implementation**
+Status: **PASS / removed / production verified**
 
 Decision: **REMOVE from the public image product until UV/spectral source data exists**
 
 Reason:
 - honeybee UV/blue/green color vision is well supported, so the phenomenon Evidence remains strong;
-- the current image implementation is Model D because a conventional RGB image has already discarded ultraviolet/spectral information;
-- the public transform only remaps visible RGB channels and cannot reconstruct UV response, nectar-guide structure, receptor catches, or bee-specific scene coding;
-- strengthening the RGB color shift would make the output more dramatic without making it more biologically defensible;
-- the spatial Bee-like gate is already blocked for the same missing-source-data reason, so keeping a weaker image-only pseudo-bee view is inconsistent.
+- the former image implementation was Model D because a conventional RGB image has already discarded ultraviolet/spectral information;
+- the public transform only remapped visible RGB channels and could not reconstruct UV response, nectar-guide structure, receptor catches, or bee-specific scene coding;
+- strengthening the RGB color shift would have made the output more dramatic without making it more biologically defensible;
+- the spatial Bee-like gate is blocked for the same missing-source-data reason, so keeping a weaker image-only pseudo-bee view would be inconsistent.
 
 Removal scope:
 - remove Bee-like from the public Animal mode list;
@@ -151,12 +153,48 @@ Removal scope:
 - update README, MVP/mode documentation, and limitations to state Bee-like is unavailable until a spectral/UV data path exists;
 - keep the scientific/source-data decision in this schedule and spatial documentation.
 
+Validation:
+- removal/build/local desktop + 390px + spatial regression workflow `34016158829` — **success**;
+- PR #14 clean-head build `34016314919` — **success**;
+- merge SHA `ce71b1f49c3fb15e6d382a3fa02fba938bd5651a`;
+- matching main build `34016338118` — **success**;
+- production smoke `34016338172` — **success**, confirming Animal image modes reached Dog-like / Cat-like / Bird-like with Bee-like absent.
+
+### R7-3 — Bird-like image mode
+Status: **ACTIVE — branch implementation validated**
+
+Decision: **REMOVE the generic Bird-like image mode**
+
+Reason:
+- avian vision itself has strong evidence, but a generic “bird” observer is not a coherent single model across species;
+- many birds use four single-cone classes with UVS or VS tuning and oil-droplet filtering, none of which can be reconstructed from ordinary three-channel RGB after capture;
+- measured avian visual acuity varies by roughly two orders of magnitude across species, so a generic sharpen/blur rule would also overclaim;
+- the former Model D transform only increased visible-range saturation and microcontrast;
+- the spatial Bird-like candidate was already rejected/blocked at the evidence/source-data gate, so retaining a weaker 2D generic-bird filter is inconsistent.
+
+Removal scope:
+- remove Bird-like from the public Animal image list;
+- remove the saturation/microcontrast Bird transform and now-unused helpers;
+- remove the public Bird-specific Evidence entry;
+- update README, MVP/mode docs, limitations, and roadmap wording;
+- strengthen production smoke so the accepted public Animal image set is Dog-like / Cat-like only;
+- keep the scientific Bird-like rejection/source-data decision documented for future species-specific work.
+
 Acceptance:
-- Animal image category exposes Dog-like, Cat-like, and Bird-like only;
-- no `bee` image transform or Bee-like Evidence entry remains;
-- production smoke confirms Bee-like is absent from the public image UI;
-- accepted spatial controls remain unchanged;
-- build and desktop/390px browser regression pass.
+- Animal image category exposes Dog-like and Cat-like only;
+- no `bird` image transform or Bird-like public Evidence entry remains;
+- Reference remains Age Profile only;
+- accepted spatial controls remain exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, Dog-like, and Cataract-like;
+- desktop and 390px browser checks pass without horizontal overflow or page/console errors;
+- build passes;
+- after merge, production smoke confirms Bird-like is absent from the public image UI.
+
+Validation so far:
+- corrected removal/build/browser workflow `34018426974` — **success**;
+- typecheck + production build — **success**;
+- 1440px and 390px image checks: Animal = Dog-like / Cat-like only, Reference = Age Profile only, no overflow or page/console errors — **success**;
+- 1440px and 390px spatial control regression — **success**;
+- earlier runs `34018291841` and `34018339466` were workflow/test-harness failures before product commit: invalid workflow formatting, then Playwright module resolution from `/tmp`; neither was a product-code failure.
 
 ## Current next action
-Complete R7-2 removal and production verification. Then audit Bird-like, the remaining public Model D animal image mode.
+Open the clean R7-3 PR, require the normal PR build, merge only if green, then require public production smoke to observe Dog-like / Cat-like as the complete Animal image set before marking R7-3 PASS.
