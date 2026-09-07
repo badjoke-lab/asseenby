@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R14 VALIDATED / built-in sample intrinsic resolution / awaiting production verification**
+Status: **Step R14 PASS / built-in sample intrinsic resolution production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -736,7 +736,7 @@ Do not add another release step merely to continue numbering; resume the remaini
 
 
 ## Step R14 — Built-in sample intrinsic resolution
-Status: **PASS / validated / awaiting production verification**
+Status: **PASS / production verified**
 
 Finding:
 - R12 documentation treated the built-in SVG as a 1440×900 source, but `createSampleImage()` supplied only a `viewBox` and no intrinsic `width` / `height`;
@@ -756,7 +756,23 @@ Acceptance:
 - normalized relative blur remains mathematically unchanged at `coefficient / 900` — **PASS**;
 - Strength 0 identity, R11 CVD behavior, and R12 cross-resolution proportionality remain unchanged — **PASS**;
 - typecheck/build and full desktop/390px image + spatial browser regression remain green — **PASS**;
-- matching main build and production smoke remain required before R14 production closeout.
+- matching main build and production smoke remain required before R14 production closeout — **PASS**.
+
+Production verification:
+- corrected local/browser validation `34077219568` — **success**; browser measured Original **1440×900** and transformed Approximation **1400×875**, and full desktop/390px image + spatial regression passed; artifact `10002503655`;
+- PR #37 build `34091507802` — **success**;
+- PR #37 squash-merged as `ef4f6a507b069249534c8ce4bcb0886f97145abe`;
+- matching main build `34091555355` — **success**;
+- production smoke run `34091555251` attempt 1 — **expected deploy-lag failure**, correctly detecting the still-old public sample as **240×150**;
+- the same production smoke run `34091555251` attempt 2 — **success** after production deployment updated; permanent assertions for Original **1440×900** and transformed **1400×875** passed together with the full production browser suite;
+- successful production-smoke artifact `10007063576` retained.
+
+## Step R14 closeout
+Status: **PASS / production verified**
+
+R14 is closed. The built-in sample now has explicit intrinsic dimensions matching its intended 1440×900 design, preprocessing produces 1400×875 for transforms, and the R12 900 px normalization denominator remains unchanged. No transform coefficient, Evidence/Model grade, Strength semantic, or spatial renderer changed.
+
+Resume the remaining transform/evidence audit and open another release step only for a concrete renderer, output, evidence, or public-claim defect.
 
 Validation history:
 - initial R14 run `34076927943` — **test-assumption failure**, not a product failure; it assumed the viewBox provided 1440×900 intrinsic dimensions and therefore expected a 1400×875 blob before measuring the actual browser intrinsic size; no product commit was emitted;
