@@ -68,3 +68,5 @@ jobs:
           name: e1-scene-observer-vision-validation
           path: production-smoke/
           if-no-files-found: warn
+
+# validation v4: wait for the Three.js canvas before checking the E1 release fingerprint
