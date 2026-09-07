@@ -9,6 +9,7 @@ old = '''  const forwardButton = page.getByRole("button", { name: "Move forward"
   await forwardButton.dispatchEvent("pointerup", { pointerId: 71, pointerType: "touch", isPrimary: true });
   await page.waitForTimeout(120);'''
 new = '''  const forwardButton = page.getByRole("button", { name: "Move forward", exact: true });
+  await forwardButton.scrollIntoViewIfNeeded();
   const forwardBox = await forwardButton.boundingBox();
   assert(forwardBox, "mobile spatial: Move forward has no bounding box");
   const movementCdp = await context.newCDPSession(page);
@@ -31,6 +32,7 @@ old = '''    const forward = page.getByRole("button", { name: "Move forward", ex
     await forward.dispatchEvent("pointerup", { pointerId: 91, pointerType: "touch", isPrimary: true });
     await page.waitForTimeout(120);'''
 new = '''    const forward = page.getByRole("button", { name: "Move forward", exact: true });
+    await forward.scrollIntoViewIfNeeded();
     const forwardBox = await forward.boundingBox();
     assert(forwardBox, "mobile Move forward has no bounding box");
     const cdp = await context.newCDPSession(page);
