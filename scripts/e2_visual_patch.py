@@ -1,55 +1,206 @@
 from pathlib import Path
+import re
 
 spatial = Path('src/SpatialPage.tsx')
 text = spatial.read_text()
-old_renderer = '''      renderer.outputColorSpace = THREE.SRGBColorSpace;\n      renderer.toneMapping = THREE.NoToneMapping;\n      renderer.toneMappingExposure = 1.0;\n      renderer.shadowMap.enabled = false;'''
-polished_renderer = '''      renderer.outputColorSpace = THREE.SRGBColorSpace;\n      renderer.toneMapping = THREE.ACESFilmicToneMapping;\n      renderer.toneMappingExposure = 1.34;\n      renderer.shadowMap.enabled = true;\n      renderer.shadowMap.type = THREE.PCFSoftShadowMap;'''
-intermediate_renderer = '''      renderer.outputColorSpace = THREE.SRGBColorSpace;\n      renderer.toneMapping = THREE.ACESFilmicToneMapping;\n      renderer.toneMappingExposure = 1.08;\n      renderer.shadowMap.enabled = true;\n      renderer.shadowMap.type = THREE.PCFSoftShadowMap;'''
-if old_renderer in text:
-    text = text.replace(old_renderer, polished_renderer, 1)
-elif intermediate_renderer in text:
-    text = text.replace(intermediate_renderer, polished_renderer, 1)
-elif polished_renderer not in text:
-    raise SystemExit('renderer settings block not found')
+text = text.replace(
+    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));',
+    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));',
+)
+text = text.replace('renderer.toneMappingExposure = 1.34;', 'renderer.toneMappingExposure = 1.28;')
 spatial.write_text(text)
 
 scene = Path('src/spatial/nightIntersectionScene.ts')
 text = scene.read_text()
-replacements = {
-    'scene.fog = new THREE.FogExp2(0x111722, 0.0042);': 'scene.fog = new THREE.FogExp2(0x111722, 0.0030);',
-    'const hemisphere = new THREE.HemisphereLight(0x91a9c7, 0x2a2018, 1.3);': 'const hemisphere = new THREE.HemisphereLight(0xa8bad0, 0x3d3024, 2.15);',
-    'const moon = new THREE.DirectionalLight(0xa7bdd7, 1.28);': 'const moon = new THREE.DirectionalLight(0xb4c8de, 1.85);',
-    'const shopWest = new THREE.PointLight(0xff9b55, 10.5, 20, 2.0);': 'const shopWest = new THREE.PointLight(0xff9b55, 18.0, 23, 2.0);',
-    'const shopEast = new THREE.PointLight(0x72c5de, 9.4, 19, 2.0);': 'const shopEast = new THREE.PointLight(0x72c5de, 16.5, 22, 2.0);',
-    'facade: 0x6a5b50': 'facade: 0x8a7868',
-    'facade: 0x59636b': 'facade: 0x72818a',
-    'facade: 0x715d4f': 'facade: 0x8d7563',
-    'facade: 0x566469': 'facade: 0x71848a',
-    'facade: 0x50565e': 'facade: 0x68737e',
-    'facade: 0x625850': 'facade: 0x796b60',
-}
-for old, new in replacements.items():
-    if old in text:
-        text = text.replace(old, new)
 
-ambient_marker = '''  hemisphere.name = "night-sky-fill";\n  root.add(hemisphere);'''
-ambient_block = '''  hemisphere.name = "night-sky-fill";\n  root.add(hemisphere);\n\n  const ambient = new THREE.AmbientLight(0x8f9baa, 0.72);\n  ambient.name = "street-ambient-fill";\n  root.add(ambient);'''
-if ambient_marker in text and 'street-ambient-fill' not in text:
-    text = text.replace(ambient_marker, ambient_block, 1)
+text = text.replace(
+    'color: 0x252930,\n    map: asphaltTexture,\n    roughness: 0.52,',
+    'color: 0x353b43,\n    map: asphaltTexture,\n    roughness: 0.58,',
+)
+text = text.replace('castShadow = true,', 'castShadow = false,', 1)
 
-moon_marker = '''  moon.shadow.bias = -0.0007;\n  root.add(moon);'''
-moon_block = '''  moon.shadow.bias = -0.0007;\n  root.add(moon);\n\n  const intersectionFill = new THREE.PointLight(0xffddb0, 9.5, 36, 1.7);\n  intersectionFill.name = "intersection-fill";\n  intersectionFill.position.set(-2, 7.5, -25);\n  root.add(intersectionFill);'''
-if moon_marker in text and 'intersection-fill' not in text:
-    text = text.replace(moon_marker, moon_block, 1)
+facade_pattern = re.compile(r'''  const facadeTexture = \(base: string, mortar: string, repeatX: number, repeatY: number\) => makeCanvasTexture\(256, \(ctx, size\) => \{.*?\n  \}, repeatX, repeatY\);''', re.S)
+facade_replacement = '''  const facadeTexture = (base: string, mortar: string, columns: number, rows: number, seed: number) => makeCanvasTexture(512, (ctx, size) => {
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
 
-sign_marker = '''  addBuilding("far-north-right", { x: 33, z: -101, width: 34, depth: 24, height: 19, floors: 5, facade: 0x796b60, trim: 0x302e2b, front: "south", sign: "DINER", signTone: "warm" });'''
-sign_block = sign_marker + '''\n\n  const addStreetSign = (name: string, label: string, tone: "warm" | "cool", x: number, y: number, z: number, width: number, height: number) => {\n    const texture = makeSignTexture(label, tone);\n    const signMaterial = trackMaterial(new THREE.MeshStandardMaterial({\n      map: texture,\n      emissiveMap: texture,\n      emissive: 0xffffff,\n      emissiveIntensity: 1.45,\n      roughness: 0.28,\n      side: THREE.DoubleSide,\n    }));\n    const sign = new THREE.Mesh(new THREE.PlaneGeometry(width, height), signMaterial);\n    sign.name = name;\n    sign.position.set(x, GROUND_Y + y, z);\n    sign.castShadow = false;\n    root.add(sign);\n    addBox(`${name}-frame`, [width + 0.18, height + 0.18, 0.08], [x, GROUND_Y + y, z + 0.04], darkMetal, root);\n  };\n\n  addStreetSign("corner-market-sign", "MARKET", "warm", -12.8, 4.2, -41.75, 5.6, 1.25);\n  addStreetSign("corner-books-sign", "BOOKS", "cool", 12.8, 4.2, -41.75, 5.2, 1.25);\n  addStreetSign("bus-stop-sign", "BUS", "cool", -10.8, 2.8, -22.2, 1.1, 1.75);'''
-if sign_marker in text and 'corner-market-sign' not in text:
-    text = text.replace(sign_marker, sign_block, 1)
+    ctx.strokeStyle = mortar;
+    ctx.lineWidth = 1;
+    const brickH = 16;
+    for (let y = 0; y < size; y += brickH) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(size, y);
+      ctx.stroke();
+      const offset = (Math.floor(y / brickH) % 2) * 18;
+      for (let x = -offset; x < size; x += 36) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, Math.min(size, y + brickH));
+        ctx.stroke();
+      }
+    }
 
-bench_marker = '''  addBench("bench-west", -14.2, -8.3, Math.PI / 2);\n  addBench("bench-east", 14.4, -50.5, -Math.PI / 2);'''
-bench_block = bench_marker + '''\n\n  const shelter = new THREE.Group();\n  shelter.name = "bus-shelter-east";\n  shelter.position.set(14.4, GROUND_Y, -24.5);\n  root.add(shelter);\n  addBox("bus-shelter-roof", [4.6, 0.16, 1.8], [0, 2.65, 0], darkMetal, shelter);\n  addBox("bus-shelter-back", [4.5, 2.25, 0.08], [0, 1.35, 0.78], glass, shelter, false);\n  addBox("bus-shelter-side", [0.08, 2.25, 1.55], [-2.15, 1.35, 0], glass, shelter, false);\n  for (const px of [-2.15, 2.15]) addCylinder(`bus-shelter-post-${px}`, 0.07, 2.65, [px, 1.33, 0.72], darkMetal, shelter, 10);\n  addBox("bus-shelter-seat", [2.7, 0.16, 0.48], [0.4, 0.58, 0.42], paleMetal, shelter);'''
-if bench_marker in text and 'bus-shelter-east' not in text:
-    text = text.replace(bench_marker, bench_block, 1)
+    const marginX = 18;
+    const marginTop = 20;
+    const marginBottom = 52;
+    const cellW = (size - marginX * 2) / Math.max(1, columns);
+    const cellH = (size - marginTop - marginBottom) / Math.max(1, rows);
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < columns; col += 1) {
+        const x = marginX + col * cellW + cellW * 0.18;
+        const y = marginTop + row * cellH + cellH * 0.16;
+        const w = cellW * 0.64;
+        const h = cellH * 0.62;
+        const lit = Math.floor(seededNoise(seed + row * 19 + col * 11) * 7);
+        ctx.fillStyle = 'rgba(13,17,21,0.72)';
+        ctx.fillRect(x - 3, y - 3, w + 6, h + 7);
+        ctx.fillStyle = lit === 0 || lit === 5 ? '#e5bd78' : lit === 2 ? '#88bed0' : '#18232b';
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(245,245,235,0.18)';
+        ctx.fillRect(x + w * 0.48, y, 2, h);
+        ctx.fillStyle = 'rgba(20,22,24,0.55)';
+        ctx.fillRect(x - 4, y + h + 3, w + 8, 3);
+      }
+    }
+
+    const gradient = ctx.createLinearGradient(0, 0, size, 0);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.09)');
+    gradient.addColorStop(0.5, 'rgba(0,0,0,0.07)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.025)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  });'''
+text, count = facade_pattern.subn(facade_replacement, text, count=1)
+if count != 1:
+    raise SystemExit('facadeTexture block not replaced')
+
+windows_pattern = re.compile(r'''\n  const addFacadeWindows = \(group: THREE\.Group, options: BuildingOptions, face: Face\) => \{.*?\n  \};\n\n  const addStorefront''', re.S)
+text, count = windows_pattern.subn('\n\n  const addStorefront', text, count=1)
+if count != 1:
+    raise SystemExit('addFacadeWindows block not removed')
+
+building_pattern = re.compile(r'''  const addBuilding = \(name: string, options: BuildingOptions\) => \{.*?\n    return group;\n  \};''', re.S)
+building_replacement = '''  const addBuilding = (name: string, options: BuildingOptions) => {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.set(options.x, GROUND_Y + options.height / 2, options.z);
+    root.add(group);
+
+    const facadeColumns = Math.max(4, Math.round(options.width / 5));
+    const facadeRows = Math.max(3, options.floors - 1);
+    const tex = facadeTexture(
+      typeof options.facade === "number" && (options.facade as number) < 0x505050 ? "#42484f" : "#65594f",
+      "rgba(220,216,207,0.12)",
+      facadeColumns,
+      facadeRows,
+      Math.abs(Math.round(options.x * 17 + options.z * 11)),
+    );
+    const facadeMaterial = trackMaterial(new THREE.MeshStandardMaterial({
+      color: options.facade,
+      map: tex,
+      roughness: 0.76,
+      metalness: 0.03,
+      emissive: 0x17130f,
+      emissiveIntensity: 0.08,
+    }));
+    const trimMaterial = trackMaterial(new THREE.MeshStandardMaterial({ color: options.trim, roughness: 0.62, metalness: 0.1 }));
+
+    const podiumHeight = Math.min(5.6, options.height * 0.29);
+    const upperHeight = options.height - podiumHeight;
+    const upperWidth = Math.max(12, options.width - 2.6);
+    const upperDepth = Math.max(12, options.depth - 2.2);
+    const upperShiftX = options.x < 0 ? 0.65 : -0.65;
+    const upperShiftZ = options.front === "south" ? -0.45 : 0.45;
+    const podiumY = -options.height / 2 + podiumHeight / 2;
+    const upperY = -options.height / 2 + podiumHeight + upperHeight / 2;
+
+    addBox(`${name}-podium`, [options.width, podiumHeight, options.depth], [0, podiumY, 0], facadeMaterial, group, true);
+    addBox(`${name}-upper`, [upperWidth, upperHeight, upperDepth], [upperShiftX, upperY, upperShiftZ], facadeMaterial, group, true);
+    addBox(`${name}-podium-cornice`, [options.width + 0.45, 0.32, options.depth + 0.45], [0, -options.height / 2 + podiumHeight + 0.16, 0], trimMaterial, group);
+    addBox(`${name}-roof-cap`, [upperWidth + 0.75, 0.48, upperDepth + 0.75], [upperShiftX, options.height / 2 + 0.24, upperShiftZ], trimMaterial, group);
+    addBox(`${name}-ground-belt`, [options.width + 0.28, 0.7, options.depth + 0.28], [0, -options.height / 2 + 0.35, 0], trimMaterial, group);
+
+    const pierY = upperY;
+    const pierX = upperWidth / 2 - 0.22;
+    const pierZ = upperDepth / 2 - 0.22;
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        addBox(`${name}-corner-pier-${sx}-${sz}`, [0.42, upperHeight - 0.4, 0.42], [upperShiftX + sx * pierX, pierY, upperShiftZ + sz * pierZ], trimMaterial, group);
+      }
+    }
+
+    addStorefront(group, options);
+    if (options.balconies) {
+      for (let floor = 1; floor < Math.min(options.floors - 1, 5); floor += 2) {
+        const y = -options.height / 2 + podiumHeight + Math.min(upperHeight - 1.6, 1.6 + floor * 2.55);
+        if (options.front === "south" || options.front === "north") {
+          const z = options.front === "south" ? options.depth / 2 + 0.64 : -options.depth / 2 - 0.64;
+          addBox(`${name}-balcony-${floor}`, [7.7, 0.16, 1.18], [upperShiftX, y, z], darkMetal, group);
+          addBox(`${name}-balcony-rail-${floor}`, [7.7, 0.72, 0.08], [upperShiftX, y + 0.34, z + (options.front === "south" ? 0.53 : -0.53)], paleMetal, group);
+        }
+      }
+    }
+
+    addBox(`${name}-roof-service`, [3.8, 1.65, 2.8], [upperShiftX + options.width * 0.12, options.height / 2 + 1.05, upperShiftZ - options.depth * 0.08], trimMaterial, group);
+    addBox(`${name}-roof-service-cap`, [4.2, 0.18, 3.2], [upperShiftX + options.width * 0.12, options.height / 2 + 1.92, upperShiftZ - options.depth * 0.08], paleMetal, group);
+    return group;
+  };'''
+text, count = building_pattern.subn(building_replacement, text, count=1)
+if count != 1:
+    raise SystemExit('addBuilding block not replaced')
+
+car_anchor = '''  const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
+  const addCar ='''
+car_helper = '''  const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
+
+  const addTaperedBox = (
+    name: string,
+    size: [number, number, number],
+    position: [number, number, number],
+    meshMaterial: THREE.Material,
+    parent: THREE.Object3D,
+    topWidth = 0.82,
+    topLength = 0.72,
+  ) => {
+    const geometry = new THREE.BoxGeometry(...size);
+    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
+    for (let index = 0; index < attribute.count; index += 1) {
+      const x = attribute.getX(index);
+      const y = attribute.getY(index);
+      const z = attribute.getZ(index);
+      if (y > 0) attribute.setXYZ(index, x * topWidth, y, z * topLength);
+    }
+    geometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(geometry, meshMaterial);
+    mesh.name = name;
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  };
+
+  const addCar ='''
+if car_anchor not in text:
+    raise SystemExit('car anchor not found')
+text = text.replace(car_anchor, car_helper, 1)
+
+text = text.replace(
+    'addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group);',
+    'addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group, true);',
+)
+text = text.replace(
+    'addBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group);',
+    'addTaperedBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group, 0.96, 0.86);',
+)
+text = text.replace(
+    'addBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group);',
+    'addTaperedBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group, 0.97, 0.9);',
+)
+text = text.replace(
+    'addBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group);',
+    'addTaperedBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group, van ? 0.92 : 0.78, van ? 0.9 : 0.68);',
+)
 
 scene.write_text(text)
