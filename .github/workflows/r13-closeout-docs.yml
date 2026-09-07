@@ -1,0 +1,47 @@
+name: R13 closeout docs
+
+on:
+  push:
+    branches: [docs/r13-production-closeout]
+    paths: [.github/workflows/r13-closeout-docs.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  closeout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs/r13-production-closeout
+      - name: Update R13 schedule state
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('docs/release-polish-schedule.md')
+          text = p.read_text()
+          text = text.replace(
+              'Status: **Step R13 VALIDATED / CVD public mode copy accuracy / awaiting production verification**',
+              'Status: **Step R13 PASS / CVD public mode copy production verified**',
+              1,
+          )
+          text = text.replace(
+              '## Step R13 — CVD public mode copy accuracy\nStatus: **PASS / validated / awaiting production verification**',
+              '## Step R13 — CVD public mode copy accuracy\nStatus: **PASS / production verified**',
+              1,
+          )
+          marker = '- matching main build and production copy verification remain required before production closeout.'
+          replacement = '''- matching main build and production copy verification remain required before production closeout — **PASS**.\n\nValidation:\n- corrected R13 copy/build/full browser validation `34076199167` — **success**; Protan-like and Deutan-like were selected in-browser and the corrected copy rendered while the stale channel wording was absent;\n- earlier validation `34076091382` was a test-harness failure only: it expected the unselected Deutan short note to exist in body text; build/preview had already passed and no product commit was made from that failed run;\n- PR #35 build `34076343798` — **success**;\n- PR #35 squash-merged as `90f1c1d714c4c5aeeb428fb051770833ffb304f6`;\n- matching main build `34076376001` — **success**;\n- production smoke `34076375993` — **success**;\n- dedicated production-copy audit `34076455854` — **success on attempt 1**; live production rendered both corrected Protan-like and Deutan-like short notes and neither stale channel-reduction phrase remained;\n- dedicated production-copy artifact `10002220240` — **success / retained evidence**.\n\n## Step R13 closeout\nStatus: **PASS / production verified**\n\nR13 is closed. Public CVD short descriptions now match the R11 Machado-based renderer and the more precise evidence/methodology wording. No renderer behavior or evidence grade changed.\n\nDo not add another release step merely to continue numbering; resume the remaining transform/evidence audit and open a new step only for a concrete renderer, model, output, or public-claim defect.'''
+          if marker not in text:
+              raise SystemExit('R13 acceptance marker not found')
+          text = text.replace(marker, replacement, 1)
+          p.write_text(text)
+          PY
+      - name: Commit closeout
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add docs/release-polish-schedule.md
+          git commit -m "Record R13 production closeout"
+          git push origin HEAD:docs/r13-production-closeout
