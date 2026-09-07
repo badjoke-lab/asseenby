@@ -1,4 +1,4 @@
-name: R14 sample blur reference validation
+name: R14 sample dimension discovery
 
 on:
   push:
@@ -6,77 +6,21 @@ on:
     paths: [.github/workflows/r14-sample-reference-validate.yml]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  validate:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/r14-sample-blur-reference
-          fetch-depth: 0
-      - name: Patch processed-sample blur reference
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          engine = Path('src/transformEngine.ts')
-          text = engine.read_text()
-          old = 'const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900;'
-          new = 'const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 875;'
-          if old not in text:
-              raise SystemExit('blur reference constant not found')
-          engine.write_text(text.replace(old, new, 1))
-
-          methodology = Path('docs/methodology.md')
-          text = methodology.read_text()
-          old = 'Image-space blur radii are normalized to the processed image short edge against the 900 px built-in-sample reference, so the same image content at different source pixel resolutions receives a comparable relative blur effect.'
-          new = 'Image-space blur radii are normalized to the processed image short edge against the built-in sample after preprocessing: the 1440×900 source is fit to 1400×875, so its 875 px processed short edge is the scale-1.0 reference. The same image content at different source pixel resolutions therefore receives a comparable relative blur effect without changing the built-in sample’s configured endpoints.'
-          if old not in text:
-              raise SystemExit('methodology blur reference text not found')
-          methodology.write_text(text.replace(old, new, 1))
-
-          limitations = Path('docs/limitations.md')
-          text = limitations.read_text()
-          old = 'Pixel-radius blur components are normalized to image size for cross-resolution consistency, but that normalization is not an optical prescription, diopter value, acuity measurement, point-spread function, or patient-specific calibration.'
-          new = 'Pixel-radius blur components are normalized to the processed image short edge for cross-resolution consistency. The scale-1.0 reference is the built-in sample after preprocessing (1400×875), preserving its configured blur endpoints; this normalization is not an optical prescription, diopter value, acuity measurement, point-spread function, or patient-specific calibration.'
-          if old not in text:
-              raise SystemExit('limitations blur text not found')
-          limitations.write_text(text.replace(old, new, 1))
-
-          schedule = Path('docs/release-polish-schedule.md')
-          text = schedule.read_text()
-          old = 'Status: **Step R13 PASS / CVD public mode copy production verified**'
-          new = 'Status: **Step R14 VALIDATED / processed sample blur reference / awaiting production verification**'
-          if old not in text:
-              raise SystemExit('current state marker not found')
-          text = text.replace(old, new, 1)
-          text += '''\n\n## Step R14 — Processed sample blur reference\nStatus: **PASS / validated / awaiting production verification**\n\nFinding:\n- R12 documented the built-in 1440×900 sample as the 900 px short-edge scale-1.0 reference so its pre-R12 blur endpoints would remain unchanged;\n- `prepareBaseCanvas()` actually fits every source within 1400×960, so the 1440×900 built-in sample is rendered at **1400×875** before `transformEngine.ts` runs;\n- with `IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900`, the built-in sample therefore used scale `875/900 = 0.9722`, weakening all normalized pixel-radius blur components by about 2.8% relative to the configured pre-R12 endpoints;\n- cross-resolution proportionality itself remained correct because the common reference constant cancels in resolution ratios.\n\nImplementation:\n- set the image-blur reference short edge to the actual processed built-in sample short edge, **875 px**;\n- document that the 1440×900 source becomes 1400×875 before image transforms;\n- keep every blur coefficient, mask, color transform, Evidence/Model grade, Strength semantic, preprocessing limit, and spatial renderer unchanged.\n\nAcceptance:\n- built-in sample preprocesses to 1400×875 and therefore uses blur scale exactly 1.0 — **PASS**;\n- the configured 100% pixel-radius endpoints remain 9 px Blur, 8.2 px Tunnel peripheral blur, 9.6 px Central Loss central blur, 7.2/5.6/26 px Cataract blur components, and 1.8 px Dog-like softening on the built-in sample — **PASS**;\n- R12 cross-resolution proportionality remains unchanged because all source sizes use the same 875 px denominator — **PASS**;\n- typecheck/build and full desktop/390px image + spatial browser regression remain green — **PASS**;\n- matching main build and production smoke remain required before R14 production closeout.\n'''
-          schedule.write_text(text)
-          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Static reference assertions
-        run: |
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const app = fs.readFileSync('src/App.tsx', 'utf8');
-          const engine = fs.readFileSync('src/transformEngine.ts', 'utf8');
-          if (!app.includes('fitWithin(image.width, image.height, 1400, 960)')) throw new Error('preprocess bounds changed');
-          if (!app.includes('viewBox="0 0 1440 900"')) throw new Error('built-in sample source dimensions changed');
-          if (!engine.includes('const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 875;')) throw new Error('processed sample blur reference is not 875');
-          const ratio = Math.min(1400 / 1440, 960 / 900, 1);
-          const width = Math.round(1440 * ratio);
-          const height = Math.round(900 * ratio);
-          if (width !== 1400 || height !== 875) throw new Error(`unexpected processed sample size ${width}x${height}`);
-          if (Math.min(width, height) / 875 !== 1) throw new Error('built-in sample blur scale is not exactly 1');
-          NODE
+      - run: npm run build
       - name: Install browser runtime
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
@@ -90,13 +34,17 @@ jobs:
           done
           cat /tmp/r14-preview.log
           exit 1
-      - name: Verify processed sample dimensions in browser
+      - name: Print intrinsic and transformed sample dimensions
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+          const original = page.locator('img[alt="Original"]');
+          await original.waitFor();
+          const originalInfo = await original.evaluate((img) => ({ src: img.src.slice(0, 40), naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }));
+
           await page.locator('#mode-select').selectOption('blur');
           const slider = page.locator('#strength-range');
           await slider.evaluate((el) => {
@@ -106,17 +54,12 @@ jobs:
             el.dispatchEvent(new Event('change', { bubbles: true }));
           });
           await page.waitForFunction(() => {
-            const imgs = [...document.querySelectorAll('img')];
-            return imgs.some((img) => img.src.startsWith('blob:') && img.naturalWidth === 1400 && img.naturalHeight === 875);
+            const img = document.querySelector('img[alt="Approximation"]');
+            return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0;
           }, null, { timeout: 15000 });
+          const approximation = page.locator('img[alt="Approximation"]');
+          const transformedInfo = await approximation.evaluate((img) => ({ src: img.src.slice(0, 40), naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }));
+          const result = { originalInfo, transformedInfo };
+          console.log(JSON.stringify(result, null, 2));
           await browser.close();
           NODE
-      - name: Full local browser regression
-        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
-      - name: Commit validated product change
-        run: |
-          git config user.name badjoke-lab
-          git config user.email badjoke.lab@gmail.com
-          git add src/transformEngine.ts docs/methodology.md docs/limitations.md docs/release-polish-schedule.md
-          git commit -m "Use processed sample as blur reference"
-          git push origin HEAD:fix/r14-sample-blur-reference
