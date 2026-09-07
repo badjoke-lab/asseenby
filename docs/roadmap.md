@@ -1,81 +1,201 @@
 # AsSeenBy — Roadmap
 
 ## Current state
-The repository contains the Vite + React + TypeScript static-image comparison product, browser-side image transforms, evidence metadata, and an accepted additive Three.js spatial baseline.
+The repository contains:
+- the Vite + React + TypeScript static-image comparison product;
+- browser-side image transforms and evidence metadata;
+- a production-verified Three.js 360° spatial reference implementation;
+- accepted Human spatial perception modes on that reference scene;
+- a production-verified image/release-polish track through R14, with R15 Tunnel image aspect-ratio correction validated and awaiting its own closeout.
 
-The existing image MVP remains the product baseline. The initial spatial pilot has passed and is merged on main; post-pilot spatial modes are now evaluated one at a time under `docs/spatial-pilot-spec.md` and `docs/spatial-pilot-schedule.md`.
+The historical 360° pilot is no longer the target architecture for the 3D product.
+
+Current Explore 3D direction is defined by:
+- `docs/explore-3d-spec.md`;
+- `docs/explore-3d-schedule.md`.
+
+The old `docs/spatial-pilot-spec.md` and `docs/spatial-pilot-schedule.md` remain historical records of the pilot and prior evidence decisions.
+
+## Product shape
+AsSeenBy keeps two complementary experiences.
+
+### Compare image
+Browser-side static-image comparison. This remains independent of the Three.js renderer.
+
+### Explore 3D
+A spatial comparison experience built around **Scene / Observer / Vision**.
+
+Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
+
+## Immediate priority order
+1. close the already-validated R15 Tunnel image aspect-ratio fix without broadening its scope;
+2. begin Explore 3D Step E1: split the current spatial architecture into Scene / Observer / Vision;
+3. retain Hansaplatz as `360° Photo Reference`, not as the whole 3D product;
+4. build the first geometry-based `Night Intersection` scene;
+5. add bounded Human movement and integrate accepted Human spatial Vision modes;
+6. add Dog observer, then refine Dog-like 3D detail behavior;
+7. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
+8. select a concrete first Bird species and implement real flight/perch behavior;
+9. evaluate that Bird species' visual model separately from its movement/viewpoint;
+10. expand to additional dense scenes after the first architecture is stable.
+
+## Explore 3D architecture
+### Scene
+Owns geometry, materials, lights, navigation bounds, collision surfaces, spawn states, climb/perch targets and guided comparison targets.
+
+### Observer
+Owns viewpoint/body scale and movement.
+
+Planned observer families:
+- Human;
+- Dog;
+- Cat;
+- species-specific Bird presets.
+
+### Vision
+Owns perception rendering and must remain independent from Observer wherever possible.
+
+Changing Vision must preserve the exact Scene/Observer/camera state. Changing Observer may alter camera height, movement model, collision envelope, reachable space and altitude according to the current spec.
+
+## Observer roadmap
+### Human
+Target baseline:
+- generic standing-adult viewpoint around 1.6 m;
+- bounded ground movement;
+- pointer/touch look;
+- desktop WASD-style movement;
+- mobile movement control;
+- Reset;
+- no game mechanics.
+
+### Dog
+Target baseline:
+- materially lower viewpoint, initially around 0.5–0.6 m for a medium-dog reference;
+- ground movement and lower occlusion envelope;
+- Normal view available independently of Dog-like Vision;
+- Dog-like remains a conservative visible-range proxy.
+
+Longer-term Dog-like 3D work should use distance/projected angular size for fine-detail loss where possible rather than only a uniform screen blur.
+
+### Cat
+Target baseline:
+- lower viewpoint, initially around 0.3 m;
+- ground movement;
+- authored climb/perch transitions for selected low/high surfaces.
+
+Cat Observer does **not** imply an accepted Cat-specific visual renderer. The old generic Cat-like RGB filter remains rejected unless a new documented feline observer model passes a separate evidence gate.
+
+### Bird
+Bird movement is a first-class 3D requirement, not ground walking.
+
+Target behavior:
+- concrete species preset rather than one generic biological Bird model;
+- free-space flight inside scene bounds;
+- ascend/descend;
+- real altitude change;
+- landing/perch targets;
+- major-geometry collision;
+- useful city flight volume roughly 30–50 m initially.
+
+Bird flight/viewpoint can be implemented before Bird-specific Vision. Generic Bird-like spectral/color vision remains rejected from ordinary RGB. Species-specific Vision requires its own evidence/data/model review and may require UV/spectral scene data.
+
+## Scene roadmap
+### Night Intersection — first full 3D scene
+Target useful volume: approximately 150 m × 150 m × 50–60 m.
+
+The scene should contain enough real geometry and visual density to support Human, Dog, Cat and Bird observers:
+- street/sidewalk/crosswalk;
+- buildings/facades/storefronts/signs;
+- vehicles and pedestrians;
+- traffic signals/streetlights;
+- street furniture;
+- vegetation;
+- dark and bright areas;
+- rooftops/poles/wires/branches/ledges;
+- near/mid/far targets.
+
+The goal is explanatory density, not an open-world map.
+
+### Later candidate scenes
+- Daytime Park;
+- Store / Supermarket;
+- Home / Apartment;
+- Station / Platform;
+- 360° Photo Reference as a retained photographic comparison scene.
+
+A strong 100–200 m scene is preferred over a sparse kilometre-scale environment.
+
+## 360° photographic reference
+The Hansaplatz panorama remains accepted and useful, but its role changes.
+
+It remains:
+- a real photographic density reference;
+- a post-processing comparison scene;
+- a regression/reference surface.
+
+It does **not** satisfy features that require:
+- camera translation;
+- parallax;
+- object distance;
+- geometric occlusion;
+- collision;
+- climbing;
+- flight;
+- real 3D lights/altitude relationships.
+
+Those require geometry-based scenes.
+
+## Human spatial Vision roadmap
+Accepted broad modes remain:
+- Normal;
+- Tunnel Vision;
+- Central Loss;
+- Night / Low Light;
+- Cataract-like.
+
+In geometry scenes, these should use real spatial information where that materially improves the model:
+- viewer-relative field position for Tunnel/Central;
+- real scene lighting/current-view context for Night / Low Light;
+- real bright-source/occlusion/distance information for Cataract-like where feasible.
+
+## Animal/species evidence boundary
+### Dog-like
+Accepted as a conservative human-display visible-range proxy. It does not claim exact canine cone catches, universal breed FOV, motion processing, tapetal/rod low-light reconstruction or literal canine qualia.
+
+### Cat-like
+The old generic visual filter remains rejected. Cat Observer movement/viewpoint is a separate product feature and may proceed without Cat-specific Vision.
+
+### Bird-like
+The old generic Bird-like visual concept remains rejected/blocked. Bird Observer flight may proceed because geometry/movement does not require unsupported spectral claims. Any Bird Vision work must target a concrete species and pass a separate model/data gate.
+
+### Bee-like
+Still blocked without UV-reflectance/spectral scene data and a documented observer/false-color model.
 
 ## Image track
-Current priorities remain:
-- build reliability
-- content wiring
-- transform quality
-- responsive / release polish
+The image track remains browser-side and separate.
 
-The image track remains browser-side, static-image based, and independent of the spatial renderer.
+Continue to maintain:
+- build reliability;
+- evidence accuracy;
+- transform quality;
+- responsive/release polish;
+- production browser regression.
 
-## Spatial track — accepted baseline
-Status: **initial pilot accepted and merged**
+Do not let ongoing image polish delay the accepted Explore 3D architecture rebuild once R15 is closed, unless a production regression requires immediate repair.
 
-Accepted:
-- one controlled night-street / street-corner scene;
-- Normal baseline;
-- Tunnel Vision live view-relative simulation;
-- Cataract-like scene-dependent glare / haze simulation;
-- same camera position and direction when switching modes;
-- evidence / limitation integration;
-- desktop and mobile interaction;
-- existing image regression coverage.
+## Engineering / operating constraints
+- browser-side rendering;
+- static/free-hosting-compatible operation;
+- no account/storage requirement unless separately specified;
+- lazy-load heavy 3D assets/scenes;
+- use instancing, LOD, culling, compressed/reused assets and controlled lighting as needed;
+- desktop and mobile must remain usable;
+- preserve `Compare image` if WebGL/Three.js fails.
 
-The word `approximation` remains a scientific/product claim boundary. It does not mean the 3D implementation should be a simple static screen filter.
-
-## Spatial expansion — Dog-like
-Status: **accepted / merged**
-
-Dog-like passed same-camera desktop/mobile rendered review and is now part of the accepted spatial set. It remains a conservative human-display visible-range dichromatic/acuity proxy, not a complete canine visual reconstruction.
-
-## Spatial evaluation — Cat-like
-Status: **rejected after rendered review**
-
-A conservative Cat-like candidate was implemented and compared against Normal and Dog-like on the same 360° camera states. Browser regression passed, but the visible difference from Dog-like was dominated by slightly lower chroma and slightly stronger softening. Keeping a separate spatial Cat-like control would therefore imply a species-specific distinction that the current RGB source and evidence boundary do not justify strongly enough.
-
-R7 subsequently audited the image-track Cat-like output against Dog-like on both the built-in sample and a controlled color/detail chart. The remaining distinction was dominated by modest hand-tuned RGB/softening differences rather than a validated feline observer mapping, so the public Cat-like image mode was also removed. Future Cat-like work must justify a separate feline renderer with an explicit observer model rather than manufacture a larger visual gap.
-
-## Spatial evaluation — Bird-like
-Status: **rejected / blocked at evidence-source gate**
-
-Evidence review found no defensible generic Bird-like spatial renderer for the current Hansaplatz source.
-
-Why:
-- many birds use four single-cone classes plus oil-droplet spectral filtering, with ultraviolet-sensitive (UVS) and violet-sensitive (VS) systems that ordinary RGB does not encode;
-- the fourth avian color dimension cannot be reconstructed from three human-camera RGB channels after spectral information has been collapsed;
-- avian visual acuity varies by roughly two orders of magnitude across measured species, so a generic sharpen/blur rule would not describe “bird vision” coherently;
-- temporal resolution, retinal specializations, field of view and ecology also vary substantially across species;
-- the former image Bird-like behavior was only a visible-range saturation/microcontrast proxy; R7 removed it rather than preserve a generic avian claim that the RGB source cannot support.
-
-Decision:
-Do not add a Bird-like spatial control or shader from the current RGB panorama. A future avian spatial mode must be species-specific and/or use additional spectral/UV source data with a documented observer model.
-
-## Spatial evaluation — Bee-like
-Status: **blocked by missing UV-reflectance scene data**
-
-The current panorama contains no UV-reflectance/spectral channel. Honeybee UV/blue/green photoreceptor behavior therefore cannot be reconstructed honestly from the current RGB source. No Bee-like spatial shader is started.
-
-A future Bee-like phase requires:
-- a UV-capable or measured spectral/UV scene source;
-- documented mapping from bee photoreceptor catches to a human-display false-color representation;
-- explicit handling of the fact that the human display cannot literally emit the bee perceptual dimensions being modeled.
-
-## Spatial post-pilot status
-The ordered animal expansion is **complete under the current RGB source-data boundary**:
-- Dog-like — accepted;
-- Cat-like — rejected after rendered review;
-- Bird-like — rejected/blocked at evidence/source-data gate;
-- Bee-like — blocked pending UV-reflectance/spectral scene data.
-
-No additional generic animal spatial filter should be added merely to fill out the image-mode list.
-
-## Near-term priority order
-1. keep the accepted spatial set stable and regression-covered;
-2. return active product work to image-transform quality, responsive/release polish, and evidence accuracy;
-3. reopen species-specific spatial work only when a new source-data/model requirement is explicitly accepted.
+## Source of truth
+For future implementation agents:
+- repository docs, not chat memory, are authoritative;
+- `AGENTS.md` defines the required reading discipline;
+- `docs/explore-3d-spec.md` defines current 3D behavior;
+- `docs/explore-3d-schedule.md` defines current 3D execution order;
+- when a product decision changes, update those documents in the same implementation change before marking the work complete.
