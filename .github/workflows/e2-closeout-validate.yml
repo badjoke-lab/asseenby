@@ -1,0 +1,60 @@
+name: E2 closeout validation
+
+on:
+  push:
+    branches:
+      - feat/e2-night-intersection
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out E2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/e2-night-intersection
+          fetch-depth: 0
+      - name: Apply E2 closeout patch
+        run: python3 scripts/e2_closeout_patch.py
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Install temporary browser dependency
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start local production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/e2-closeout-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/e2-closeout-preview.log
+          exit 1
+      - name: Run full local production smoke with E2 fingerprint
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+      - name: Commit validated E2 release gate and docs
+        run: |
+          if git diff --quiet -- .github/production-smoke.mjs docs/explore-3d-schedule.md docs/roadmap.md; then exit 0; fi
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add .github/production-smoke.mjs docs/explore-3d-schedule.md docs/roadmap.md
+          git commit -m "Add E2 production fingerprint and implementation record"
+          git push origin HEAD:feat/e2-night-intersection
+      - name: Upload closeout smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2-closeout-production-smoke
+          path: production-smoke/
+          if-no-files-found: warn
