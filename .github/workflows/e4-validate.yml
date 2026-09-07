@@ -23,6 +23,7 @@ jobs:
         run: |
           python3 scripts/e4_patch.py
           python3 scripts/e4_smoke_patch.py
+          python3 scripts/e4_validate_fix.py
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
