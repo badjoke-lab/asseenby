@@ -70,11 +70,20 @@ jobs:
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
-          const text = await page.locator('body').innerText();
+
+          await page.locator('#category-select').selectOption('Human');
+          await page.locator('#mode-select').selectOption('protan');
+          await page.waitForTimeout(80);
+          let text = await page.locator('body').innerText();
           if (!text.includes('Protanomaly-style red-green color-discrimination approximation.')) throw new Error('corrected Protan copy missing');
-          if (!text.includes('Deuteranomaly-style red-green color-discrimination approximation.')) throw new Error('corrected Deutan copy missing');
           if (text.includes('Reduced red-channel discrimination approximation.')) throw new Error('stale Protan channel copy remains');
+
+          await page.locator('#mode-select').selectOption('deutan');
+          await page.waitForTimeout(80);
+          text = await page.locator('body').innerText();
+          if (!text.includes('Deuteranomaly-style red-green color-discrimination approximation.')) throw new Error('corrected Deutan copy missing');
           if (text.includes('Reduced green-channel discrimination approximation.')) throw new Error('stale Deutan channel copy remains');
+
           await browser.close();
           NODE
       - name: Full local browser regression
