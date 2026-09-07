@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { SpatialObserverId } from "./catalog";
+import type { SpatialGuidedViewpoint, SpatialObserverId } from "./catalog";
 
 export type SpatialObserverSnapshot = {
   id: SpatialObserverId;
@@ -7,12 +7,14 @@ export type SpatialObserverSnapshot = {
   pitch: number;
   fov: number;
   position: [number, number, number];
+  viewpoint: SpatialGuidedViewpoint;
 };
 
 export type SpatialObserverRuntime = {
   id: SpatialObserverId;
   movement: "look-only";
   getSnapshot: () => SpatialObserverSnapshot;
+  setGuidedViewpoint: (viewpoint: SpatialGuidedViewpoint) => void;
   reset: () => void;
   dispose: () => void;
 };
@@ -23,12 +25,17 @@ type ObserverRuntimeOptions = {
   renderScene: () => void;
 };
 
+const GUIDED_VIEWPOINT_POSITIONS: Record<SpatialGuidedViewpoint, [number, number, number]> = {
+  baseline: [0, 0, 0],
+  offset: [3.2, 0, -4.2],
+};
+
 export function createSpatialObserverRuntime(
   observerId: SpatialObserverId,
   { camera, canvas, renderScene }: ObserverRuntimeOptions,
 ): SpatialObserverRuntime {
   if (observerId !== "human") {
-    throw new Error(`Unsupported observer in the current Photo Reference scene: ${observerId}`);
+    throw new Error(`Unsupported Explore 3D observer: ${observerId}`);
   }
 
   let yaw = 0;
@@ -36,8 +43,9 @@ export function createSpatialObserverRuntime(
   let activePointer: number | null = null;
   let lastX = 0;
   let lastY = 0;
+  let viewpoint: SpatialGuidedViewpoint = "baseline";
 
-  camera.position.set(0, 0, 0);
+  camera.position.set(...GUIDED_VIEWPOINT_POSITIONS.baseline);
   camera.rotation.order = "YXZ";
 
   const syncCamera = () => {
@@ -45,16 +53,25 @@ export function createSpatialObserverRuntime(
     camera.rotation.x = pitch;
     canvas.dataset.observerId = observerId;
     canvas.dataset.observerMovement = "look-only";
+    canvas.dataset.cameraViewpoint = viewpoint;
     canvas.dataset.cameraYaw = yaw.toFixed(6);
     canvas.dataset.cameraPitch = pitch.toFixed(6);
     canvas.dataset.cameraFov = camera.fov.toFixed(3);
     canvas.dataset.cameraPosition = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(3)},${camera.position.z.toFixed(3)}`;
   };
 
+  const setGuidedViewpoint = (nextViewpoint: SpatialGuidedViewpoint) => {
+    viewpoint = nextViewpoint;
+    camera.position.set(...GUIDED_VIEWPOINT_POSITIONS[nextViewpoint]);
+    syncCamera();
+    renderScene();
+  };
+
   const reset = () => {
     yaw = 0;
     pitch = -0.01;
-    camera.position.set(0, 0, 0);
+    viewpoint = "baseline";
+    camera.position.set(...GUIDED_VIEWPOINT_POSITIONS.baseline);
     camera.fov = 52;
     camera.updateProjectionMatrix();
     syncCamera();
@@ -104,7 +121,7 @@ export function createSpatialObserverRuntime(
     renderScene();
   };
 
-  canvas.setAttribute("aria-label", "360 degree Photo Reference. Human reference observer. Drag, use arrow keys, or press R to reset the look direction.");
+  canvas.setAttribute("aria-label", "Explore 3D. Human reference observer. Drag or use arrow keys to look around; press R to reset the current scene view.");
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", stopPointer);
@@ -121,7 +138,9 @@ export function createSpatialObserverRuntime(
       pitch,
       fov: camera.fov,
       position: [camera.position.x, camera.position.y, camera.position.z],
+      viewpoint,
     }),
+    setGuidedViewpoint,
     reset,
     dispose: () => {
       canvas.removeEventListener("pointerdown", onPointerDown);
