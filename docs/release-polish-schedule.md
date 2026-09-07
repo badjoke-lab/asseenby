@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R12 ACTIVE / resolution-normalized image blur components / R11 CVD model fidelity production verified**
+Status: **Step R12 PASS / resolution-normalized image blur production verified / R11 CVD model fidelity production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -659,7 +659,7 @@ Validation:
 - production smoke `34066953211` — **success**.
 
 ## Step R12 — Resolution-normalized image blur components
-Status: **ACTIVE — implementation / validation**
+Status: **PASS / production verified**
 
 Finding:
 - `prepareBaseCanvas()` downsizes only images larger than 1400×960; smaller uploads retain their original pixel dimensions;
@@ -674,11 +674,26 @@ Implementation target:
 - do not change masks, color transforms, contrast transforms, mode evidence grades, or any spatial renderer.
 
 Acceptance:
-- same-content 350×225 and 1400×900 uploads produce comparable normalized outputs for every blur-bearing public image mode at Strength 40 and 100;
-- the built-in 1440×900 sample retains scale 1.0 and therefore preserves all pre-R12 configured blur endpoints;
-- Strength 0 identity and R11 CVD fidelity remain unchanged;
-- full desktop/390px image + spatial browser regression remains green;
-- matching main build and production smoke pass after merge before R12 is marked production verified.
+- same-content 350×225 and 1400×900 uploads produce comparable normalized outputs for every blur-bearing public image mode at Strength 40 and 100 — **PASS**;
+- the built-in 1440×900 sample retains scale 1.0 and therefore preserves all pre-R12 configured blur endpoints — **PASS**;
+- Strength 0 identity and R11 CVD fidelity remain unchanged — **PASS**;
+- full desktop/390px image + spatial browser regression remains green — **PASS**;
+- matching main build and production smoke pass after merge before R12 is marked production verified — **PASS**.
 
-## Current next action
-Run a controlled same-content resolution audit for Blur / Tunnel / Central Loss / Cataract-like / Dog-like at 350×225 versus 1400×900, then run the full image/spatial browser regression. Open a clean PR only if both gates pass.
+Validation:
+- before/after resolution validation v2 `34067641403` — **success**; across Blur / Tunnel Vision / Central Loss / Cataract-like / Dog-like at Strength 40/100, aggregate same-content cross-resolution mean channel error fell from **13.668 to 1.857** (~86.4% reduction);
+- representative v2 endpoints: Blur 100 **43.578 -> 0.884**, Tunnel Vision 100 **17.847 -> 1.608**, Cataract-like 100 **17.461 -> 1.700**;
+- the same validation run completed full desktop/390px image + spatial regression — **success**;
+- PR #33 build `34067889815` — **success**;
+- PR #33 squash-merged as `f3b28c150ea44134135dc37420197721022bd3a7`;
+- matching main build `34067915020` — **success**;
+- production smoke `34067914996` — **success**; production artifact `9999544384`;
+- dedicated production-resolution audit `34067960352` — **success on attempt 1**; live `https://asseenby.pages.dev/` Blur 100 on same-content 350×225 vs 1400×900 measured mean channel error **0.844** against a release gate of `<=3`, directly distinguishing the deployed R12 renderer from the pre-R12 behavior (~43.578);
+- dedicated production audit artifact `9999560170` — **success / retained evidence**.
+
+## Step R12 closeout
+Status: **PASS / production verified**
+
+R12 is closed. The remaining public image blur-bearing renderers now normalize pixel blur radii against the processed image short edge while preserving the 1440×900 built-in sample endpoints, and the behavior is verified both in local before/after A/B browser output and on the public production deployment.
+
+Do not reopen R12 merely for further tuning. Reopen image-transform work only for a new concrete renderer/model/output defect found by evidence review or controlled output audit.
