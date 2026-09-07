@@ -1,0 +1,129 @@
+name: Tunnel aspect-mask audit
+
+on:
+  push:
+    branches: [audit/tunnel-aspect-mask-v2]
+    paths: [.github/workflows/tunnel-aspect-audit.yml]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/tunnel-audit-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/tunnel-audit-preview.log
+          exit 1
+      - name: Measure tunnel edge darkening across aspect ratios
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+          const cases = [
+            { name: 'wide', width: 1600, height: 900 },
+            { name: 'square', width: 900, height: 900 },
+            { name: 'tall', width: 900, height: 1600 },
+          ];
+          const results = [];
+
+          for (const item of cases) {
+            await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${item.width}" height="${item.height}" viewBox="0 0 ${item.width} ${item.height}"><rect width="100%" height="100%" fill="rgb(220,220,220)"/></svg>`;
+            await page.locator('input[type="file"]').setInputFiles({
+              name: `${item.name}.svg`,
+              mimeType: 'image/svg+xml',
+              buffer: Buffer.from(svg),
+            });
+            await page.locator('#category-select').selectOption('Human');
+            await page.locator('#mode-select').selectOption('tunnel');
+            await page.locator('#strength-range').evaluate((el) => {
+              const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+              setter?.call(el, '100');
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            await page.waitForFunction(() => {
+              const img = document.querySelector('img[alt="Approximation"]');
+              return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0;
+            }, null, { timeout: 15000 });
+
+            const measured = await page.evaluate(async () => {
+              const original = document.querySelector('img[alt="Original"]');
+              const approximation = document.querySelector('img[alt="Approximation"]');
+              if (!(original instanceof HTMLImageElement) || !(approximation instanceof HTMLImageElement)) throw new Error('comparison images unavailable');
+              const load = async (src) => {
+                const img = new Image();
+                img.src = src;
+                await img.decode();
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                if (!ctx) throw new Error('canvas context unavailable');
+                ctx.drawImage(img, 0, 0);
+                return { canvas, ctx };
+              };
+              const a = await load(original.src);
+              const b = await load(approximation.src);
+              const sample = (xRatio, yRatio) => {
+                const x = Math.min(b.canvas.width - 1, Math.max(0, Math.round((b.canvas.width - 1) * xRatio)));
+                const y = Math.min(b.canvas.height - 1, Math.max(0, Math.round((b.canvas.height - 1) * yRatio)));
+                const ap = a.ctx.getImageData(x, y, 1, 1).data;
+                const bp = b.ctx.getImageData(x, y, 1, 1).data;
+                const luma = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2];
+                return Number((luma(ap) - luma(bp)).toFixed(3));
+              };
+              return {
+                width: b.canvas.width,
+                height: b.canvas.height,
+                centerDelta: sample(0.5, 0.5),
+                topDelta: sample(0.5, 0.05),
+                bottomDelta: sample(0.5, 0.95),
+                leftDelta: sample(0.05, 0.5),
+                rightDelta: sample(0.95, 0.5),
+                cornerDelta: sample(0.05, 0.05),
+              };
+            });
+            results.push({ name: item.name, ...measured });
+          }
+
+          await browser.close();
+          const byName = Object.fromEntries(results.map((r) => [r.name, r]));
+          const squareAxisGap = Math.abs(byName.square.topDelta - byName.square.leftDelta);
+          const wideAxisGap = byName.wide.leftDelta - byName.wide.topDelta;
+          const tallAxisGap = byName.tall.topDelta - byName.tall.leftDelta;
+          const finding = {
+            squareAxisGap,
+            wideAxisGap,
+            tallAxisGap,
+            aspectBiasConfirmed: squareAxisGap <= 3 && wideAxisGap >= 8 && tallAxisGap >= 8,
+          };
+          const output = { checkedAt: new Date().toISOString(), results, finding };
+          fs.writeFileSync('tunnel-aspect-audit.json', JSON.stringify(output, null, 2));
+          console.log(JSON.stringify(output, null, 2));
+          if (!finding.aspectBiasConfirmed) throw new Error('Tunnel aspect-axis bias was not confirmed at the audit threshold');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tunnel-aspect-audit
+          path: tunnel-aspect-audit.json
+          if-no-files-found: warn
