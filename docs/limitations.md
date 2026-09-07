@@ -53,7 +53,7 @@ Examples:
 - the current image Central Loss view is also a simplified transform;
 - spatial Tunnel Vision remains generic unless future work accepts measured individual field data;
 - spatial Central Loss must not be interpreted as a patient's actual scotoma shape, size, opacity, severity, or perimetry result;
-- spatial Cataract-like remains generic unless future work accepts validated individual optical measurements.
+- spatial Cataract-like remains generic even when Night Intersection's visible lights and geometry occlusion determine which rendered bright pixels drive the glare proxy; no calibrated lens scatter or individual optical measurements are supplied.
 
 ### Central Loss specific limitation
 Real central vision loss can be irregular, incomplete, blurred, distorted, or experienced differently depending on condition and individual.
@@ -63,9 +63,9 @@ The spatial Central Loss mode therefore uses a deliberately generic central disr
 ### Night / Low Light specific limitation
 The former static-image Night / Low Light mode was removed in R7. A conventional uploaded RGB image has unknown exposure, tone mapping, scene luminance, and adaptation context, so applying a uniform dark/desaturated transform would imply a low-light observer state that the input does not establish.
 
-The current spatial Night / Low Light mode remains because it can at least use relative brightness differences in the rendered panorama, but the source is still a tone-mapped RGB photograph rather than calibrated luminance or spectral data.
+The current spatial Night / Low Light mode remains because it uses relative brightness differences in the current live rendered frame. On Night Intersection those pixels come from authored geometry, materials and lights after the renderer's tone mapping; on the 360° Photo Reference they come from the tone-mapped RGB photograph. Neither path supplies calibrated luminance or spectral radiance.
 
-It therefore does not reproduce a validated scotopic/mesopic observer, dark-adaptation timing, pupil dynamics, complete rod/cone spectral response, or a specific person's night-vision impairment. It is a luminance-dependent comparison proxy: dark regions are made less informative relative to bright regions so users can inspect the consequence across one fixed scene.
+It therefore does not reproduce a validated scotopic/mesopic observer, dark-adaptation timing, pupil dynamics, complete rod/cone spectral response, or a specific person's night-vision impairment. It is a luminance-dependent comparison proxy: darker rendered regions are made less informative relative to bright regions while the observer scans the same scene.
 
 ## Animal-mode limitation
 Animal modes in v0.1 are visible-range approximations only.

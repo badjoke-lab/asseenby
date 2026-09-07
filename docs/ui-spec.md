@@ -37,15 +37,14 @@ Uses the existing slider / split / side-by-side image comparison flow.
 ### Explore 3D
 Shows the controlled spatial test scene and a restrained mode switch for accepted / active spatial modes.
 
-Current 3D mode controls:
+Current Night Intersection × Human Vision controls:
 - Normal
 - Tunnel Vision
 - Central Loss
 - Night / Low Light
-- Dog-like
 - Cataract-like
 
-Dog-like is accepted and public. Cat-like spatial was rejected after rendered review. Generic Bird-like spatial was rejected/blocked at the evidence/source-data gate, and Bee-like is blocked pending UV-reflectance/spectral scene data. There are intentionally no Cat-like, Bird-like, or Bee-like controls in Explore spatial under the current source-data boundary.
+The 360° Photo Reference also exposes Dog-like as a Human-height Vision proxy. Dog-like is accepted and public on that reference scene, but it is not part of the E4 Human geometry Vision set and does not imply a Dog observer. Cat-like spatial was rejected after rendered review. Generic Bird-like spatial was rejected/blocked at the evidence/source-data gate, and Bee-like is blocked pending UV-reflectance/spectral scene data. There are intentionally no Cat-like, Bird-like, or Bee-like controls in Explore spatial under the current source-data boundary.
 
 Mode switching must keep the current camera state. The UI should make it obvious that the user is comparing the same scene/view under different rendering models.
 
