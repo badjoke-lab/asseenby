@@ -1,9 +1,17 @@
 export const SPATIAL_SCENES = [
   {
+    id: "night-intersection",
+    label: "Night Intersection",
+    description: "First geometry-based Explore 3D scene: a dense authored night intersection with real depth, lighting, street detail, vehicles, pedestrians, vegetation, and vertical structure.",
+    supportsTranslation: true,
+    status: "Geometry scene",
+  },
+  {
     id: "photo-reference",
     label: "360° Photo Reference",
     description: "Hansaplatz photographic reference. Look-around only because the source has no translation depth.",
     supportsTranslation: false,
+    status: "Photo reference",
   },
 ] as const;
 
@@ -13,7 +21,7 @@ export const SPATIAL_OBSERVERS = [
   {
     id: "human",
     label: "Human",
-    description: "Human reference observer at the source panorama viewpoint. Ground translation begins with geometry scenes, not this photograph.",
+    description: "Human reference observer. Night Intersection currently offers authored comparison viewpoints; bounded free ground movement arrives in E3.",
   },
 ] as const;
 
@@ -29,3 +37,5 @@ export const SPATIAL_VISIONS = [
 ] as const;
 
 export type SpatialVisionMode = (typeof SPATIAL_VISIONS)[number]["id"];
+
+export type SpatialGuidedViewpoint = "baseline" | "offset";

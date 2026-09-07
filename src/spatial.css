@@ -111,7 +111,8 @@
   background: #eee8dc;
 }
 
-.spatial-mode-button {
+.spatial-mode-button,
+.spatial-viewpoint-button {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid #aaa294;
@@ -122,13 +123,15 @@
   cursor: pointer;
 }
 
-.spatial-mode-button--active {
+.spatial-mode-button--active,
+.spatial-viewpoint-button--active {
   background: #2d2d2a;
   color: #f7f3e9;
   border-color: #2d2d2a;
 }
 
-.spatial-mode-button:focus-visible {
+.spatial-mode-button:focus-visible,
+.spatial-viewpoint-button:focus-visible {
   outline: 3px solid #7f786b;
   outline-offset: 2px;
 }
@@ -222,53 +225,6 @@
   color: inherit;
 }
 
-@media (max-width: 760px) {
-  .experience-switch {
-    width: min(100% - 24px, 1180px);
-    justify-content: flex-start;
-  }
-
-  .spatial-intro {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .spatial-kicker {
-    grid-column: 1;
-    margin-bottom: 0;
-  }
-
-  .spatial-title {
-    font-size: clamp(2rem, 12vw, 3.3rem);
-  }
-
-  .spatial-card__header {
-    align-items: center;
-  }
-
-  .spatial-layer-grid {
-    grid-template-columns: 1fr;
-    padding: 12px;
-  }
-
-  .spatial-mode-bar {
-    padding: 10px 12px;
-  }
-
-  .spatial-mode-button {
-    flex: 1 1 132px;
-  }
-
-  .spatial-mode-description {
-    padding: 11px 12px;
-  }
-
-  .spatial-render-host {
-    min-height: 240px;
-  }
-}
-
-
 .spatial-layer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -318,4 +274,102 @@
 .spatial-vision-section .spatial-mode-bar {
   border-bottom: 0;
   padding-top: 9px;
+}
+
+.spatial-mode-availability {
+  margin: -2px 16px 12px;
+  color: #6b655b;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.spatial-viewpoint-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 13px 16px;
+  border-top: 1px solid #d8d1c5;
+  background: #eee8dc;
+}
+
+.spatial-viewpoint-section > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.spatial-viewpoint-section small {
+  color: #6a645a;
+  line-height: 1.45;
+}
+
+.spatial-viewpoint-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .experience-switch {
+    width: min(100% - 24px, 1180px);
+    justify-content: flex-start;
+  }
+
+  .spatial-intro {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .spatial-kicker {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  .spatial-title {
+    font-size: clamp(2rem, 12vw, 3.3rem);
+  }
+
+  .spatial-card__header {
+    align-items: center;
+  }
+
+  .spatial-layer-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .spatial-mode-bar {
+    padding: 10px 12px;
+  }
+
+  .spatial-mode-button {
+    flex: 1 1 132px;
+  }
+
+  .spatial-mode-description {
+    padding: 11px 12px;
+  }
+
+  .spatial-render-host {
+    min-height: 240px;
+  }
+
+  .spatial-mode-availability {
+    margin: -2px 12px 11px;
+  }
+
+  .spatial-viewpoint-section {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .spatial-viewpoint-buttons {
+    justify-content: stretch;
+  }
+
+  .spatial-viewpoint-button {
+    flex: 1 1 120px;
+  }
 }
