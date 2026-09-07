@@ -29,7 +29,7 @@ text = text.replace('''  e3HumanMovementDetected: false,
   desktopImage: false,''', 1)
 
 text = text.replace('''        && JSON.stringify(visionButtons) === JSON.stringify(["Normal"])
-        && canvas.clientWidth > 0''', '''        && JSON.stringify(visionButtons) === JSON.stringify(expectedGeometryHumanVisionModes)
+        && canvas.clientWidth > 0''', '''        && JSON.stringify(visionButtons) === JSON.stringify(["Normal", "Tunnel Vision", "Central Loss", "Night / Low Light", "Cataract-like"])
         && canvas.clientWidth > 0''', 1)
 
 old = '''        result.e3HumanMovementDetected = true;
