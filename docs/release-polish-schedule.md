@@ -795,8 +795,14 @@ Implementation:
 - add a permanent production-smoke regression using wide, square, and tall controlled uploads.
 
 Acceptance:
-- controlled wide/square/tall Tunnel outputs keep center delta near zero and produce a non-trivial peripheral effect — **required**;
-- top-vs-left delta at the same normalized radius differs by no more than 2 luma units for all three aspect ratios — **required**;
-- square-image Tunnel output geometry/endpoints remain unchanged — **required**;
-- typecheck/build and full desktop/390px image + spatial regression remain green — **required**;
+- controlled wide/square/tall Tunnel outputs keep center delta near zero and produce a non-trivial peripheral effect — **PASS**;
+- top-vs-left delta at the same normalized radius differs by no more than 2 luma units for all three aspect ratios — **PASS**;
+- square-image Tunnel output geometry/endpoints remain unchanged — **PASS**;
+- typecheck/build and full desktop/390px image + spatial regression remain green — **PASS**;
+Validation:
+- pre-fix controlled aspect audit `34092347452` — **success / defect reproduced**; Strength 100 uniform-gray deltas were square top/left **8/8**, landscape **0/8**, portrait **8/0**; artifact `10007298129`;
+- corrected focused + full browser validation `34092878700` — **success**;
+- after normalization, wide / square / tall all measured center **0**, top/bottom/left/right **8/8/8/8**, corner **19**; the prior square endpoint therefore remained unchanged while the orientation bias disappeared;
+- full local desktop/390px image + spatial production-smoke regression — **success**;
+- corrected validation artifact `10007516829`;
 - matching main build and production smoke remain required before R15 production closeout.
