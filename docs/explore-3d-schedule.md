@@ -1,7 +1,7 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **architecture redefinition active / implementation not yet started**
+Status: **E1 ACTIVE / Scene / Observer / Vision architecture split**
 
 The historical 360° spatial pilot is accepted as a reference implementation, but it is no longer the target architecture for Explore 3D.
 
@@ -22,14 +22,14 @@ If historical pilot text conflicts with the current Explore 3D spec, follow `doc
 Do not rely on chat history as the sole source of product requirements.
 
 ## Step E0 — Finish active image/release work
-Status: **pending R15 closeout**
+Status: **PASS / R15 production verified**
 
-Finish the already-validated Tunnel image aspect-ratio correction and production verification before starting the new 3D architecture implementation.
+R15 is closed. PR #40 merged as `c1673dfc7d20f890fb9f38ad2dfced1d2dc82855`; main build `34116997123` and production smoke `34116997193` both passed, including the permanent Tunnel aspect-ratio regression.
 
-Do not broaden R15 into the Explore 3D rebuild.
+The image/release blocker is cleared. New product work may proceed to E1 without broadening or reopening R15.
 
 ## Step E1 — Architecture split: Scene / Observer / Vision
-Status: **next**
+Status: **ACTIVE**
 
 Goal:
 - refactor the current panorama-only spatial component so Scene, Observer/controller and Vision/post-processing are explicit layers;
