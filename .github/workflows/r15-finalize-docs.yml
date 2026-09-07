@@ -1,0 +1,47 @@
+name: R15 finalize validation docs
+
+on:
+  push:
+    branches: [fix/r15-tunnel-aspect-symmetry]
+    paths: [.github/workflows/r15-finalize-docs.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/r15-tunnel-aspect-symmetry
+      - name: Record R15 validation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('docs/release-polish-schedule.md')
+          text = p.read_text()
+          replacements = {
+            '- controlled wide/square/tall Tunnel outputs keep center delta near zero and produce a non-trivial peripheral effect — **required**;': '- controlled wide/square/tall Tunnel outputs keep center delta near zero and produce a non-trivial peripheral effect — **PASS**;',
+            '- top-vs-left delta at the same normalized radius differs by no more than 2 luma units for all three aspect ratios — **required**;': '- top-vs-left delta at the same normalized radius differs by no more than 2 luma units for all three aspect ratios — **PASS**;',
+            '- square-image Tunnel output geometry/endpoints remain unchanged — **required**;': '- square-image Tunnel output geometry/endpoints remain unchanged — **PASS**;',
+            '- typecheck/build and full desktop/390px image + spatial regression remain green — **required**;': '- typecheck/build and full desktop/390px image + spatial regression remain green — **PASS**;',
+          }
+          for old, new in replacements.items():
+            if old not in text:
+              raise SystemExit(f'marker not found: {old}')
+            text = text.replace(old, new, 1)
+          marker = '- matching main build and production smoke remain required before R15 production closeout.'
+          validation = '''Validation:\n- pre-fix controlled aspect audit `34092347452` — **success / defect reproduced**; Strength 100 uniform-gray deltas were square top/left **8/8**, landscape **0/8**, portrait **8/0**; artifact `10007298129`;\n- corrected focused + full browser validation `34092878700` — **success**;\n- after normalization, wide / square / tall all measured center **0**, top/bottom/left/right **8/8/8/8**, corner **19**; the prior square endpoint therefore remained unchanged while the orientation bias disappeared;\n- full local desktop/390px image + spatial production-smoke regression — **success**;\n- corrected validation artifact `10007516829`;\n- matching main build and production smoke remain required before R15 production closeout.'''
+          if marker not in text:
+            raise SystemExit('R15 production marker not found')
+          text = text.replace(marker, validation, 1)
+          p.write_text(text)
+          PY
+      - name: Commit validation record
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add docs/release-polish-schedule.md
+          git commit -m "Record R15 validation results"
+          git push origin HEAD:fix/r15-tunnel-aspect-symmetry
