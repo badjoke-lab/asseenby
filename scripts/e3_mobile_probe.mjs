@@ -15,6 +15,8 @@ try {
   await canvas.waitFor({ timeout: 30000 });
   const button = page.getByRole("button", { name: "Move forward", exact: true });
   await button.waitFor();
+  await button.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(100);
   await button.evaluate((element) => {
     window.__e3MobileProbe = [];
     for (const type of ["touchstart", "touchend", "pointerdown", "pointerup", "pointercancel", "lostpointercapture"]) {
@@ -38,6 +40,7 @@ try {
   assert.notEqual(result.after, result.before, `mobile did not move: ${JSON.stringify(result)}`);
   assert.equal(result.movement, "bounded-ground");
   assert.equal(result.viewpoint, "free");
+  assert(result.events.some((event) => event.type === "pointerdown" || event.type === "touchstart"), `mobile touch did not reach movement button: ${JSON.stringify(result.events)}`);
   assert.deepEqual(result.errors, []);
   await context.close();
 } finally {
