@@ -186,7 +186,7 @@ function SpatialRenderer({
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.3;
-      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.enabled = false;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.domElement.className = "spatial-canvas";
       renderer.domElement.tabIndex = 0;

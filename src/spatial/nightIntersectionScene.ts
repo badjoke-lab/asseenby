@@ -236,6 +236,25 @@ export function mountNightIntersectionScene(
     return mesh;
   };
 
+  const addInstancedBoxes = (
+    name: string,
+    size: [number, number, number],
+    positions: Array<[number, number, number]>,
+    meshMaterial: THREE.Material,
+  ) => {
+    const geometry = new THREE.BoxGeometry(...size);
+    const mesh = new THREE.InstancedMesh(geometry, meshMaterial, positions.length);
+    mesh.name = name;
+    const matrix = new THREE.Matrix4();
+    positions.forEach((position, index) => {
+      matrix.makeTranslation(position[0], position[1], position[2]);
+      mesh.setMatrixAt(index, matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    root.add(mesh);
+    return mesh;
+  };
+
   const addCylinder = (
     name: string,
     radius: number,
@@ -268,7 +287,7 @@ export function mountNightIntersectionScene(
   const moon = new THREE.DirectionalLight(0xb4c8de, 1.85);
   moon.name = "moon-key";
   moon.position.set(-38, 58, 30);
-  moon.castShadow = true;
+  moon.castShadow = false;
   moon.shadow.mapSize.set(512, 512);
   moon.shadow.camera.left = -70;
   moon.shadow.camera.right = 70;
@@ -301,20 +320,28 @@ export function mountNightIntersectionScene(
   for (const x of [-9.55, 9.55]) addBox(`curb-ns-${x}`, [0.34, 0.37, 150], [x, GROUND_Y + 0.17, -28], curb, root, false);
   for (const z of [-37.55, -18.45]) addBox(`curb-ew-${z}`, [150, 0.37, 0.34], [0, GROUND_Y + 0.18, z], curb, root, false);
 
+  const crosswalkNs: Array<[number, number, number]> = [];
+  const crosswalkEw: Array<[number, number, number]> = [];
   for (let i = 0; i < 9; i += 1) {
     const x = -7.6 + i * 1.9;
-    addBox(`crosswalk-s-${i}`, [1.0, 0.026, 5.6], [x, GROUND_Y + 0.07, -17.9], roadPaint, root, false);
-    addBox(`crosswalk-n-${i}`, [1.0, 0.026, 5.6], [x, GROUND_Y + 0.07, -38.1], roadPaint, root, false);
+    crosswalkNs.push([x, GROUND_Y + 0.07, -17.9], [x, GROUND_Y + 0.07, -38.1]);
     const z = -35.6 + i * 1.9;
-    addBox(`crosswalk-w-${i}`, [5.6, 0.026, 1.0], [-10.9, GROUND_Y + 0.075, z], roadPaint, root, false);
-    addBox(`crosswalk-e-${i}`, [5.6, 0.026, 1.0], [10.9, GROUND_Y + 0.075, z], roadPaint, root, false);
+    crosswalkEw.push([-10.9, GROUND_Y + 0.075, z], [10.9, GROUND_Y + 0.075, z]);
   }
+  addInstancedBoxes("crosswalk-ns-instances", [1.0, 0.026, 5.6], crosswalkNs, roadPaint);
+  addInstancedBoxes("crosswalk-ew-instances", [5.6, 0.026, 1.0], crosswalkEw, roadPaint);
+
+  const laneNs: Array<[number, number, number]> = [];
   for (const x of [-3.2, 3.2]) {
-    for (let z = 34; z >= -96; z -= 13) addBox(`lane-${x}-${z}`, [0.16, 0.026, 5.4], [x, GROUND_Y + 0.07, z], roadPaint, root, false);
+    for (let z = 34; z >= -96; z -= 13) laneNs.push([x, GROUND_Y + 0.07, z]);
   }
+  addInstancedBoxes("lane-ns-instances", [0.16, 0.026, 5.4], laneNs, roadPaint);
+
+  const laneEw: Array<[number, number, number]> = [];
   for (const z of [-24.8, -31.2]) {
-    for (let x = -66; x <= 66; x += 13) addBox(`lane-cross-${x}-${z}`, [5.4, 0.026, 0.16], [x, GROUND_Y + 0.075, z], roadPaint, root, false);
+    for (let x = -66; x <= 66; x += 13) laneEw.push([x, GROUND_Y + 0.075, z]);
   }
+  addInstancedBoxes("lane-ew-instances", [5.4, 0.026, 0.16], laneEw, roadPaint);
 
   for (const [x, z, sx, sz, rotation] of [
     [-5.8, -7.2, 4.8, 1.5, -0.1],
