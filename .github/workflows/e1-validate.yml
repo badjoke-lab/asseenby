@@ -17,7 +17,9 @@ jobs:
           ref: feat/e1-scene-observer-vision
           fetch-depth: 0
       - name: Apply E1 patch
-        run: python3 scripts/e1_patch.py
+        run: |
+          python3 scripts/e1_patch.py
+          python3 scripts/e1_smoke_fix.py
       - uses: actions/setup-node@v4
         with:
           node-version: 20
