@@ -25,11 +25,13 @@ new = '''async function waitForExplore3DArchitecture(page, label) {
   for (let attempt = 1; attempt <= 12; attempt += 1) {
     await page.goto(`${BASE}/?view=spatial&architecture_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
     try {
+      const canvasLocator = page.locator('canvas.spatial-canvas[data-scene-id="photo-reference"][data-observer-id="human"]');
+      await canvasLocator.waitFor({ state: "visible", timeout: 4_000 });
       const sceneValue = await page.locator("#spatial-scene-select").inputValue({ timeout: 2_000 });
       const observerValue = await page.locator("#spatial-observer-select").inputValue({ timeout: 2_000 });
       const architectureCard = await page.locator('.spatial-card[data-scene-id="photo-reference"][data-observer-id="human"]').count();
       const visionGroup = await page.getByRole("group", { name: "Vision", exact: true }).count();
-      const canvas = await page.locator('canvas.spatial-canvas[data-scene-id="photo-reference"][data-observer-id="human"]').count();
+      const canvas = await canvasLocator.count();
       if (
         sceneValue === "photo-reference"
         && observerValue === "human"
@@ -41,7 +43,7 @@ new = '''async function waitForExplore3DArchitecture(page, label) {
         return;
       }
     } catch {
-      // Deployment may still be serving the pre-E1 panorama-only shell.
+      // Deployment may still be serving the pre-E1 panorama-only shell or Three.js may still be mounting.
     }
     if (attempt < 12) await page.waitForTimeout(5_000);
   }
