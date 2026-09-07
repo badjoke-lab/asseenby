@@ -1,0 +1,42 @@
+name: E3 mobile movement probe
+
+on:
+  push:
+    branches:
+      - feat/e3-human-bounded-movement
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/e3-human-bounded-movement
+      - name: Apply E3 patches
+        run: |
+          python3 scripts/e3_patch.py
+          python3 scripts/e3_runtime_fix.py
+          python3 scripts/e3_touch_harness_fix.py
+          python3 scripts/e3_mobile_fix.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 >/tmp/e3-mobile-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/e3-mobile-preview.log
+          exit 1
+      - name: Probe real mobile touch movement
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e3_mobile_probe.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e3-mobile-movement-probe
+          path: e3-mobile-probe/
+          if-no-files-found: warn
