@@ -78,16 +78,16 @@ Spatial experience:
 Do not expose game-like movement, speed, graphics-quality, inventory, score, or decorative HUD controls.
 
 ## Spatial interaction
-Desktop:
-- pointer drag to look around
-- keyboard look-around when the scene has focus
-- restrained zoom only if separately justified
+Geometry scenes with an active ground observer:
+- desktop pointer drag / arrow keys: look around;
+- desktop W/A/S/D: bounded ground movement;
+- desktop Shift: moderately faster movement;
+- R / Reset observer: return to the canonical Scene × Observer start;
+- mobile touch drag: look around;
+- mobile uses a compact movement control that does not cover most of the viewport;
+- movement controls remain restrained and informational rather than becoming a game HUD.
 
-Mobile:
-- touch drag to look around
-- controls remain reachable without covering most of the scene
-
-The scene does not require free walking.
+`360° Photo Reference` remains look-only because the photographic source has no translation depth. Collision/navigation bounds belong to geometry scenes and must prevent ground observers from leaving the useful authored area or passing through major obstacles.
 
 ## Central Loss UI behavior
 When Central Loss is selected:

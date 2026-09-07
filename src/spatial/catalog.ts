@@ -21,7 +21,7 @@ export const SPATIAL_OBSERVERS = [
   {
     id: "human",
     label: "Human",
-    description: "Human reference observer. Night Intersection currently offers authored comparison viewpoints; bounded free ground movement arrives in E3.",
+    description: "Human reference observer. Night Intersection supports bounded ground movement with collision-aware navigation; the Photo Reference remains look-only.",
   },
 ] as const;
 
@@ -39,3 +39,4 @@ export const SPATIAL_VISIONS = [
 export type SpatialVisionMode = (typeof SPATIAL_VISIONS)[number]["id"];
 
 export type SpatialGuidedViewpoint = "baseline" | "offset";
+export type SpatialViewpointState = SpatialGuidedViewpoint | "free";

@@ -22,6 +22,7 @@ const result = {
   checkedAt: new Date().toISOString(),
   productionReleaseDetected: false,
   e2SpatialReleaseDetected: false,
+  e3HumanMovementDetected: false,
   desktopImage: false,
   mobileImage: false,
   desktopSpatial: false,
@@ -393,9 +394,9 @@ async function mobileImageSmoke(browser) {
   await context.close();
 }
 
-async function waitForExplore3DE2(page, label) {
+async function waitForExplore3DE3(page, label) {
   for (let attempt = 1; attempt <= 12; attempt += 1) {
-    await page.goto(`${BASE}/?view=spatial&e2_release_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
+    await page.goto(`${BASE}/?view=spatial&e3_release_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
     await page.waitForTimeout(1_000);
     const stable = await page.evaluate(() => {
       const scene = document.querySelector("#spatial-scene-select");
@@ -410,6 +411,8 @@ async function waitForExplore3DE2(page, label) {
         && observer.value === "human"
         && canvas instanceof HTMLCanvasElement
         && canvas.dataset.sceneSupportsTranslation === "true"
+        && canvas.dataset.observerMovement === "bounded-ground"
+        && document.querySelector('.spatial-reset-button') instanceof HTMLButtonElement
         && Number(canvas.dataset.sceneObjectCount || 0) >= 220
         && Number(canvas.dataset.sceneLightCount || 0) >= 10
         && canvas.dataset.sceneVolume === "150x150x60"
@@ -449,24 +452,49 @@ async function waitForExplore3DE2(page, label) {
         const restored = await canvas.evaluate((element) => ({ position: element.dataset.cameraPosition, viewpoint: element.dataset.cameraViewpoint }));
         assert(restored.viewpoint === "baseline" && restored.position === baseline.position, `${label}: E2 Reference viewpoint did not restore`);
         result.e2SpatialReleaseDetected = true;
-        result.notes.push(`${label}: current E2 Night Intersection fingerprint detected on attempt ${attempt}`);
+        const beforeMove = await canvas.evaluate((element) => element.dataset.cameraPosition);
+        await canvas.focus();
+        await page.keyboard.down("w");
+        await page.waitForTimeout(320);
+        await page.keyboard.up("w");
+        await page.waitForTimeout(120);
+        const moved = await canvas.evaluate((element) => ({
+          position: element.dataset.cameraPosition,
+          viewpoint: element.dataset.cameraViewpoint,
+          movement: element.dataset.observerMovement,
+        }));
+        assert(moved.position && moved.position !== beforeMove, `${label}: E3 W movement did not translate the Human observer`);
+        assert(moved.viewpoint === "free" && moved.movement === "bounded-ground", `${label}: E3 movement state is not free/bounded-ground`);
+        await page.getByRole("button", { name: "Reset observer", exact: true }).click();
+        await page.waitForTimeout(120);
+        const reset = await canvas.evaluate((element) => ({
+          position: element.dataset.cameraPosition,
+          yaw: element.dataset.cameraYaw,
+          pitch: element.dataset.cameraPitch,
+          fov: element.dataset.cameraFov,
+          viewpoint: element.dataset.cameraViewpoint,
+        }));
+        assert(reset.position === "0.000,0.000,0.000" && reset.viewpoint === "baseline", `${label}: E3 Reset did not restore canonical position`);
+        assert(reset.yaw === "0.000000" && reset.pitch === "-0.010000" && reset.fov === "52.000", `${label}: E3 Reset did not restore direction/FOV`);
+        result.e3HumanMovementDetected = true;
+        result.notes.push(`${label}: current E3 Human bounded-movement fingerprint detected on attempt ${attempt}`);
         return;
       } catch (error) {
-        result.notes.push(`${label}: E2 attempt ${attempt} reached geometry but failed authored-translation fingerprint: ${error instanceof Error ? error.message : String(error)}`);
+        result.notes.push(`${label}: E2 attempt ${attempt} reached geometry but failed E3 movement/translation fingerprint: ${error instanceof Error ? error.message : String(error)}`);
       }
     } else {
-      result.notes.push(`${label}: E2 attempt ${attempt} did not reach Night Intersection geometry fingerprint`);
+      result.notes.push(`${label}: E2 attempt ${attempt} did not reach E3 Night Intersection movement fingerprint`);
     }
     if (attempt < 12) await page.waitForTimeout(5_000);
   }
-  throw new Error(`${label}: current E2 Night Intersection release was not detected`);
+  throw new Error(`${label}: current E3 Human bounded-movement release was not detected`);
 }
 
 async function desktopSpatialSmoke(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const errors = collectErrors(page);
-  await waitForExplore3DE2(page, "desktop spatial");
+  await waitForExplore3DE3(page, "desktop spatial");
   const canvas = page.locator("canvas.spatial-canvas");
   await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "desktop spatial");
@@ -501,6 +529,8 @@ async function desktopSpatialSmoke(browser) {
   }));
   assert(baseline.scene === "night-intersection" && baseline.supportsTranslation === "true", `desktop spatial: E2 geometry metadata regressed ${JSON.stringify(baseline)}`);
   assert(baseline.objectCount >= 220 && baseline.lightCount >= 10 && baseline.volume === "150x150x60", `desktop spatial: E2 density/volume regressed ${JSON.stringify(baseline)}`);
+  assert((await canvas.getAttribute("data-observer-movement")) === "bounded-ground", "desktop spatial: bounded Human movement is unavailable");
+  assert((await page.getByRole("button", { name: "Reset observer", exact: true }).count()) === 1, "desktop spatial: Reset observer control is missing");
 
   await page.waitForTimeout(500);
   const beforeOffset = await canvas.screenshot();
@@ -602,6 +632,27 @@ async function mobileSpatialSmoke(browser) {
     fov: element.dataset.cameraFov,
   }));
   assert(baseline.scene === "night-intersection" && baseline.objectCount >= 220 && baseline.lightCount >= 10, `mobile spatial: E2 geometry incomplete ${JSON.stringify(baseline)}`);
+  assert((await canvas.getAttribute("data-observer-movement")) === "bounded-ground", "mobile spatial: bounded Human movement is unavailable");
+  const mobileMoveButtons = page.getByRole("group", { name: "Mobile movement" }).getByRole("button");
+  await assertTouchTargets(mobileMoveButtons, "mobile spatial movement pad");
+  const beforeFreeMove = await canvas.getAttribute("data-camera-position");
+  const forwardButton = page.getByRole("button", { name: "Move forward", exact: true });
+  await forwardButton.scrollIntoViewIfNeeded();
+  const forwardBox = await forwardButton.boundingBox();
+  assert(forwardBox, "mobile spatial: Move forward has no bounding box");
+  const movementCdp = await context.newCDPSession(page);
+  const moveX = forwardBox.x + forwardBox.width / 2;
+  const moveY = forwardBox.y + forwardBox.height / 2;
+  await movementCdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: moveX, y: moveY, id: 71, radiusX: 4, radiusY: 4, force: 1 }] });
+  await page.waitForTimeout(320);
+  await movementCdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await page.waitForTimeout(120);
+  const afterFreeMove = await canvas.getAttribute("data-camera-position");
+  assert(afterFreeMove && afterFreeMove !== beforeFreeMove, "mobile spatial: movement control did not translate observer");
+  assert((await canvas.getAttribute("data-camera-viewpoint")) === "free", "mobile spatial: movement did not mark viewpoint free");
+  await page.getByRole("button", { name: "Reset observer", exact: true }).click();
+  await page.waitForTimeout(120);
+  assert((await canvas.getAttribute("data-camera-position")) === "0.000,0.000,0.000", "mobile spatial: Reset observer did not restore canonical position");
   const beforeOffset = await canvas.screenshot();
   const viewpoint = page.getByRole("group", { name: "Comparison viewpoint" });
   await viewpoint.getByRole("button", { name: "Offset", exact: true }).click();

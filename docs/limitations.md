@@ -36,9 +36,9 @@ Therefore:
 The term `approximation` refers to this claim boundary. It should not be interpreted as permission to substitute a decorative static filter where live spatial modeling is required by the specification.
 
 ### Current Explore 3D architecture boundary
-The Scene / Observer / Vision split does not by itself create geometry, depth, parallax, collision, observer-height differences, climbing, or flight. The current public `360° Photo Reference` remains a fixed-position photographic source, so its Human observer supports look-around only. Features that require translation or physical observer differences remain unavailable until the scheduled geometry/observer phases are implemented and production-verified.
+`Night Intersection` is a geometry-based scene with real depth/parallax. Its Human observer uses a generic 1.6 m reference eye height and bounded collision-aware ground movement inside an authored walking area. That movement model is a geometric comparison tool, not a measurement of a particular person's body, gait, reach, mobility, or preferred walking speed. Full rigid-body physics is not implied.
 
-Dog-like remains available on the Photo Reference as a **Vision proxy** while the current Observer remains Human. That visual switch must not be read as a Dog-height camera or canine movement model. Cat and Bird observers are likewise not claimed until their movement/viewpoint phases exist; Bird flight and Bird spectral/color Vision remain separate requirements.
+`360° Photo Reference` remains a fixed-position photographic source, so its Human observer supports look-around only and cannot provide real camera translation, collision, or parallax. Dog-like remains available there as a **Vision proxy** while the Observer remains Human; that visual switch must not be read as a Dog-height camera or canine movement model. Cat and Bird observers are likewise not claimed until their movement/viewpoint phases exist; Bird flight and Bird spectral/color Vision remain separate requirements.
 
 ## Human-mode limitation
 Human modes are simplified visual proxies or generic simulations.
