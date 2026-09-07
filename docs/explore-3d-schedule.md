@@ -1,9 +1,9 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E2 IMPLEMENTED / release verification pending**
+Status: **E3 ACTIVE / Human observer and bounded movement**
 
-Explore 3D Step E1 is production verified. The product now has explicit Scene / Observer / Vision layers while retaining Hansaplatz as the `360° Photo Reference`.
+Explore 3D Steps E1 and E2 are production verified. `Night Intersection` is now the default real-geometry scene while Hansaplatz remains the `360° Photo Reference`.
 
 Current product direction is defined by `docs/explore-3d-spec.md`.
 
@@ -60,7 +60,7 @@ Production closeout:
 - production smoke artifact `10019243348` was uploaded.
 
 ## Step E2 — Night Intersection geometry baseline
-Status: **IMPLEMENTED / release verification pending**
+Status: **PASS / production verified**
 
 Build the first real Three.js environment, targeting roughly 150 m × 150 m × 50–60 m of useful volume.
 
@@ -93,10 +93,13 @@ Validation:
 - final E2 visual/browser validation run `34132000347` passed desktop/mobile with no page or console errors; artifact `10022490421` was rendered-reviewed;
 - final validation recorded 471 objects / 12 lights / `150x150x60`, preserved Reference/Offset direction and FOV, produced different rendered canvas output after translation, and retained all accepted Photo Reference Vision controls;
 - CI software-render `loadMs` varied materially between runners and is not used as a release threshold; the permanent release gate checks behavior/scene metadata instead;
-- production verification remains pending until the E2 PR is merged and the E2-specific production fingerprint passes on the public deployment.
+- PR #44 merged by squash as main commit `d67157c9f806c508f19523e7fe4c3cbe404a6cdb`;
+- matching main build `34135941939` passed;
+- matching production smoke `34135941956` passed against `https://asseenby.pages.dev` with `productionReleaseDetected=true`, `e2SpatialReleaseDetected=true`, desktop/mobile image=true, desktop/mobile spatial=true, the E2 Night Intersection fingerprint detected on attempt 1, and `ok=true`;
+- production smoke artifact `10024024552` was uploaded.
 
 ## Step E3 — Human observer and bounded movement
-Status: **queued**
+Status: **ACTIVE**
 
 Add a generic standing Human observer around 1.6 m with bounded ground movement.
 
