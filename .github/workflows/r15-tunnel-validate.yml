@@ -1,0 +1,59 @@
+name: R15 Tunnel aspect symmetry validation
+
+on:
+  push:
+    branches: [fix/r15-tunnel-aspect-symmetry]
+    paths: [.github/workflows/r15-tunnel-validate.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/r15-tunnel-aspect-symmetry
+          fetch-depth: 0
+      - name: Apply R15 patch
+        run: python3 scripts/r15_patch.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/r15-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/r15-preview.log
+          exit 1
+      - name: Focused Tunnel aspect audit
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/r15_tunnel_audit.mjs
+      - name: Full local browser regression
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+      - name: Commit validated product change
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add src/transformEngine.ts .github/production-smoke.mjs src/modeEvidence.ts docs/methodology.md docs/limitations.md docs/release-polish-schedule.md
+          git commit -m "Normalize Tunnel image masks across aspect ratios"
+          git push origin HEAD:fix/r15-tunnel-aspect-symmetry
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r15-tunnel-validation
+          path: |
+            r15-tunnel-audit.json
+            production-smoke/
+          if-no-files-found: warn
