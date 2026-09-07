@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R13 PASS / CVD public mode copy production verified**
+Status: **Step R14 VALIDATED / built-in sample intrinsic resolution / awaiting production verification**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -733,3 +733,31 @@ Status: **PASS / production verified**
 R13 is closed. Public CVD short descriptions now match the R11 Machado-based renderer and the more precise evidence/methodology wording. No renderer behavior or evidence grade changed.
 
 Do not add another release step merely to continue numbering; resume the remaining transform/evidence audit and open a new step only for a concrete renderer, model, output, or public-claim defect.
+
+
+## Step R14 — Built-in sample intrinsic resolution
+Status: **PASS / validated / awaiting production verification**
+
+Finding:
+- R12 documentation treated the built-in SVG as a 1440×900 source, but `createSampleImage()` supplied only a `viewBox` and no intrinsic `width` / `height`;
+- real Chromium discovery run `34077057531` measured the public sample at **240×150** and its transformed blob at **240×150**;
+- therefore the sample source was being heavily upscaled by the UI and R12's historical statement that it was a 1440×900 source was not true in-browser;
+- the R12 blur normalization itself remains valid: with `blurPx = coefficient × shortEdge / 900`, relative blur is `coefficient / 900` regardless of source resolution, so fixing intrinsic sample dimensions does not require retuning the 900 px normalization denominator.
+
+Implementation:
+- explicitly declare `width="1440" height="900"` on the built-in SVG while retaining the existing 1440×900 viewBox;
+- keep `prepareBaseCanvas()` limits at 1400×960, so the transform path receives **1400×875** for the built-in sample;
+- keep `IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900` and all transform coefficients unchanged;
+- add permanent production-smoke assertions for Original **1440×900** and transformed sample **1400×875**.
+
+Acceptance:
+- real browser reports built-in Original natural size 1440×900 — **PASS**;
+- at a nonzero image transform, generated Approximation is 1400×875 — **PASS**;
+- normalized relative blur remains mathematically unchanged at `coefficient / 900` — **PASS**;
+- Strength 0 identity, R11 CVD behavior, and R12 cross-resolution proportionality remain unchanged — **PASS**;
+- typecheck/build and full desktop/390px image + spatial browser regression remain green — **PASS**;
+- matching main build and production smoke remain required before R14 production closeout.
+
+Validation history:
+- initial R14 run `34076927943` — **test-assumption failure**, not a product failure; it assumed the viewBox provided 1440×900 intrinsic dimensions and therefore expected a 1400×875 blob before measuring the actual browser intrinsic size; no product commit was emitted;
+- dimension-discovery run `34077057531` — **success**, measuring Original **240×150** and transformed blob **240×150** and establishing the concrete defect.

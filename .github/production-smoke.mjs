@@ -81,6 +81,31 @@ async function setReactRangeValue(page, selector, value) {
   }, value);
 }
 
+async function assertBuiltInSampleDimensions(page) {
+  const original = page.locator('img[alt="Original"]').first();
+  await original.waitFor({ state: "visible" });
+  const originalSize = await original.evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight }));
+  if (originalSize.width !== 1440 || originalSize.height !== 900) {
+    throw new Error(`Built-in sample intrinsic size mismatch: ${originalSize.width}x${originalSize.height}`);
+  }
+
+  await page.locator('#category-select').selectOption('Human');
+  await page.locator('#mode-select').selectOption('blur');
+  await setReactRangeValue(page, '#strength-range', 100);
+  await page.waitForFunction(() => {
+    const img = document.querySelector('img[alt="Approximation"]');
+    return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0;
+  });
+  const approximation = page.locator('img[alt="Approximation"]').first();
+  const transformedSize = await approximation.evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight }));
+  if (transformedSize.width !== 1400 || transformedSize.height !== 875) {
+    throw new Error(`Built-in transformed sample size mismatch: ${transformedSize.width}x${transformedSize.height}`);
+  }
+
+  await setReactRangeValue(page, '#strength-range', 65);
+  await page.locator('#mode-select').selectOption('protan');
+}
+
 async function assertImageStrengthZeroIdentity(page) {
   await setReactRangeValue(page, "#strength-range", 0);
   await page.waitForFunction(() => {
@@ -205,7 +230,8 @@ async function desktopImageSmoke(browser) {
   assert(!humanBodyText.includes("Dry-eye-like"), "desktop image: removed Dry-eye-like mode is still visible");
   assert(!humanBodyText.includes("Night / Low Light"), "desktop image: removed Night / Low Light image mode is still visible");
 
-  await assertImageStrengthZeroIdentity(page);
+  await assertBuiltInSampleDimensions(page);
+    await assertImageStrengthZeroIdentity(page);
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();
