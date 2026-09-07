@@ -9,7 +9,8 @@ The repository contains:
 - a production-verified image/release-polish track through R15;
 - a production-verified Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference;
 - a production-verified E2 `Night Intersection` real-geometry baseline with authored camera translation/parallax and a permanent production fingerprint;
-- a production-verified E3 Human observer with bounded collision-aware ground movement on Night Intersection.
+- a production-verified E3 Human observer with bounded collision-aware ground movement on Night Intersection;
+- a production-verified E4 Human spatial Vision integration on Night Intersection with Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like.
 
 The historical 360° pilot is no longer the target architecture for the 3D product.
 
@@ -31,12 +32,11 @@ A spatial comparison experience built around **Scene / Observer / Vision**.
 Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
 
 ## Immediate priority order
-1. integrate the accepted Human spatial Vision modes into Night Intersection in E4 while preserving the E3 observer state;
-2. add Dog observer, then refine Dog-like 3D detail behavior;
-3. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
-4. select a concrete first Bird species and implement real flight/perch behavior;
-5. evaluate that Bird species' visual model separately from its movement/viewpoint;
-6. expand to additional dense scenes after the first architecture is stable.
+1. add Dog observer in E5, then refine Dog-like 3D detail behavior in E6;
+2. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
+3. select a concrete first Bird species and implement real flight/perch behavior;
+4. evaluate that Bird species' visual model separately from its movement/viewpoint;
+5. expand to additional dense scenes after the first architecture is stable.
 
 ## Explore 3D architecture
 ### Scene
