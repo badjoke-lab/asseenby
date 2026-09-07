@@ -6,7 +6,7 @@ on:
       - feat/e2-night-intersection
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -16,6 +16,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: feat/e2-night-intersection
+          fetch-depth: 0
+      - name: Apply E2 TypeScript fix
+        run: python3 scripts/e2_fix_ts.py
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,6 +43,17 @@ jobs:
           exit 1
       - name: Validate E2 geometry and parallax
         run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e2_validate.mjs
+      - name: Commit validated TypeScript fix
+        if: success()
+        run: |
+          if git diff --quiet -- src/SpatialPage.tsx; then
+            exit 0
+          fi
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add src/SpatialPage.tsx
+          git commit -m "Fix E2 guided viewpoint initialization"
+          git push origin HEAD:feat/e2-night-intersection
       - name: Upload E2 validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
