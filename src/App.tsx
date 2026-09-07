@@ -514,7 +514,7 @@ function loadImage(src: string) {
 
 function createSampleImage() {
   const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900">
+  <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#d7d0c1" />
