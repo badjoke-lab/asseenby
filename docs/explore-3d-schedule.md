@@ -1,9 +1,9 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E1 ACTIVE / Scene / Observer / Vision architecture split**
+Status: **E2 ACTIVE / Night Intersection geometry baseline**
 
-The historical 360° spatial pilot is accepted as a reference implementation, but it is no longer the target architecture for Explore 3D.
+Explore 3D Step E1 is production verified. The product now has explicit Scene / Observer / Vision layers while retaining Hansaplatz as the `360° Photo Reference`.
 
 Current product direction is defined by `docs/explore-3d-spec.md`.
 
@@ -29,7 +29,7 @@ R15 is closed. PR #40 merged as `c1673dfc7d20f890fb9f38ad2dfced1d2dc82855`; main
 The image/release blocker is cleared. New product work may proceed to E1 without broadening or reopening R15.
 
 ## Step E1 — Architecture split: Scene / Observer / Vision
-Status: **VALIDATED locally / awaiting PR and production verification**
+Status: **PASS / production verified**
 
 Goal:
 - refactor the current panorama-only spatial component so Scene, Observer/controller and Vision/post-processing are explicit layers;
@@ -44,7 +44,7 @@ Acceptance:
 - desktop/mobile regression green;
 - build and production verification green.
 
-Implementation under validation:
+Implemented:
 - current available Scene is explicitly `360° Photo Reference` and is owned by a Scene runtime rather than `SpatialPage` directly;
 - current available Observer is explicitly `Human`; its fixed-photo look controls are owned by an Observer runtime and do not claim ground translation;
 - existing Normal / Tunnel Vision / Central Loss / Night / Dog-like / Cataract-like post-processing is owned by a Vision runtime;
@@ -52,8 +52,15 @@ Implementation under validation:
 - permanent browser regression asserts the E1 control structure and verifies that switching Vision preserves scene, observer, yaw, pitch, FOV and camera position;
 - production smoke waits for the E1 spatial architecture before accepting a freshly deployed release.
 
+Production closeout:
+- local full validation run `34121147909` passed desktop/mobile Compare image and Explore 3D regression; artifact `10018270114` was rendered-reviewed;
+- PR #42 merged by squash as main commit `9a081da1639ba3228ee89e91766bc5c9101b1a18`;
+- matching main build `34123678525` passed;
+- matching production smoke `34123678534` passed against `https://asseenby.pages.dev` with `productionReleaseDetected=true`, desktop/mobile image=true, desktop/mobile spatial=true, stable E1 architecture detected on attempt 1, and `ok=true`;
+- production smoke artifact `10019243348` was uploaded.
+
 ## Step E2 — Night Intersection geometry baseline
-Status: **queued**
+Status: **ACTIVE**
 
 Build the first real Three.js environment, targeting roughly 150 m × 150 m × 50–60 m of useful volume.
 

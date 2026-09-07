@@ -7,7 +7,7 @@ The repository contains:
 - a production-verified Three.js 360° spatial reference implementation;
 - accepted Human spatial perception modes on that reference scene;
 - a production-verified image/release-polish track through R15;
-- an active Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference.
+- a production-verified Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference.
 
 The historical 360° pilot is no longer the target architecture for the 3D product.
 
@@ -29,14 +29,13 @@ A spatial comparison experience built around **Scene / Observer / Vision**.
 Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
 
 ## Immediate priority order
-1. complete and production-verify Explore 3D Step E1: explicit Scene / Observer / Vision architecture while retaining Hansaplatz as `360° Photo Reference`;
-2. build the first geometry-based `Night Intersection` scene;
-3. add bounded Human movement and integrate accepted Human spatial Vision modes;
-4. add Dog observer, then refine Dog-like 3D detail behavior;
-5. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
-6. select a concrete first Bird species and implement real flight/perch behavior;
-7. evaluate that Bird species' visual model separately from its movement/viewpoint;
-8. expand to additional dense scenes after the first architecture is stable.
+1. build the first geometry-based `Night Intersection` scene for Explore 3D Step E2;
+2. add bounded Human movement and integrate accepted Human spatial Vision modes;
+3. add Dog observer, then refine Dog-like 3D detail behavior;
+4. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
+5. select a concrete first Bird species and implement real flight/perch behavior;
+6. evaluate that Bird species' visual model separately from its movement/viewpoint;
+7. expand to additional dense scenes after the first architecture is stable.
 
 ## Explore 3D architecture
 ### Scene
@@ -180,7 +179,7 @@ Continue to maintain:
 - responsive/release polish;
 - production browser regression.
 
-Do not let ongoing image polish delay the accepted Explore 3D architecture rebuild once R15 is closed, unless a production regression requires immediate repair.
+Do not let ongoing image polish delay the accepted Explore 3D geometry build, unless a production regression requires immediate repair.
 
 ## Engineering / operating constraints
 - browser-side rendering;
