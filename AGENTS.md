@@ -7,59 +7,87 @@ Read these files before implementation and use them as the source of truth for s
 
 1. `README.md`
 2. `docs/roadmap.md`
-3. `docs/spatial-pilot-spec.md` when working on 3D / spatial features
-4. `docs/spatial-pilot-schedule.md` for spatial execution order and status
-5. `docs/release-polish-schedule.md` for image/release-polish execution order and production verification status
-6. `docs/methodology.md`
-7. `docs/limitations.md`
-8. `docs/ui-spec.md`
-9. `docs/modes.md` and `docs/evidence-model.md` when changing perception modes or evidence UI
+3. `docs/release-polish-schedule.md` for current image/release-polish execution and production-verification state
+4. `docs/methodology.md`
+5. `docs/limitations.md`
+6. `docs/ui-spec.md`
+7. `docs/modes.md` and `docs/evidence-model.md` when changing perception modes or evidence UI
 
-If code and documentation disagree, do not silently invent a new direction. Preserve the documented product boundary or update the relevant spec/schedule in the same change.
+For **any Explore 3D / Three.js / spatial / observer / scene / movement work**, also read before implementation:
+
+8. `docs/explore-3d-spec.md` — **current canonical 3D product specification**
+9. `docs/explore-3d-schedule.md` — **current canonical 3D execution order and status**
+10. `docs/spatial-pilot-spec.md` — historical pilot/evidence/design record
+11. `docs/spatial-pilot-schedule.md` — historical pilot execution record
+
+If the historical spatial-pilot documents conflict with `docs/explore-3d-spec.md` on current product shape, movement, observer behavior, scene architecture, 360°-photo role, or implementation direction, **`docs/explore-3d-spec.md` controls**.
+
+If code and documentation disagree, do not silently invent a new direction. Preserve the documented product boundary or update the relevant current spec/schedule in the same change.
+
+Do not rely on chat history alone for accepted product behavior. Durable decisions must be represented in the repository documentation.
 
 ## Product invariants
-- Keep the existing static-image comparison experience. The spatial experience is additive, not a replacement.
-- The image experience remains `Compare image`; the Three.js experience remains `Explore spatial`.
+- Keep the existing static-image comparison experience. Explore 3D is additive, not a replacement.
+- The image experience remains `Compare image`; the current 3D product name is `Explore 3D`.
 - Do not turn AsSeenBy into a game, generic 3D showcase, medical tool, or claim of exact perception.
-- Every perception output is a research-based approximation or reference view, subject to the evidence and limitation documents.
-- Do not claim UV, polarization, full species-specific spectral perception, neural interpretation, diagnosis, or patient-level accuracy unless a future spec explicitly adds a validated data path for it.
+- Every perception output is a research-based approximation/reference view subject to the evidence and limitation documents.
+- Do not claim UV, polarization, full species-specific spectral perception, neural interpretation, diagnosis, or patient-level accuracy unless a future accepted spec explicitly adds a validated data/model path.
 - Keep uploads browser-side. Do not add accounts, saved sessions, server-side image storage, or an API unless separately specified.
-- Preserve the editorial field-guide / research-book visual language. Avoid generic dark SaaS, glow, glass, or game HUD styling.
+- Preserve the editorial field-guide / research-book visual language. Avoid generic dark SaaS, glow, glass, or game-HUD styling.
 
-## Spatial expansion invariants
-- The initial Normal / Tunnel Vision / Cataract-like pilot established the renderer and interaction baseline, but subsequent visual review showed that the current primitive night-street scene is not acceptable as a public-facing presentation baseline.
-- Scene presentation quality is now a blocking acceptance criterion. A technically correct perception shader must not be merged if the environment still reads as placeholder geometry, a cheap low-detail demo, or a debug test scene.
-- The night street must remain a controlled comparison environment, but it must also read immediately as a believable street: recognizable building facades, windows and storefront detail, credible road/sidewalk surfaces, vehicle form, pedestrian form, lighting hierarchy, street furniture, and enough near/mid/far visual information to support perception comparisons.
-- Primitive geometry is allowed when it is composed into convincing forms. Bare boxes standing in for buildings, cars, or people are not sufficient for acceptance.
-- Keep camera position and direction unchanged when switching perception modes so the comparison isolates the rendering model.
-- Interaction remains look-around first; no walking simulation, collision system, scoring, or game mechanics are required.
-- Reuse existing mode evidence and limitations wherever applicable instead of creating separate unsupported claims.
-- Add post-pilot spatial modes one at a time in the order defined by `docs/spatial-pilot-schedule.md` and require a rendered acceptance check before starting the following mode.
-- Central Loss, Night / Low Light, Dog-like, and the photographic 360° reference scene are accepted and merged. Cat-like spatial was rejected after rendered review. Generic Bird-like spatial was then rejected/blocked at the evidence/source-data gate: ordinary RGB cannot reproduce avian tetrachromatic/UV relationships, while acuity and spectral tuning vary too widely across bird species to justify one generic live renderer.
-- Bee-like spatial remains blocked until an explicit UV-reflectance/spectral scene-data path exists. Do not begin a Bee-like shader from ordinary RGB, and do not substitute a purple/blue false tint for missing UV information.
-- The ordered animal spatial evaluation is therefore resolved under the current Hansaplatz RGB source. Any future species-specific spatial work must introduce a new documented data/model requirement rather than reopening generic animal filters.
-- The current panorama is tone-mapped RGB. It can support a human-display visible-range comparison, not complete species-specific spectral reconstruction.
-- Central Loss remains a generic field-loss model, not an individual's measured scotoma or perimetry result.
-- Bee-like UV work still requires additional UV-reflectance scene data and must not be faked with an RGB color filter.
+## Explore 3D architecture invariants
+- Explore 3D is **not** a 360° panorama viewer with filters. Its current architecture is `Scene / Observer / Vision`.
+- The existing Hansaplatz 360° panorama remains useful as `360° Photo Reference`, but it is only one reference Scene and must not define the capability ceiling of Explore 3D.
+- Real 3D scenes must use geometry/depth/parallax and, where relevant, real scene lighting, occlusion, distance and vertical space.
+- Observer and Vision are separate. Changing only Vision must preserve Scene, Observer, camera position/direction, FOV, lighting/time and object state.
+- Observer changes may alter camera height, movement model, collision envelope, reachable space, altitude bounds and reset state according to the current spec.
+- Current Observer architecture must support Human, Dog, Cat and species-specific Bird presets over time.
+- Human uses bounded ground movement; Dog uses a materially lower ground viewpoint; Cat uses a lower viewpoint plus authored climb/perch targets; Bird uses actual free-space flight with ascend/descend and perch/landing behavior.
+- A Bird observer must not be implemented as a Human/Dog ground walker. Bird flight and Bird vision are separate requirements.
+- Adding Cat/Bird observers does not automatically restore the previously rejected generic Cat-like/Bird-like RGB visual filters.
+- Generic Bird-like spectral/color vision remains rejected from ordinary RGB. Any future Bird visual renderer must be species-specific and pass a separate evidence/model/data gate.
+- Bee-like/UV work remains blocked until explicit UV-reflectance/spectral scene data and a documented observer/false-color model exist. Never substitute a purple/blue filter for missing UV information.
+- Dog-like remains a conservative visible-range human-display proxy; do not claim exact canine cone catches, universal breed FOV, motion processing, tapetal/rod low-light reconstruction or literal qualia from ordinary RGB.
+- Scene density/explanatory value matters more than map size. Prefer a strong ~100–200 m authored scene to a sparse kilometre-scale world.
+- `Night Intersection` is the first full geometry-based target scene. Later candidate scenes include Daytime Park, Store/Supermarket, Home/Apartment and Station/Platform.
+- Bounded free movement is now an accepted 3D requirement where specified. The old pilot rule prohibiting walking/collision is historical and no longer controls current Explore 3D work.
+- Bounded movement does **not** authorize game mechanics: no combat, scoring, inventory, character progression, quests or unrelated game loop.
+- Scene presentation quality remains blocking. A technically correct shader must not be accepted if the geometry scene still reads as placeholder/debug/cheap low-detail work.
+
+## Image / perception invariants
+- The existing `src/transformEngine.ts` remains the image renderer for `Compare image`.
+- Image Strength semantics, evidence/model claims and production-smoke gates remain governed by the current release-polish/methodology/limitations documents.
+- Reuse existing mode evidence and limitations wherever applicable instead of creating unsupported duplicate claims.
+- Keep renderer-specific Model notes separate from underlying phenomenon Evidence.
 
 ## Engineering rules
-- Prefer the smallest change that satisfies the active schedule step, except where the documented scene-quality gate explicitly requires a broader presentation pass.
+- Prefer the smallest change that satisfies the active schedule step, except where the accepted scene-quality/architecture gate explicitly requires a broader coherent change.
 - Keep the current React + TypeScript structure unless a documented requirement needs restructuring.
-- Three.js remains an isolated spatial renderer/component and must not replace the 2D canvas transform engine.
-- Avoid unrelated refactors while a new spatial mode is being validated.
+- Three.js remains isolated from the 2D Canvas transform engine, but Explore 3D may be refactored internally into Scene, Observer/controller and Vision layers as required by the canonical spec.
+- Avoid unrelated refactors while a scheduled step is being validated.
 - Keep desktop and mobile behavior usable.
 - Run `npm run build` before declaring an implementation step complete. The existing GitHub workflow runs the same typecheck + Vite build on pull requests and main.
 - For production-verification steps, preview/local success is not enough: test the public production URL and record stale/deployment-state failures separately from code failures.
+- Where visual/spatial behavior materially changes, include a rendered/browser acceptance check, not only source inspection or typecheck.
 
 ## Progress discipline
-At the start of each spatial implementation step, re-read `docs/spatial-pilot-schedule.md` and the relevant spec sections.
+At the start of **every** implementation step, re-read `AGENTS.md`, `docs/roadmap.md`, and the active schedule for that workstream.
 
-At the start of each image/release-polish step, re-read `docs/release-polish-schedule.md` and `docs/roadmap.md`; if the step touches spatial behavior, also re-read the spatial spec/schedule.
+At the start of every Explore 3D step, re-read at minimum:
+- `docs/explore-3d-spec.md`;
+- `docs/explore-3d-schedule.md`;
+- relevant methodology/limitations/evidence sections.
+
+Read the old spatial-pilot spec/schedule when prior decisions matter, but do not let historical pilot restrictions override the current Explore 3D spec.
+
+At the start of each image/release-polish step, re-read `docs/release-polish-schedule.md` and `docs/roadmap.md`; if the step touches Explore 3D behavior, also re-read the current Explore 3D spec/schedule.
 
 When a step is completed, blocked, rejected, or materially changed:
-- update the active schedule (`docs/spatial-pilot-schedule.md` or `docs/release-polish-schedule.md`) in the same branch/PR;
-- update `docs/spatial-pilot-spec.md` if spatial product behavior or acceptance criteria changed;
+- update the active schedule in the same branch/PR;
+- update `docs/explore-3d-spec.md` if current 3D product behavior, observer behavior, scene architecture, movement, source-data boundary or acceptance criteria changed;
 - update `docs/methodology.md` / `docs/limitations.md` if the scientific or claim boundary changed;
-- keep renderer-specific Model notes separate from the existing 2D implementation assessment.
+- update `docs/roadmap.md` if product priority/order changed materially.
+
+When the user makes a new product decision that changes accepted behavior, **do not leave that decision only in conversation history**. Before declaring related implementation complete, reflect it in the canonical spec/schedule and then continue using those repository documents as the source of truth.
 
 Do not mark a step complete merely because scaffolding exists. Status is based on the acceptance criteria in the active schedule, including actual rendered review where required and production verification where explicitly required.
