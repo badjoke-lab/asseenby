@@ -117,32 +117,57 @@ export function mountNightIntersectionScene(
     }
   }, 7, 7);
 
-  const facadeTexture = (base: string, mortar: string, repeatX: number, repeatY: number) => makeCanvasTexture(256, (ctx, size) => {
+  const facadeTexture = (base: string, mortar: string, columns: number, rows: number, seed: number) => makeCanvasTexture(512, (ctx, size) => {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, size, size);
+
     ctx.strokeStyle = mortar;
     ctx.lineWidth = 1;
-    const row = 20;
-    for (let y = 0; y < size; y += row) {
+    const brickH = 16;
+    for (let y = 0; y < size; y += brickH) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(size, y);
       ctx.stroke();
-      const offset = (Math.floor(y / row) % 2) * 20;
-      for (let x = -offset; x < size; x += 40) {
+      const offset = (Math.floor(y / brickH) % 2) * 18;
+      for (let x = -offset; x < size; x += 36) {
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x, Math.min(size, y + row));
+        ctx.lineTo(x, Math.min(size, y + brickH));
         ctx.stroke();
       }
     }
+
+    const marginX = 18;
+    const marginTop = 20;
+    const marginBottom = 52;
+    const cellW = (size - marginX * 2) / Math.max(1, columns);
+    const cellH = (size - marginTop - marginBottom) / Math.max(1, rows);
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < columns; col += 1) {
+        const x = marginX + col * cellW + cellW * 0.18;
+        const y = marginTop + row * cellH + cellH * 0.16;
+        const w = cellW * 0.64;
+        const h = cellH * 0.62;
+        const lit = Math.floor(seededNoise(seed + row * 19 + col * 11) * 7);
+        ctx.fillStyle = 'rgba(13,17,21,0.72)';
+        ctx.fillRect(x - 3, y - 3, w + 6, h + 7);
+        ctx.fillStyle = lit === 0 || lit === 5 ? '#e5bd78' : lit === 2 ? '#88bed0' : '#18232b';
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(245,245,235,0.18)';
+        ctx.fillRect(x + w * 0.48, y, 2, h);
+        ctx.fillStyle = 'rgba(20,22,24,0.55)';
+        ctx.fillRect(x - 4, y + h + 3, w + 8, 3);
+      }
+    }
+
     const gradient = ctx.createLinearGradient(0, 0, size, 0);
-    gradient.addColorStop(0, "rgba(255,255,255,0.08)");
-    gradient.addColorStop(0.52, "rgba(0,0,0,0.06)");
-    gradient.addColorStop(1, "rgba(255,255,255,0.03)");
+    gradient.addColorStop(0, 'rgba(255,255,255,0.09)');
+    gradient.addColorStop(0.5, 'rgba(0,0,0,0.07)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0.025)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
-  }, repeatX, repeatY);
+  });
 
   const makeSignTexture = (label: string, tone: "warm" | "cool") => makeCanvasTexture(512, (ctx, size) => {
     ctx.fillStyle = tone === "warm" ? "#3e2416" : "#12313b";
@@ -164,9 +189,9 @@ export function mountNightIntersectionScene(
   });
 
   const asphalt = trackMaterial(new THREE.MeshPhysicalMaterial({
-    color: 0x252930,
+    color: 0x353b43,
     map: asphaltTexture,
-    roughness: 0.52,
+    roughness: 0.58,
     metalness: 0.18,
     clearcoat: 0.36,
     clearcoatRoughness: 0.34,
@@ -200,7 +225,7 @@ export function mountNightIntersectionScene(
     position: [number, number, number],
     meshMaterial: THREE.Material,
     parent: THREE.Object3D = root,
-    castShadow = true,
+    castShadow = false,
   ) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), meshMaterial);
     mesh.name = name;
@@ -301,32 +326,6 @@ export function mountNightIntersectionScene(
     puddle.rotation.y = rotation;
   }
 
-  const addFacadeWindows = (group: THREE.Group, options: BuildingOptions, face: Face) => {
-    const horizontalSpan = face === "north" || face === "south" ? options.width : options.depth;
-    const columns = Math.max(4, Math.floor(horizontalSpan / 4.1));
-    const spacing = horizontalSpan / columns;
-    const baseY = -options.height / 2 + 4.6;
-    const floorStep = (options.height - 5.4) / Math.max(1, options.floors - 1);
-    for (let floor = 0; floor < options.floors - 1; floor += 1) {
-      for (let col = 0; col < columns; col += 1) {
-        const offset = -horizontalSpan / 2 + spacing * (col + 0.5);
-        const pattern = Math.abs((floor * 13 + col * 7 + Math.round(options.x - options.z)) % 7);
-        const pane = pattern === 0 || pattern === 5 ? windowWarm : pattern === 2 ? windowCool : windowDark;
-        const y = baseY + floor * floorStep;
-        if (face === "north" || face === "south") {
-          const z = face === "north" ? -options.depth / 2 - 0.075 : options.depth / 2 + 0.075;
-          addBox(`window-frame-${face}-${floor}-${col}`, [2.3, 1.72, 0.12], [offset, y, z], darkMetal, group);
-          addBox(`window-pane-${face}-${floor}-${col}`, [1.92, 1.36, 0.14], [offset, y, z + (face === "north" ? -0.02 : 0.02)], pane, group, false);
-          addBox(`window-sill-${face}-${floor}-${col}`, [2.42, 0.12, 0.3], [offset, y - 0.94, z + (face === "north" ? -0.08 : 0.08)], options.front === face ? paleMetal : darkMetal, group);
-        } else {
-          const x = face === "west" ? -options.width / 2 - 0.075 : options.width / 2 + 0.075;
-          addBox(`window-frame-${face}-${floor}-${col}`, [0.12, 1.72, 2.3], [x, y, offset], darkMetal, group);
-          addBox(`window-pane-${face}-${floor}-${col}`, [0.14, 1.36, 1.92], [x + (face === "west" ? -0.02 : 0.02), y, offset], pane, group, false);
-          addBox(`window-sill-${face}-${floor}-${col}`, [0.3, 0.12, 2.42], [x + (face === "west" ? -0.08 : 0.08), y - 0.94, offset], options.front === face ? paleMetal : darkMetal, group);
-        }
-      }
-    }
-  };
 
   const addStorefront = (group: THREE.Group, options: BuildingOptions) => {
     const signTexture = makeSignTexture(options.sign, options.signTone);
@@ -376,32 +375,64 @@ export function mountNightIntersectionScene(
     group.name = name;
     group.position.set(options.x, GROUND_Y + options.height / 2, options.z);
     root.add(group);
+
+    const facadeColumns = Math.max(4, Math.round(options.width / 5));
+    const facadeRows = Math.max(3, options.floors - 1);
     const tex = facadeTexture(
-      typeof options.facade === "number" && (options.facade as number) < 0x505050 ? "#34373b" : "#5b5047",
-      "rgba(210,205,195,0.12)",
-      Math.max(2, options.width / 12),
-      Math.max(2, options.height / 8),
+      typeof options.facade === "number" && (options.facade as number) < 0x505050 ? "#42484f" : "#65594f",
+      "rgba(220,216,207,0.12)",
+      facadeColumns,
+      facadeRows,
+      Math.abs(Math.round(options.x * 17 + options.z * 11)),
     );
-    const facadeMaterial = trackMaterial(new THREE.MeshStandardMaterial({ color: options.facade, map: tex, roughness: 0.78, metalness: 0.03 }));
-    const trimMaterial = trackMaterial(new THREE.MeshStandardMaterial({ color: options.trim, roughness: 0.66, metalness: 0.08 }));
-    addBox(`${name}-mass`, [options.width, options.height, options.depth], [0, 0, 0], facadeMaterial, group);
-    addBox(`${name}-roof-cap`, [options.width + 0.8, 0.45, options.depth + 0.8], [0, options.height / 2 + 0.22, 0], trimMaterial, group);
-    addBox(`${name}-ground-belt`, [options.width + 0.28, 0.75, options.depth + 0.28], [0, -options.height / 2 + 0.38, 0], trimMaterial, group);
-    for (const x of [-options.width * 0.28, options.width * 0.28]) addBox(`${name}-vertical-band-${x}`, [0.24, options.height - 1, options.depth + 0.16], [x, 0.15, 0], trimMaterial, group);
-    addFacadeWindows(group, options, options.front);
-    if (options.side) addFacadeWindows(group, options, options.side);
+    const facadeMaterial = trackMaterial(new THREE.MeshStandardMaterial({
+      color: options.facade,
+      map: tex,
+      roughness: 0.76,
+      metalness: 0.03,
+      emissive: 0x17130f,
+      emissiveIntensity: 0.08,
+    }));
+    const trimMaterial = trackMaterial(new THREE.MeshStandardMaterial({ color: options.trim, roughness: 0.62, metalness: 0.1 }));
+
+    const podiumHeight = Math.min(5.6, options.height * 0.29);
+    const upperHeight = options.height - podiumHeight;
+    const upperWidth = Math.max(12, options.width - 2.6);
+    const upperDepth = Math.max(12, options.depth - 2.2);
+    const upperShiftX = options.x < 0 ? 0.65 : -0.65;
+    const upperShiftZ = options.front === "south" ? -0.45 : 0.45;
+    const podiumY = -options.height / 2 + podiumHeight / 2;
+    const upperY = -options.height / 2 + podiumHeight + upperHeight / 2;
+
+    addBox(`${name}-podium`, [options.width, podiumHeight, options.depth], [0, podiumY, 0], facadeMaterial, group, true);
+    addBox(`${name}-upper`, [upperWidth, upperHeight, upperDepth], [upperShiftX, upperY, upperShiftZ], facadeMaterial, group, true);
+    addBox(`${name}-podium-cornice`, [options.width + 0.45, 0.32, options.depth + 0.45], [0, -options.height / 2 + podiumHeight + 0.16, 0], trimMaterial, group);
+    addBox(`${name}-roof-cap`, [upperWidth + 0.75, 0.48, upperDepth + 0.75], [upperShiftX, options.height / 2 + 0.24, upperShiftZ], trimMaterial, group);
+    addBox(`${name}-ground-belt`, [options.width + 0.28, 0.7, options.depth + 0.28], [0, -options.height / 2 + 0.35, 0], trimMaterial, group);
+
+    const pierY = upperY;
+    const pierX = upperWidth / 2 - 0.22;
+    const pierZ = upperDepth / 2 - 0.22;
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        addBox(`${name}-corner-pier-${sx}-${sz}`, [0.42, upperHeight - 0.4, 0.42], [upperShiftX + sx * pierX, pierY, upperShiftZ + sz * pierZ], trimMaterial, group);
+      }
+    }
+
     addStorefront(group, options);
     if (options.balconies) {
       for (let floor = 1; floor < Math.min(options.floors - 1, 5); floor += 2) {
-        const y = -options.height / 2 + 4.8 + floor * 2.8;
+        const y = -options.height / 2 + podiumHeight + Math.min(upperHeight - 1.6, 1.6 + floor * 2.55);
         if (options.front === "south" || options.front === "north") {
-          const z = options.front === "south" ? options.depth / 2 + 0.62 : -options.depth / 2 - 0.62;
-          addBox(`${name}-balcony-${floor}`, [7.5, 0.16, 1.15], [0, y - 0.7, z], darkMetal, group);
-          addBox(`${name}-balcony-rail-${floor}`, [7.5, 0.72, 0.08], [0, y - 0.35, z + (options.front === "south" ? 0.52 : -0.52)], paleMetal, group);
+          const z = options.front === "south" ? options.depth / 2 + 0.64 : -options.depth / 2 - 0.64;
+          addBox(`${name}-balcony-${floor}`, [7.7, 0.16, 1.18], [upperShiftX, y, z], darkMetal, group);
+          addBox(`${name}-balcony-rail-${floor}`, [7.7, 0.72, 0.08], [upperShiftX, y + 0.34, z + (options.front === "south" ? 0.53 : -0.53)], paleMetal, group);
         }
       }
     }
-    addBox(`${name}-roof-service`, [3.8, 1.6, 2.8], [options.width * 0.18, options.height / 2 + 1.0, -options.depth * 0.12], trimMaterial, group);
+
+    addBox(`${name}-roof-service`, [3.8, 1.65, 2.8], [upperShiftX + options.width * 0.12, options.height / 2 + 1.05, upperShiftZ - options.depth * 0.08], trimMaterial, group);
+    addBox(`${name}-roof-service-cap`, [4.2, 0.18, 3.2], [upperShiftX + options.width * 0.12, options.height / 2 + 1.92, upperShiftZ - options.depth * 0.08], paleMetal, group);
     return group;
   };
 
@@ -492,6 +523,34 @@ export function mountNightIntersectionScene(
   addTrafficSignal("signal-east", 9.2, -36.2, -Math.PI / 2, "red");
 
   const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
+
+  const addTaperedBox = (
+    name: string,
+    size: [number, number, number],
+    position: [number, number, number],
+    meshMaterial: THREE.Material,
+    parent: THREE.Object3D,
+    topWidth = 0.82,
+    topLength = 0.72,
+  ) => {
+    const geometry = new THREE.BoxGeometry(...size);
+    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
+    for (let index = 0; index < attribute.count; index += 1) {
+      const x = attribute.getX(index);
+      const y = attribute.getY(index);
+      const z = attribute.getZ(index);
+      if (y > 0) attribute.setXYZ(index, x * topWidth, y, z * topLength);
+    }
+    geometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(geometry, meshMaterial);
+    mesh.name = name;
+    mesh.position.set(...position);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  };
+
   const addCar = (name: string, x: number, z: number, rotationY: number, paint: THREE.Material, van = false) => {
     const group = new THREE.Group();
     group.name = name;
@@ -499,10 +558,10 @@ export function mountNightIntersectionScene(
     group.rotation.y = rotationY;
     root.add(group);
     const length = van ? 5.5 : 4.5;
-    addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group);
-    addBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group);
-    addBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group);
-    addBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group);
+    addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group, true);
+    addTaperedBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group, 0.96, 0.86);
+    addTaperedBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group, 0.97, 0.9);
+    addTaperedBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group, van ? 0.92 : 0.78, van ? 0.9 : 0.68);
     addBox(`${name}-windshield`, [1.46, van ? 0.82 : 0.72, 0.08], [0, van ? 1.72 : 1.57, -length * 0.2], glass, group, false);
     addBox(`${name}-rear-glass`, [1.46, van ? 0.78 : 0.68, 0.08], [0, van ? 1.65 : 1.52, length * 0.22], glass, group, false);
     for (const side of [-1, 1]) {
