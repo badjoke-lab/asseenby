@@ -43,13 +43,13 @@ jobs:
           exit 1
       - name: Validate E2 geometry and parallax
         run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e2_validate.mjs
-      - name: Commit validated renderer polish
+      - name: Commit validated scene polish
         run: |
-          if git diff --quiet -- src/SpatialPage.tsx; then exit 0; fi
+          if git diff --quiet -- src/SpatialPage.tsx src/spatial/nightIntersectionScene.ts; then exit 0; fi
           git config user.name badjoke-lab
           git config user.email badjoke.lab@gmail.com
-          git add src/SpatialPage.tsx
-          git commit -m "Polish Night Intersection lighting and tone mapping"
+          git add src/SpatialPage.tsx src/spatial/nightIntersectionScene.ts
+          git commit -m "Refine Night Intersection presentation"
           git push origin HEAD:feat/e2-night-intersection
       - name: Upload E2 validation artifacts
         if: always()
