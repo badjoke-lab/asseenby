@@ -1,9 +1,9 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E4 IMPLEMENTED / release verification pending**
+Status: **E4 PASS / production verified**
 
-Explore 3D Steps E1, E2, and E3 are production verified. `Night Intersection` is the default real-geometry scene with bounded Human movement while Hansaplatz remains the `360° Photo Reference`. E4 integrates the accepted Human spatial Vision set on the geometry scene.
+Explore 3D Steps E1 through E4 are production verified. `Night Intersection` is the default real-geometry scene with bounded Human movement and the accepted Human spatial Vision set, while Hansaplatz remains the `360° Photo Reference`. The next queued implementation step is E5 Dog observer.
 
 Current product direction is defined by `docs/explore-3d-spec.md`.
 
@@ -145,7 +145,7 @@ Production closeout:
 - production smoke artifact `10027185737` was uploaded.
 
 ## Step E4 — Human spatial Vision integration
-Status: **IMPLEMENTED / release verification pending**
+Status: **PASS / production verified**
 
 Port/adjust the accepted Human spatial modes to the geometry scene:
 - Normal;
@@ -180,6 +180,14 @@ Validation requirement before merge:
 - Photo Reference accepted Vision set unchanged;
 - full Compare image regression;
 - permanent production smoke with an E4-specific stale-release fingerprint.
+
+Production closeout:
+- final E4 validation run `34148557108` passed build, desktop/mobile geometry Vision behavior, same-state Vision switching, Compare image regression, and the full local production smoke; validation artifact `10028600514` was uploaded;
+- rendered validation confirmed Tunnel edge-dominance (`centerDelta=0.00001`, `edgeDelta=21.158`), Central center-dominance (`centerDelta=53.588`, `edgeDelta=0.00001`), stronger Night response in dark regions (`darkRelativeDelta=1.190` vs `brightRelativeDelta=0.199`), and local Cataract bright-source glare spread (`nearGain=38.976` vs `farGain=29.290`);
+- PR #47 was squash-merged as main commit `58fbd132c24f5d182b90e8c55a096d500419b580`;
+- matching main build `34148945521` passed;
+- matching production smoke `34148945534` passed against `https://asseenby.pages.dev` with `productionReleaseDetected=true`, `e2SpatialReleaseDetected=true`, `e3HumanMovementDetected=true`, `e4HumanVisionDetected=true`, desktop/mobile image=true, desktop/mobile spatial=true, and `ok=true`;
+- the production E4 fingerprint was detected on attempt 1 and production smoke artifact `10028717598` was uploaded.
 
 ## Step E5 — Dog observer
 Status: **queued**
