@@ -14,6 +14,13 @@ const expectedSpatialModes = [
   "Dog-like",
   "Cataract-like",
 ];
+const expectedGeometryHumanVisionModes = [
+  "Normal",
+  "Tunnel Vision",
+  "Central Loss",
+  "Night / Low Light",
+  "Cataract-like",
+];
 
 await fs.mkdir(OUT, { recursive: true });
 
@@ -23,6 +30,7 @@ const result = {
   productionReleaseDetected: false,
   e2SpatialReleaseDetected: false,
   e3HumanMovementDetected: false,
+  e4HumanVisionDetected: false,
   desktopImage: false,
   mobileImage: false,
   desktopSpatial: false,
@@ -418,7 +426,7 @@ async function waitForExplore3DE3(page, label) {
         && canvas.dataset.sceneVolume === "150x150x60"
         && canvas.dataset.cameraViewpoint === "baseline"
         && canvas.dataset.visionMode === "normal"
-        && JSON.stringify(visionButtons) === JSON.stringify(["Normal"])
+        && JSON.stringify(visionButtons) === JSON.stringify(["Normal", "Tunnel Vision", "Central Loss", "Night / Low Light", "Cataract-like"])
         && canvas.clientWidth > 0
         && canvas.clientHeight > 0;
     });
@@ -477,7 +485,44 @@ async function waitForExplore3DE3(page, label) {
         assert(reset.position === "0.000,0.000,0.000" && reset.viewpoint === "baseline", `${label}: E3 Reset did not restore canonical position`);
         assert(reset.yaw === "0.000000" && reset.pitch === "-0.010000" && reset.fov === "52.000", `${label}: E3 Reset did not restore direction/FOV`);
         result.e3HumanMovementDetected = true;
-        result.notes.push(`${label}: current E3 Human bounded-movement fingerprint detected on attempt ${attempt}`);
+
+        const e4Baseline = await canvas.evaluate((element) => ({
+          scene: element.dataset.sceneId,
+          observer: element.dataset.observerId,
+          position: element.dataset.cameraPosition,
+          yaw: element.dataset.cameraYaw,
+          pitch: element.dataset.cameraPitch,
+          fov: element.dataset.cameraFov,
+          viewpoint: element.dataset.cameraViewpoint,
+        }));
+        const e4Modes = [
+          ["Tunnel Vision", "tunnel"],
+          ["Central Loss", "central_loss"],
+          ["Night / Low Light", "night"],
+          ["Cataract-like", "cataract"],
+          ["Normal", "normal"],
+        ];
+        const e4Group = page.getByRole("group", { name: "Vision" });
+        for (const [modeLabel, modeId] of e4Modes) {
+          await e4Group.getByRole("button", { name: modeLabel, exact: true }).click();
+          await page.waitForTimeout(100);
+          const state = await canvas.evaluate((element) => ({
+            scene: element.dataset.sceneId,
+            observer: element.dataset.observerId,
+            position: element.dataset.cameraPosition,
+            yaw: element.dataset.cameraYaw,
+            pitch: element.dataset.cameraPitch,
+            fov: element.dataset.cameraFov,
+            viewpoint: element.dataset.cameraViewpoint,
+            vision: element.dataset.visionMode,
+          }));
+          assert(state.vision === modeId, `${label}: E4 ${modeLabel} runtime did not activate (${JSON.stringify(state)})`);
+          for (const key of ["scene", "observer", "position", "yaw", "pitch", "fov", "viewpoint"]) {
+            assert(state[key] === e4Baseline[key], `${label}: E4 ${modeLabel} changed ${key}: ${e4Baseline[key]} -> ${state[key]}`);
+          }
+        }
+        result.e4HumanVisionDetected = true;
+        result.notes.push(`${label}: current E3 Human bounded-movement + E4 geometry Vision fingerprint detected on attempt ${attempt}`);
         return;
       } catch (error) {
         result.notes.push(`${label}: E2 attempt ${attempt} reached geometry but failed E3 movement/translation fingerprint: ${error instanceof Error ? error.message : String(error)}`);
@@ -512,7 +557,7 @@ async function desktopSpatialSmoke(browser) {
 
   const modeGroup = page.getByRole("group", { name: "Vision" });
   let labels = await modeGroup.getByRole("button").allTextContents();
-  assert(JSON.stringify(labels) === JSON.stringify(["Normal"]), `desktop spatial: E2 geometry must expose Normal only, got ${JSON.stringify(labels)}`);
+  assert(JSON.stringify(labels) === JSON.stringify(expectedGeometryHumanVisionModes), `desktop spatial: E4 geometry Human Vision set regressed ${JSON.stringify(labels)}`);
   assert(!labels.some((label) => /Cat-like|Bird-like|Bee-like/i.test(label)), "desktop spatial: blocked/rejected animal control exposed");
 
   const baseline = await canvas.evaluate((element) => ({
@@ -620,7 +665,7 @@ async function mobileSpatialSmoke(browser) {
   assert((await page.locator("#spatial-observer-select").inputValue()) === "human", "mobile spatial: Human Observer is not active");
   await assertTouchTargets(page.locator(".spatial-layer-control select"), "mobile spatial Scene/Observer controls");
   const group = page.getByRole("group", { name: "Vision" });
-  assert(JSON.stringify(await group.getByRole("button").allTextContents()) === JSON.stringify(["Normal"]), "mobile spatial: E2 geometry exposes non-Normal Vision");
+  assert(JSON.stringify(await group.getByRole("button").allTextContents()) === JSON.stringify(expectedGeometryHumanVisionModes), "mobile spatial: E4 geometry Human Vision set regressed");
 
   const baseline = await canvas.evaluate((element) => ({
     scene: element.dataset.sceneId,
@@ -635,6 +680,28 @@ async function mobileSpatialSmoke(browser) {
   assert((await canvas.getAttribute("data-observer-movement")) === "bounded-ground", "mobile spatial: bounded Human movement is unavailable");
   const mobileMoveButtons = page.getByRole("group", { name: "Mobile movement" }).getByRole("button");
   await assertTouchTargets(mobileMoveButtons, "mobile spatial movement pad");
+  const mobileVisionBaseline = await canvas.evaluate((element) => ({
+    position: element.dataset.cameraPosition,
+    yaw: element.dataset.cameraYaw,
+    pitch: element.dataset.cameraPitch,
+    fov: element.dataset.cameraFov,
+    viewpoint: element.dataset.cameraViewpoint,
+  }));
+  await group.getByRole("button", { name: "Central Loss", exact: true }).click();
+  await page.waitForTimeout(100);
+  const mobileVisionAfter = await canvas.evaluate((element) => ({
+    position: element.dataset.cameraPosition,
+    yaw: element.dataset.cameraYaw,
+    pitch: element.dataset.cameraPitch,
+    fov: element.dataset.cameraFov,
+    viewpoint: element.dataset.cameraViewpoint,
+    vision: element.dataset.visionMode,
+  }));
+  assert(mobileVisionAfter.vision === "central_loss", "mobile spatial: E4 Central Loss did not activate");
+  for (const key of ["position", "yaw", "pitch", "fov", "viewpoint"]) assert(mobileVisionAfter[key] === mobileVisionBaseline[key], `mobile spatial: E4 Vision switch changed ${key}`);
+  await group.getByRole("button", { name: "Normal", exact: true }).click();
+  await page.waitForTimeout(80);
+
   const beforeFreeMove = await canvas.getAttribute("data-camera-position");
   const forwardButton = page.getByRole("button", { name: "Move forward", exact: true });
   await forwardButton.scrollIntoViewIfNeeded();

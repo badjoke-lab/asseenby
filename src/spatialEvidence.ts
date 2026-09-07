@@ -1,7 +1,7 @@
 import type { ModeEvidence } from "./evidenceTypes";
 import { getModeEvidence } from "./modeEvidence";
 
-const SPATIAL_REVIEWED_ON = "2026-09-06";
+const SPATIAL_REVIEWED_ON = "2026-09-08";
 
 type SpatialEvidenceMode = "tunnel" | "central_loss" | "night" | "dog" | "cataract";
 
@@ -32,7 +32,7 @@ export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEviden
     return {
       ...base,
       modelScore: "C",
-      modelNote: "The spatial Night / Low Light renderer uses displayed scene luminance from the current rendered view to increase desaturation, contrast loss, and fine-detail loss in darker regions while leaving brighter sources more available. Because the 360° panorama is a tone-mapped RGB photograph rather than calibrated radiometric scene data, this is a luminance-dependent communication model, not a physical scotopic or mesopic reconstruction.",
+      modelNote: "The spatial Night / Low Light renderer samples displayed luminance from the current live rendered frame, increasing desaturation, contrast loss, and fine-detail loss in darker regions while leaving brighter sources more available. On Night Intersection that frame reflects authored geometry, materials, lights, visibility, and occlusion; on the 360° Photo Reference it reflects the tone-mapped RGB photograph. Neither source is calibrated radiometric scene data, so this remains a luminance-dependent communication model rather than a physical scotopic or mesopic reconstruction.",
       caveat: "Real low-light vision changes with absolute luminance, rod/cone contribution, adaptation state, pupil size, glare, ocular health, and individual differences. The current spatial mode does not model dark-adaptation timing, calibrated cd/m², or full rod/cone spectral sensitivity.",
       lastReviewed: SPATIAL_REVIEWED_ON,
     };
@@ -51,7 +51,7 @@ export function getSpatialModeEvidence(modeKey: SpatialEvidenceMode): ModeEviden
   return {
     ...base,
     modelScore: "C",
-    modelNote: "The spatial renderer samples the live rendered frame, gates light spread by actual high-luminance scene pixels, and combines that view-dependent glare with optical softness, lower contrast, slight desaturation, warming, and a veil component. Headlights, streetlights, and signals therefore spread more strongly when they are actually in view, while dark directions do not receive the same glare. This remains a generic browser model rather than a validated lens-scatter reconstruction.",
+    modelNote: "The spatial renderer samples the live rendered frame, gates light spread by actual high-luminance pixels, and combines that view-dependent glare with optical softness, lower contrast, slight desaturation, warming, and a veil component. On Night Intersection, visible practical/emissive sources and geometry occlusion therefore affect the pixels that can drive glare; the Photo Reference uses its photographed highlights. This remains a generic browser model without calibrated point-spread, lens-scatter, or patient-specific optical measurements.",
     caveat: "Cataract type, density, scatter, glare, contrast loss, and color shift vary substantially between individuals. This spatial output is an educational scene-dependent simulation, not a patient-specific optical measurement.",
     lastReviewed: SPATIAL_REVIEWED_ON,
   };

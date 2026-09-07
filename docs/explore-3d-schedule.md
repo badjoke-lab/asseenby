@@ -1,9 +1,9 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E3 IMPLEMENTED / release verification pending**
+Status: **E4 IMPLEMENTED / release verification pending**
 
-Explore 3D Steps E1 and E2 are production verified. `Night Intersection` is now the default real-geometry scene while Hansaplatz remains the `360° Photo Reference`.
+Explore 3D Steps E1, E2, and E3 are production verified. `Night Intersection` is the default real-geometry scene with bounded Human movement while Hansaplatz remains the `360° Photo Reference`. E4 integrates the accepted Human spatial Vision set on the geometry scene.
 
 Current product direction is defined by `docs/explore-3d-spec.md`.
 
@@ -99,7 +99,7 @@ Validation:
 - production smoke artifact `10024024552` was uploaded.
 
 ## Step E3 — Human observer and bounded movement
-Status: **IMPLEMENTED / release verification pending**
+Status: **PASS / production verified**
 
 Add a generic standing Human observer around 1.6 m with bounded ground movement.
 
@@ -137,8 +137,15 @@ Validation requirement before merge:
 - Photo Reference look-only regression;
 - full Compare image + Explore 3D production-smoke regression with an E3-specific stale-release fingerprint.
 
+Production closeout:
+- full E3 validation run `34143680918` passed movement speed, collision, authored bounds, Reset, Photo Reference look-only behavior, real mobile touch movement, and the full local production-smoke regression; validation artifact `10026994364` was uploaded;
+- PR #46 was squash-merged as main commit `47d7c0f9a15b62520b1a4a8994043668c14553cd`;
+- matching main build `34144520176` passed;
+- matching production smoke `34144520172` passed against `https://asseenby.pages.dev` with `productionReleaseDetected=true`, `e2SpatialReleaseDetected=true`, `e3HumanMovementDetected=true`, desktop/mobile image=true, desktop/mobile spatial=true, and `ok=true`;
+- production smoke artifact `10027185737` was uploaded.
+
 ## Step E4 — Human spatial Vision integration
-Status: **queued**
+Status: **IMPLEMENTED / release verification pending**
 
 Port/adjust the accepted Human spatial modes to the geometry scene:
 - Normal;
@@ -153,6 +160,26 @@ Use true scene information where it improves the model:
 - view-relative field effects for Tunnel/Central.
 
 Acceptance requires same-position/same-direction comparisons and evidence/limitation review.
+
+Implemented E4:
+- Night Intersection × Human exposes exactly Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like; Dog-like remains Photo Reference-only until the Dog observer phase;
+- the existing live Vision runtime is applied to the geometry renderer rather than duplicating the image transform engine;
+- Tunnel/Central remain view-relative post-processing effects over the live geometry frame;
+- Night / Low Light uses the current rendered frame's relative luminance, so authored geometry/material/light visibility changes its input while remaining explicitly non-calibrated;
+- Cataract-like gates local glare from visible high-luminance rendered pixels, so geometry occlusion and visible practical/emissive sources affect the glare input without claiming calibrated lens scatter;
+- Vision switching preserves Scene, Human observer, camera position, direction, FOV, lighting/object state and free/guided viewpoint state;
+- Night / Low Light now has a spatial Evidence panel even though it is intentionally absent from the public image-mode registry.
+
+Validation requirement before merge:
+- build;
+- same-position/same-direction/FOV checks for all five geometry Human Vision modes after both guided and free movement;
+- rendered Tunnel edge-dominance and Central center-dominance checks;
+- rendered Night dark-versus-bright response and Cataract bright-source response checks;
+- Night spatial Evidence panel availability;
+- desktop and 390px mobile geometry Vision usability with no horizontal overflow/errors;
+- Photo Reference accepted Vision set unchanged;
+- full Compare image regression;
+- permanent production smoke with an E4-specific stale-release fingerprint.
 
 ## Step E5 — Dog observer
 Status: **queued**

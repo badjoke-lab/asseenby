@@ -177,10 +177,11 @@ The current public release has no Reference modes. Earlier Age Profile and sex-d
 ## Explore 3D implementation approach
 - Three.js runs browser-side and remains separate from the Canvas 2D image transform engine;
 - the runtime is organized into explicit **Scene / Observer / Vision** layers;
-- the current public Scene is the Hansaplatz `360° Photo Reference`, retained as a fixed-position photographic reference rather than the capability ceiling of Explore 3D;
-- the current Photo Reference Observer is Human and look-only because the panorama contains no geometry for translation/parallax; this does not claim that bounded Human movement is already implemented;
+- the current default public Scene is the geometry-based `Night Intersection`; Hansaplatz remains separately available as the fixed-position `360° Photo Reference`;
+- the Night Intersection Human observer uses a 1.6 m reference eye height with bounded collision-aware ground movement, while the Photo Reference Human observer remains look-only because the panorama contains no translation/parallax depth;
 - Vision is independent from Observer state: changing Vision preserves Scene, Observer, camera position, direction and FOV;
-- geometry scenes may introduce translation, depth, collision, authored lighting, observer height and reachable-space differences in their scheduled phases;
+- Night Intersection Human Vision currently includes Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like; Dog-like remains a separate Photo Reference Vision proxy until Dog observer work;
+- Tunnel/Central use live view-relative field position, Night uses luminance from the current rendered frame, and Cataract-like gates glare from visible high-luminance rendered pixels, so the geometry scene's lighting/visibility/occlusion can influence those live inputs without turning them into calibrated biological reconstructions;
 - Dog/Cat/Bird observer behavior is separate from species-specific Vision claims, and unsupported Cat/Bird spectral filters are not restored by the architecture split;
 - no accounts or server-side user data are required;
 - bounded movement may be added where specified, but combat, scoring, inventory, quests and unrelated game-loop mechanics remain outside scope;

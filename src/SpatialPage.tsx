@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
-import { MODES } from "./modes";
+import { MODES, type ModeDef } from "./modes";
 import { getSpatialModeEvidence } from "./spatialEvidence";
 import {
   SPATIAL_OBSERVERS,
@@ -29,6 +29,18 @@ type SpatialController = {
   render: () => void;
 };
 
+const GEOMETRY_HUMAN_VISIONS = new Set<SpatialVisionMode>(["normal", "tunnel", "central_loss", "night", "cataract"]);
+
+const SPATIAL_EVIDENCE_MODE_DEFS: Partial<Record<SpatialVisionMode, ModeDef>> = {
+  night: {
+    key: "night",
+    label: "Night / Low Light",
+    category: "Human",
+    confidence: "Estimated",
+    note: "Luminance-dependent low-light spatial comparison proxy.",
+  },
+};
+
 const VISION_DESCRIPTIONS: Record<SpatialVisionMode, string> = {
   normal: "Baseline scene with no perception simulation.",
   tunnel: "Live screen-relative peripheral field loss. Look around to see how objects outside the center become harder to notice.",
@@ -43,7 +55,9 @@ export default function SpatialPage() {
   const [observerId, setObserverId] = useState<SpatialObserverId>("human");
   const [vision, setVision] = useState<SpatialVisionMode>("normal");
   const evidenceModeKey = vision === "normal" ? null : vision;
-  const evidenceMode = evidenceModeKey ? MODES.find((item) => item.key === evidenceModeKey) ?? null : null;
+  const evidenceMode = evidenceModeKey
+    ? MODES.find((item) => item.key === evidenceModeKey) ?? SPATIAL_EVIDENCE_MODE_DEFS[evidenceModeKey] ?? null
+    : null;
   const isGeometryScene = sceneId === "night-intersection";
 
   return (
@@ -79,7 +93,7 @@ export default function SpatialPage() {
           <section className="spatial-note" aria-label="Explore 3D comparison limitation">
             {isGeometryScene ? (
               <>
-                <strong>E3 movement boundary:</strong> the Human observer can move through the authored Night Intersection walking area with collision-aware ground navigation while keeping a 1.6 m reference eye height. This is a generic comparison viewpoint, not a claim about every person. Night Intersection intentionally exposes Normal only until Human Vision integration is reviewed in E4.
+                <strong>Human geometry comparison:</strong> the 1.6 m Human observer keeps the same bounded ground position, look direction, and FOV while Vision switches among Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like. The modes remain generic research simulations rather than patient-specific reconstructions.
               </>
             ) : (
               <>
@@ -269,7 +283,7 @@ function SpatialRenderer({
   const sceneDefinition = SPATIAL_SCENES.find((item) => item.id === sceneId) ?? SPATIAL_SCENES[0];
   const observerDefinition = SPATIAL_OBSERVERS.find((item) => item.id === observerId) ?? SPATIAL_OBSERVERS[0];
   const isGeometryScene = sceneId === "night-intersection";
-  const visibleVisions = isGeometryScene ? SPATIAL_VISIONS.filter((item) => item.id === "normal") : SPATIAL_VISIONS;
+  const visibleVisions = isGeometryScene ? SPATIAL_VISIONS.filter((item) => GEOMETRY_HUMAN_VISIONS.has(item.id)) : SPATIAL_VISIONS;
 
   if (error) {
     return (
@@ -300,7 +314,7 @@ function SpatialRenderer({
             onChange={(event) => {
               const nextSceneId = event.target.value as SpatialSceneId;
               setViewpoint("baseline");
-              if (nextSceneId === "night-intersection") setVision("normal");
+              if (nextSceneId === "night-intersection" && vision === "dog") setVision("normal");
               setSceneId(nextSceneId);
             }}
           >
@@ -338,7 +352,7 @@ function SpatialRenderer({
           ))}
         </div>
         {isGeometryScene ? (
-          <p className="spatial-mode-availability">Geometry Vision integration remains deferred to E4. E3 validates Human movement in Normal.</p>
+          <p className="spatial-mode-availability">Human geometry Vision uses the same live rendered scene and preserves the current observer/camera state. Dog-like remains a separate Photo Reference Vision proxy until the Dog observer phases.</p>
         ) : null}
       </div>
 
@@ -416,7 +430,7 @@ function SpatialRenderer({
 
       <div className="spatial-caption">
         {isGeometryScene
-          ? "Night Intersection supports bounded Human ground movement. Walk with W/A/S/D on desktop or the compact mobile controls, use Shift for faster desktop movement, drag to look around, and use Reset observer or R to return to the canonical 1.6 m Human start."
+          ? "Night Intersection supports bounded Human ground movement plus same-state Human Vision switching. Walk with W/A/S/D on desktop or the compact mobile controls, use Shift for faster desktop movement, drag to look around, and use Reset observer or R to return to the canonical 1.6 m Human start without changing Vision."
           : "This Photo Reference supports look-around only. Drag or use arrow keys to look around; press R to reset. Changing Vision keeps the exact same Scene, Human observer, viewpoint, direction, and FOV."}
       </div>
     </section>

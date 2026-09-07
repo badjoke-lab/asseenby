@@ -50,15 +50,15 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Strong
 - goal: hazy, lower-contrast, yellowed viewing approximation
 - image renderer: current static-image transform
-- spatial status: accepted initial pilot mode
-- spatial renderer: scene-dependent simulation using live rendered high-luminance information so bright sources can produce stronger glare / spread as the camera turns toward them
+- spatial status: accepted and integrated for the Human geometry scene
+- spatial renderer: scene-dependent simulation using live rendered high-luminance information so visible bright sources can produce stronger glare / spread as the camera turns; Night Intersection geometry/occlusion affects which highlights reach the rendered frame toward them
 - spatial limitation: generic model, not a reconstruction of an individual's lens scattering
 
 ### Tunnel Vision
 - class: Strong
 - goal: peripheral field loss approximation
 - image renderer: current simplified screen-space mask
-- spatial status: accepted initial pilot mode
+- spatial status: accepted and integrated for the Human geometry scene
 - spatial renderer: live view-relative peripheral field-loss simulation on the rendered scene
 - spatial limitation: generic field-loss profile, not an individual's measured perimetry result
 
@@ -66,7 +66,7 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Strong
 - goal: central field loss approximation
 - image renderer: current localized central-loss transform
-- spatial status: accepted post-pilot mode
+- spatial status: accepted and integrated for the Human geometry scene
 - spatial renderer: live view-relative central-field-loss simulation; straight-ahead detail is degraded while surrounding scene information remains more available, and the affected region stays centered in the viewer's field during look-around
 - spatial limitation: generic central-loss / scotoma-style profile, not an individual's measured scotoma or perimetry result
 
@@ -74,8 +74,8 @@ The existence of a spatial implementation does not change the mode's evidence cl
 - class: Estimated
 - goal: low-light viewing approximation
 - image status: removed in R7; the former static RGB transform was not retained as a validated low-light observer model
-- spatial status: accepted post-pilot mode
-- spatial renderer target: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker rendered regions while brighter regions remain comparatively available
+- spatial status: accepted and integrated for the Human geometry scene
+- spatial renderer: luminance-dependent loss of chromatic separation, contrast, and fine detail in darker current-frame regions while brighter regions remain comparatively available
 - spatial limitation: tone-mapped RGB provides relative displayed brightness only; no calibrated scotopic/mesopic luminance, dark-adaptation timing, or patient-specific night-vision reconstruction
 
 
