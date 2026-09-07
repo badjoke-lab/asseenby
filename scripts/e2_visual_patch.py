@@ -3,91 +3,25 @@ import re
 
 spatial = Path('src/SpatialPage.tsx')
 text = spatial.read_text()
-text = text.replace(
-    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));',
-    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));',
-)
-text = text.replace('renderer.toneMappingExposure = 1.28;', 'renderer.toneMappingExposure = 1.3;')
+text = text.replace('renderer.shadowMap.enabled = true;', 'renderer.shadowMap.enabled = false;')
 spatial.write_text(text)
 
 scene = Path('src/spatial/nightIntersectionScene.ts')
 text = scene.read_text()
-text = text.replace('moon.shadow.mapSize.set(1024, 1024);', 'moon.shadow.mapSize.set(512, 512);')
-text = text.replace('      crown.castShadow = true;', '      crown.castShadow = false;')
-text = text.replace('        wheel.castShadow = true;', '        wheel.castShadow = false;')
+text = text.replace('moon.castShadow = true;', 'moon.castShadow = false;')
 
-shell_pattern = re.compile(r'''  const addCarShell = \(.*?\n  const addCar =''', re.S)
-if 'new THREE.ExtrudeGeometry' in text:
-    shell_replacement = r'''  const addCarShell = (
-    name: string,
-    length: number,
-    width: number,
-    van: boolean,
-    paint: THREE.Material,
-    parent: THREE.Object3D,
-  ) => {
-    const profile: Array<[number, number]> = van
-      ? [
-          [-length / 2, 0.48],
-          [-length / 2, 0.9],
-          [-length * 0.4, 1.12],
-          [-length * 0.29, 1.9],
-          [-length * 0.18, 2.04],
-          [length * 0.38, 2.04],
-          [length * 0.46, 1.76],
-          [length / 2, 1.08],
-          [length / 2, 0.5],
-        ]
-      : [
-          [-length / 2, 0.48],
-          [-length / 2, 0.78],
-          [-length * 0.42, 0.96],
-          [-length * 0.26, 1.02],
-          [-length * 0.11, 1.55],
-          [length * 0.02, 1.7],
-          [length * 0.18, 1.65],
-          [length * 0.31, 1.1],
-          [length * 0.43, 0.98],
-          [length / 2, 0.78],
-          [length / 2, 0.48],
-        ];
+if 'const addInstancedBoxes =' not in text:
+    anchor = '''  const addCylinder = (\n'''
+    helper = '''  const addInstancedBoxes = (\n    name: string,\n    size: [number, number, number],\n    positions: Array<[number, number, number]>,\n    meshMaterial: THREE.Material,\n  ) => {\n    const geometry = new THREE.BoxGeometry(...size);\n    const mesh = new THREE.InstancedMesh(geometry, meshMaterial, positions.length);\n    mesh.name = name;\n    const matrix = new THREE.Matrix4();\n    positions.forEach((position, index) => {\n      matrix.makeTranslation(position[0], position[1], position[2]);\n      mesh.setMatrixAt(index, matrix);\n    });\n    mesh.instanceMatrix.needsUpdate = true;\n    root.add(mesh);\n    return mesh;\n  };\n\n'''
+    if anchor not in text:
+        raise SystemExit('addCylinder anchor missing')
+    text = text.replace(anchor, helper + anchor, 1)
 
-    const halfWidth = width / 2;
-    const positions: number[] = [];
-    for (const side of [-halfWidth, halfWidth]) {
-      for (const [pz, py] of profile) positions.push(side, py, pz);
-    }
-    const count = profile.length;
-    const indices: number[] = [];
-
-    for (let i = 1; i < count - 1; i += 1) {
-      indices.push(0, i + 1, i);
-      indices.push(count, count + i, count + i + 1);
-    }
-    for (let i = 0; i < count; i += 1) {
-      const next = (i + 1) % count;
-      const leftA = i;
-      const leftB = next;
-      const rightA = count + i;
-      const rightB = count + next;
-      indices.push(leftA, rightA, rightB, leftA, rightB, leftB);
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-    const shell = new THREE.Mesh(geometry, paint);
-    shell.name = `${name}-shell`;
-    shell.castShadow = true;
-    shell.receiveShadow = true;
-    parent.add(shell);
-    return shell;
-  };
-
-  const addCar ='''
-    text, count = shell_pattern.subn(shell_replacement, text, count=1)
+road_pattern = re.compile(r'''  for \(let i = 0; i < 9; i \+= 1\) \{.*?\n  for \(const z of \[-24\.8, -31\.2\]\) \{\n    for \(let x = -66; x <= 66; x \+= 13\) addBox\(`lane-cross-\$\{x\}-\$\{z\}`, \[5\.4, 0\.026, 0\.16\], \[x, GROUND_Y \+ 0\.075, z\], roadPaint, root, false\);\n  \}\n''', re.S)
+if 'crosswalk-ns-instances' not in text:
+    road_replacement = '''  const crosswalkNs: Array<[number, number, number]> = [];\n  const crosswalkEw: Array<[number, number, number]> = [];\n  for (let i = 0; i < 9; i += 1) {\n    const x = -7.6 + i * 1.9;\n    crosswalkNs.push([x, GROUND_Y + 0.07, -17.9], [x, GROUND_Y + 0.07, -38.1]);\n    const z = -35.6 + i * 1.9;\n    crosswalkEw.push([-10.9, GROUND_Y + 0.075, z], [10.9, GROUND_Y + 0.075, z]);\n  }\n  addInstancedBoxes("crosswalk-ns-instances", [1.0, 0.026, 5.6], crosswalkNs, roadPaint);\n  addInstancedBoxes("crosswalk-ew-instances", [5.6, 0.026, 1.0], crosswalkEw, roadPaint);\n\n  const laneNs: Array<[number, number, number]> = [];\n  for (const x of [-3.2, 3.2]) {\n    for (let z = 34; z >= -96; z -= 13) laneNs.push([x, GROUND_Y + 0.07, z]);\n  }\n  addInstancedBoxes("lane-ns-instances", [0.16, 0.026, 5.4], laneNs, roadPaint);\n\n  const laneEw: Array<[number, number, number]> = [];\n  for (const z of [-24.8, -31.2]) {\n    for (let x = -66; x <= 66; x += 13) laneEw.push([x, GROUND_Y + 0.075, z]);\n  }\n  addInstancedBoxes("lane-ew-instances", [5.4, 0.026, 0.16], laneEw, roadPaint);\n'''
+    text, count = road_pattern.subn(road_replacement, text, count=1)
     if count != 1:
-        raise SystemExit('current addCarShell block not replaced')
+        raise SystemExit('road marking loops not replaced')
 
 scene.write_text(text)
