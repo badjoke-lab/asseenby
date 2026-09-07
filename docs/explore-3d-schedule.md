@@ -1,7 +1,7 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E2 ACTIVE / Night Intersection geometry baseline**
+Status: **E2 IMPLEMENTED / release verification pending**
 
 Explore 3D Step E1 is production verified. The product now has explicit Scene / Observer / Vision layers while retaining Hansaplatz as the `360° Photo Reference`.
 
@@ -60,7 +60,7 @@ Production closeout:
 - production smoke artifact `10019243348` was uploaded.
 
 ## Step E2 — Night Intersection geometry baseline
-Status: **ACTIVE**
+Status: **IMPLEMENTED / release verification pending**
 
 Build the first real Three.js environment, targeting roughly 150 m × 150 m × 50–60 m of useful volume.
 
@@ -80,6 +80,20 @@ Acceptance:
 - scene no longer reads as a panorama or debug/low-effort environment;
 - Normal mode is useful before adding perception effects;
 - mobile performance remains acceptable.
+
+Implemented baseline:
+- `Night Intersection` is the default Explore 3D Scene; Hansaplatz remains separately available as `360° Photo Reference`;
+- authored scene volume is `150x150x60`, with streets, sidewalks/crossings, multi-part buildings, procedural facade detail, storefronts/signs, vehicles, pedestrians, signals, streetlights, furniture, vegetation, wires/roof targets and near/mid/far references;
+- the current optimized scene exposes 471 scene objects and 12 lights, with repeated road markings batched through instancing;
+- Human / Normal is intentionally the only geometry-scene Observer/Vision combination in E2; accepted Photo Reference Vision modes remain available on the photographic scene;
+- `Reference` and `Offset` authored viewpoints translate camera position from `0,0,0` to `3.2,0,-4.2` while preserving yaw, pitch and FOV, providing an explicit parallax proof before E3 free movement;
+- ACES tone mapping, authored practical/emissive lighting and procedural material texture are used; expensive realtime shadow mapping is deferred rather than sacrificing the E2 interaction baseline.
+
+Validation:
+- final E2 visual/browser validation run `34132000347` passed desktop/mobile with no page or console errors; artifact `10022490421` was rendered-reviewed;
+- final validation recorded 471 objects / 12 lights / `150x150x60`, preserved Reference/Offset direction and FOV, produced different rendered canvas output after translation, and retained all accepted Photo Reference Vision controls;
+- CI software-render `loadMs` varied materially between runners and is not used as a release threshold; the permanent release gate checks behavior/scene metadata instead;
+- production verification remains pending until the E2 PR is merged and the E2-specific production fingerprint passes on the public deployment.
 
 ## Step E3 — Human observer and bounded movement
 Status: **queued**

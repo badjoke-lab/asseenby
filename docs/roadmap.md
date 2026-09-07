@@ -7,7 +7,8 @@ The repository contains:
 - a production-verified Three.js 360° spatial reference implementation;
 - accepted Human spatial perception modes on that reference scene;
 - a production-verified image/release-polish track through R15;
-- a production-verified Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference.
+- a production-verified Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference;
+- an implemented E2 `Night Intersection` real-geometry baseline awaiting merged-production verification.
 
 The historical 360° pilot is no longer the target architecture for the 3D product.
 
@@ -29,8 +30,8 @@ A spatial comparison experience built around **Scene / Observer / Vision**.
 Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
 
 ## Immediate priority order
-1. build the first geometry-based `Night Intersection` scene for Explore 3D Step E2;
-2. add bounded Human movement and integrate accepted Human spatial Vision modes;
+1. merge and production-verify the implemented `Night Intersection` geometry baseline for Explore 3D Step E2;
+2. add bounded Human movement in E3, then integrate accepted Human spatial Vision modes in E4;
 3. add Dog observer, then refine Dog-like 3D detail behavior;
 4. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
 5. select a concrete first Bird species and implement real flight/perch behavior;
