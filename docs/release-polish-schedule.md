@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R13 VALIDATED / CVD public mode copy accuracy / awaiting production verification**
+Status: **Step R13 PASS / CVD public mode copy production verified**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -700,7 +700,7 @@ Do not reopen R12 merely for further tuning. Reopen image-transform work only fo
 
 
 ## Step R13 — CVD public mode copy accuracy
-Status: **PASS / validated / awaiting production verification**
+Status: **PASS / production verified**
 
 Finding:
 - R11 aligned Protan-like / Deutan-like / Tritan-like with the Machado severity-matrix model, but the short public mode notes in `src/modes.ts` still described Protan-like as `Reduced red-channel` and Deutan-like as `Reduced green-channel`;
@@ -715,4 +715,21 @@ Acceptance:
 - public copy no longer describes Protan-like / Deutan-like as simple red/green channel reduction — **PASS**;
 - browser-rendered page contains the corrected protanomaly/deuteranomaly wording — **PASS**;
 - typecheck/build and full local desktop/390px image + spatial regression remain green — **PASS**;
-- matching main build and production copy verification remain required before production closeout.
+- matching main build and production copy verification remain required before production closeout — **PASS**.
+
+Validation:
+- corrected R13 copy/build/full browser validation `34076199167` — **success**; Protan-like and Deutan-like were selected in-browser and the corrected copy rendered while the stale channel wording was absent;
+- earlier validation `34076091382` was a test-harness failure only: it expected the unselected Deutan short note to exist in body text; build/preview had already passed and no product commit was made from that failed run;
+- PR #35 build `34076343798` — **success**;
+- PR #35 squash-merged as `90f1c1d714c4c5aeeb428fb051770833ffb304f6`;
+- matching main build `34076376001` — **success**;
+- production smoke `34076375993` — **success**;
+- dedicated production-copy audit `34076455854` — **success on attempt 1**; live production rendered both corrected Protan-like and Deutan-like short notes and neither stale channel-reduction phrase remained;
+- dedicated production-copy artifact `10002220240` — **success / retained evidence**.
+
+## Step R13 closeout
+Status: **PASS / production verified**
+
+R13 is closed. Public CVD short descriptions now match the R11 Machado-based renderer and the more precise evidence/methodology wording. No renderer behavior or evidence grade changed.
+
+Do not add another release step merely to continue numbering; resume the remaining transform/evidence audit and open a new step only for a concrete renderer, model, output, or public-claim defect.
