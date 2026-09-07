@@ -38,6 +38,8 @@ jobs:
           done
           cat /tmp/e1-preview.log
           exit 1
+      - name: Diagnose E1 runtime
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e1_diagnostic.mjs
       - name: Full local browser regression
         run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
       - name: Commit validated E1 product change
