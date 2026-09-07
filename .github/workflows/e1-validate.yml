@@ -69,4 +69,4 @@ jobs:
           path: production-smoke/
           if-no-files-found: warn
 
-# validation v4: wait for the Three.js canvas before checking the E1 release fingerprint
+# validation v5: require a stable Scene/Observer/Vision/canvas state across StrictMode remount
