@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R15 VALIDATED / Tunnel image aspect-ratio symmetry / awaiting production verification**
+Status: **Step R15 PASS / production verified / Tunnel image aspect-ratio symmetry**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -806,3 +806,14 @@ Validation:
 - full local desktop/390px image + spatial production-smoke regression — **success**;
 - corrected validation artifact `10007516829`;
 - matching main build and production smoke remain required before R15 production closeout.
+
+
+### R15 production closeout
+Status: **PASS / production verified**
+
+- focused pre-fix audit `34092347452`, artifact `10007298129`, established the orientation defect;
+- corrected validation `34092878700`, artifact `10007516829`, measured wide/square/tall center=0, top/bottom/left/right=8, corner=19 and passed full desktop/390px image + spatial regression;
+- clean PR #40 merged as `c1673dfc7d20f890fb9f38ad2dfced1d2dc82855`;
+- matching main build `34116997123` passed;
+- matching production smoke `34116997193` passed with the permanent wide/square/tall Tunnel symmetry regression enabled;
+- production artifact `10016690589`.
