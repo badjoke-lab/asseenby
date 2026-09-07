@@ -29,7 +29,7 @@ R15 is closed. PR #40 merged as `c1673dfc7d20f890fb9f38ad2dfced1d2dc82855`; main
 The image/release blocker is cleared. New product work may proceed to E1 without broadening or reopening R15.
 
 ## Step E1 — Architecture split: Scene / Observer / Vision
-Status: **ACTIVE**
+Status: **VALIDATED locally / awaiting PR and production verification**
 
 Goal:
 - refactor the current panorama-only spatial component so Scene, Observer/controller and Vision/post-processing are explicit layers;
@@ -43,6 +43,14 @@ Acceptance:
 - architecture can host geometry-based scenes and translating observers;
 - desktop/mobile regression green;
 - build and production verification green.
+
+Implementation under validation:
+- current available Scene is explicitly `360° Photo Reference` and is owned by a Scene runtime rather than `SpatialPage` directly;
+- current available Observer is explicitly `Human`; its fixed-photo look controls are owned by an Observer runtime and do not claim ground translation;
+- existing Normal / Tunnel Vision / Central Loss / Night / Dog-like / Cataract-like post-processing is owned by a Vision runtime;
+- public UI exposes Scene / Observer / Vision as separate controls without exposing unfinished Dog/Cat/Bird observers;
+- permanent browser regression asserts the E1 control structure and verifies that switching Vision preserves scene, observer, yaw, pitch, FOV and camera position;
+- production smoke waits for the E1 spatial architecture before accepting a freshly deployed release.
 
 ## Step E2 — Night Intersection geometry baseline
 Status: **queued**

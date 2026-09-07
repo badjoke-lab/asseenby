@@ -174,14 +174,17 @@ The current public release has no Reference modes. Earlier Age Profile and sex-d
 - static-image only;
 - per-mode evidence metadata attached in the UI layer.
 
-## Spatial implementation approach
-- Three.js runs browser-side;
-- the accepted fixed-viewpoint 360° photographic night-city reference is reused while post-pilot modes are evaluated;
-- scene-aware / view-relative post-processing is used where required by the mode;
-- no accounts or server-side user data requirement;
-- no game mechanics required;
-- the current 2D transform engine remains in place;
-- new spatial modes are added one at a time and require their own rendered acceptance gate.
+## Explore 3D implementation approach
+- Three.js runs browser-side and remains separate from the Canvas 2D image transform engine;
+- the runtime is organized into explicit **Scene / Observer / Vision** layers;
+- the current public Scene is the Hansaplatz `360° Photo Reference`, retained as a fixed-position photographic reference rather than the capability ceiling of Explore 3D;
+- the current Photo Reference Observer is Human and look-only because the panorama contains no geometry for translation/parallax; this does not claim that bounded Human movement is already implemented;
+- Vision is independent from Observer state: changing Vision preserves Scene, Observer, camera position, direction and FOV;
+- geometry scenes may introduce translation, depth, collision, authored lighting, observer height and reachable-space differences in their scheduled phases;
+- Dog/Cat/Bird observer behavior is separate from species-specific Vision claims, and unsupported Cat/Bird spectral filters are not restored by the architecture split;
+- no accounts or server-side user data are required;
+- bounded movement may be added where specified, but combat, scoring, inventory, quests and unrelated game-loop mechanics remain outside scope;
+- every material spatial behavior change requires build/browser regression and the scheduled rendered/production acceptance gate.
 
 ## Practical reading rule
 Users should treat each output as:
