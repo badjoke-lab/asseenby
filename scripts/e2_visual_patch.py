@@ -4,203 +4,130 @@ import re
 spatial = Path('src/SpatialPage.tsx')
 text = spatial.read_text()
 text = text.replace(
-    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));',
     'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));',
+    'renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));',
 )
-text = text.replace('renderer.toneMappingExposure = 1.34;', 'renderer.toneMappingExposure = 1.28;')
+text = text.replace('renderer.toneMappingExposure = 1.28;', 'renderer.toneMappingExposure = 1.3;')
 spatial.write_text(text)
 
 scene = Path('src/spatial/nightIntersectionScene.ts')
 text = scene.read_text()
 
-text = text.replace(
-    'color: 0x252930,\n    map: asphaltTexture,\n    roughness: 0.52,',
-    'color: 0x353b43,\n    map: asphaltTexture,\n    roughness: 0.58,',
-)
-text = text.replace('castShadow = true,', 'castShadow = false,', 1)
+text = text.replace('moon.shadow.mapSize.set(1024, 1024);', 'moon.shadow.mapSize.set(512, 512);')
+text = text.replace('    mesh.castShadow = true;\n    mesh.receiveShadow = true;\n    parent.add(mesh);\n    return mesh;\n  };\n\n  scene.background', '    mesh.castShadow = false;\n    mesh.receiveShadow = true;\n    parent.add(mesh);\n    return mesh;\n  };\n\n  scene.background', 1)
+text = text.replace('      crown.castShadow = true;', '      crown.castShadow = false;')
+text = text.replace('        wheel.castShadow = true;', '        wheel.castShadow = false;')
 
-facade_pattern = re.compile(r'''  const facadeTexture = \(base: string, mortar: string, repeatX: number, repeatY: number\) => makeCanvasTexture\(256, \(ctx, size\) => \{.*?\n  \}, repeatX, repeatY\);''', re.S)
-facade_replacement = '''  const facadeTexture = (base: string, mortar: string, columns: number, rows: number, seed: number) => makeCanvasTexture(512, (ctx, size) => {
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, size, size);
+text = text.replace('const upperWidth = Math.max(12, options.width - 2.6);', 'const upperWidth = Math.max(12, options.width - 4.6);')
+text = text.replace('const upperDepth = Math.max(12, options.depth - 2.2);', 'const upperDepth = Math.max(12, options.depth - 4.0);')
+text = text.replace('const upperShiftX = options.x < 0 ? 0.65 : -0.65;', 'const upperShiftX = options.x < 0 ? 1.35 : -1.35;')
+text = text.replace('const upperShiftZ = options.front === "south" ? -0.45 : 0.45;', 'const upperShiftZ = options.front === "south" ? -0.9 : 0.9;')
 
-    ctx.strokeStyle = mortar;
-    ctx.lineWidth = 1;
-    const brickH = 16;
-    for (let y = 0; y < size; y += brickH) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(size, y);
-      ctx.stroke();
-      const offset = (Math.floor(y / brickH) % 2) * 18;
-      for (let x = -offset; x < size; x += 36) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, Math.min(size, y + brickH));
-        ctx.stroke();
-      }
-    }
+upper_anchor = '''    addBox(`${name}-upper`, [upperWidth, upperHeight, upperDepth], [upperShiftX, upperY, upperShiftZ], facadeMaterial, group, true);\n'''
+if '`${name}-corner-bay`' not in text:
+    upper_extra = upper_anchor + '''    const bayWidth = Math.max(5.2, upperWidth * 0.34);\n    const bayHeight = Math.max(6.2, upperHeight * 0.72);\n    const bayX = upperShiftX + (options.x < 0 ? upperWidth * 0.31 : -upperWidth * 0.31);\n    const bayZ = upperShiftZ + (options.front === "south" ? upperDepth * 0.12 : -upperDepth * 0.12);\n    const bayY = -options.height / 2 + podiumHeight + bayHeight / 2 + 0.18;\n    addBox(`${name}-corner-bay`, [bayWidth, bayHeight, upperDepth + 0.9], [bayX, bayY, bayZ], facadeMaterial, group, true);\n'''
+    if upper_anchor not in text:
+        raise SystemExit('upper building anchor not found')
+    text = text.replace(upper_anchor, upper_extra, 1)
 
-    const marginX = 18;
-    const marginTop = 20;
-    const marginBottom = 52;
-    const cellW = (size - marginX * 2) / Math.max(1, columns);
-    const cellH = (size - marginTop - marginBottom) / Math.max(1, rows);
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < columns; col += 1) {
-        const x = marginX + col * cellW + cellW * 0.18;
-        const y = marginTop + row * cellH + cellH * 0.16;
-        const w = cellW * 0.64;
-        const h = cellH * 0.62;
-        const lit = Math.floor(seededNoise(seed + row * 19 + col * 11) * 7);
-        ctx.fillStyle = 'rgba(13,17,21,0.72)';
-        ctx.fillRect(x - 3, y - 3, w + 6, h + 7);
-        ctx.fillStyle = lit === 0 || lit === 5 ? '#e5bd78' : lit === 2 ? '#88bed0' : '#18232b';
-        ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = 'rgba(245,245,235,0.18)';
-        ctx.fillRect(x + w * 0.48, y, 2, h);
-        ctx.fillStyle = 'rgba(20,22,24,0.55)';
-        ctx.fillRect(x - 4, y + h + 3, w + 8, 3);
-      }
-    }
-
-    const gradient = ctx.createLinearGradient(0, 0, size, 0);
-    gradient.addColorStop(0, 'rgba(255,255,255,0.09)');
-    gradient.addColorStop(0.5, 'rgba(0,0,0,0.07)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0.025)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-  });'''
-text, count = facade_pattern.subn(facade_replacement, text, count=1)
-if count != 1:
-    raise SystemExit('facadeTexture block not replaced')
-
-windows_pattern = re.compile(r'''\n  const addFacadeWindows = \(group: THREE\.Group, options: BuildingOptions, face: Face\) => \{.*?\n  \};\n\n  const addStorefront''', re.S)
-text, count = windows_pattern.subn('\n\n  const addStorefront', text, count=1)
-if count != 1:
-    raise SystemExit('addFacadeWindows block not removed')
-
-building_pattern = re.compile(r'''  const addBuilding = \(name: string, options: BuildingOptions\) => \{.*?\n    return group;\n  \};''', re.S)
-building_replacement = '''  const addBuilding = (name: string, options: BuildingOptions) => {
-    const group = new THREE.Group();
-    group.name = name;
-    group.position.set(options.x, GROUND_Y + options.height / 2, options.z);
-    root.add(group);
-
-    const facadeColumns = Math.max(4, Math.round(options.width / 5));
-    const facadeRows = Math.max(3, options.floors - 1);
-    const tex = facadeTexture(
-      typeof options.facade === "number" && (options.facade as number) < 0x505050 ? "#42484f" : "#65594f",
-      "rgba(220,216,207,0.12)",
-      facadeColumns,
-      facadeRows,
-      Math.abs(Math.round(options.x * 17 + options.z * 11)),
-    );
-    const facadeMaterial = trackMaterial(new THREE.MeshStandardMaterial({
-      color: options.facade,
-      map: tex,
-      roughness: 0.76,
-      metalness: 0.03,
-      emissive: 0x17130f,
-      emissiveIntensity: 0.08,
-    }));
-    const trimMaterial = trackMaterial(new THREE.MeshStandardMaterial({ color: options.trim, roughness: 0.62, metalness: 0.1 }));
-
-    const podiumHeight = Math.min(5.6, options.height * 0.29);
-    const upperHeight = options.height - podiumHeight;
-    const upperWidth = Math.max(12, options.width - 2.6);
-    const upperDepth = Math.max(12, options.depth - 2.2);
-    const upperShiftX = options.x < 0 ? 0.65 : -0.65;
-    const upperShiftZ = options.front === "south" ? -0.45 : 0.45;
-    const podiumY = -options.height / 2 + podiumHeight / 2;
-    const upperY = -options.height / 2 + podiumHeight + upperHeight / 2;
-
-    addBox(`${name}-podium`, [options.width, podiumHeight, options.depth], [0, podiumY, 0], facadeMaterial, group, true);
-    addBox(`${name}-upper`, [upperWidth, upperHeight, upperDepth], [upperShiftX, upperY, upperShiftZ], facadeMaterial, group, true);
-    addBox(`${name}-podium-cornice`, [options.width + 0.45, 0.32, options.depth + 0.45], [0, -options.height / 2 + podiumHeight + 0.16, 0], trimMaterial, group);
-    addBox(`${name}-roof-cap`, [upperWidth + 0.75, 0.48, upperDepth + 0.75], [upperShiftX, options.height / 2 + 0.24, upperShiftZ], trimMaterial, group);
-    addBox(`${name}-ground-belt`, [options.width + 0.28, 0.7, options.depth + 0.28], [0, -options.height / 2 + 0.35, 0], trimMaterial, group);
-
-    const pierY = upperY;
-    const pierX = upperWidth / 2 - 0.22;
-    const pierZ = upperDepth / 2 - 0.22;
-    for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) {
-        addBox(`${name}-corner-pier-${sx}-${sz}`, [0.42, upperHeight - 0.4, 0.42], [upperShiftX + sx * pierX, pierY, upperShiftZ + sz * pierZ], trimMaterial, group);
-      }
-    }
-
-    addStorefront(group, options);
-    if (options.balconies) {
-      for (let floor = 1; floor < Math.min(options.floors - 1, 5); floor += 2) {
-        const y = -options.height / 2 + podiumHeight + Math.min(upperHeight - 1.6, 1.6 + floor * 2.55);
-        if (options.front === "south" || options.front === "north") {
-          const z = options.front === "south" ? options.depth / 2 + 0.64 : -options.depth / 2 - 0.64;
-          addBox(`${name}-balcony-${floor}`, [7.7, 0.16, 1.18], [upperShiftX, y, z], darkMetal, group);
-          addBox(`${name}-balcony-rail-${floor}`, [7.7, 0.72, 0.08], [upperShiftX, y + 0.34, z + (options.front === "south" ? 0.53 : -0.53)], paleMetal, group);
-        }
-      }
-    }
-
-    addBox(`${name}-roof-service`, [3.8, 1.65, 2.8], [upperShiftX + options.width * 0.12, options.height / 2 + 1.05, upperShiftZ - options.depth * 0.08], trimMaterial, group);
-    addBox(`${name}-roof-service-cap`, [4.2, 0.18, 3.2], [upperShiftX + options.width * 0.12, options.height / 2 + 1.92, upperShiftZ - options.depth * 0.08], paleMetal, group);
-    return group;
-  };'''
-text, count = building_pattern.subn(building_replacement, text, count=1)
-if count != 1:
-    raise SystemExit('addBuilding block not replaced')
-
-car_anchor = '''  const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
-  const addCar ='''
-car_helper = '''  const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
-
-  const addTaperedBox = (
+if 'const addCarShell =' not in text:
+    car_pattern = re.compile(r'''  const addTaperedBox = \(.*?\n  addCar\("parked-east", 13\.2, -61, Math\.PI, paints\[3\]\);\n''', re.S)
+    car_replacement = r'''  const addCarShell = (
     name: string,
-    size: [number, number, number],
-    position: [number, number, number],
-    meshMaterial: THREE.Material,
+    length: number,
+    width: number,
+    van: boolean,
+    paint: THREE.Material,
     parent: THREE.Object3D,
-    topWidth = 0.82,
-    topLength = 0.72,
   ) => {
-    const geometry = new THREE.BoxGeometry(...size);
-    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
-    for (let index = 0; index < attribute.count; index += 1) {
-      const x = attribute.getX(index);
-      const y = attribute.getY(index);
-      const z = attribute.getZ(index);
-      if (y > 0) attribute.setXYZ(index, x * topWidth, y, z * topLength);
-    }
+    const shape = new THREE.Shape();
+    const points = van
+      ? [
+          [-length / 2, 0.46],
+          [-length * 0.44, 1.05],
+          [-length * 0.31, 1.82],
+          [-length * 0.18, 2.02],
+          [length * 0.34, 2.02],
+          [length * 0.45, 1.72],
+          [length / 2, 0.5],
+        ]
+      : [
+          [-length / 2, 0.46],
+          [-length * 0.44, 0.84],
+          [-length * 0.28, 1.02],
+          [-length * 0.13, 1.58],
+          [length * 0.04, 1.76],
+          [length * 0.22, 1.68],
+          [length * 0.37, 1.08],
+          [length * 0.46, 0.92],
+          [length / 2, 0.5],
+        ];
+    shape.moveTo(points[0][0], points[0][1]);
+    for (const [px, py] of points.slice(1)) shape.lineTo(px, py);
+    shape.lineTo(points[0][0], points[0][1]);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: width,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      steps: 1,
+      bevelSize: 0.055,
+      bevelThickness: 0.055,
+    });
+    geometry.translate(0, 0, -width / 2);
+    geometry.rotateY(Math.PI / 2);
     geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, meshMaterial);
-    mesh.name = name;
-    mesh.position.set(...position);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    parent.add(mesh);
-    return mesh;
+    const shell = new THREE.Mesh(geometry, paint);
+    shell.name = `${name}-shell`;
+    shell.castShadow = true;
+    shell.receiveShadow = true;
+    parent.add(shell);
+    return shell;
   };
 
-  const addCar ='''
-if car_anchor not in text:
-    raise SystemExit('car anchor not found')
-text = text.replace(car_anchor, car_helper, 1)
+  const addCar = (name: string, x: number, z: number, rotationY: number, paint: THREE.Material, van = false) => {
+    const group = new THREE.Group();
+    group.name = name;
+    group.position.set(x, GROUND_Y, z);
+    group.rotation.y = rotationY;
+    root.add(group);
+    const length = van ? 5.5 : 4.5;
+    const width = van ? 1.95 : 1.9;
+    addCarShell(name, length, width, van, paint, group);
 
-text = text.replace(
-    'addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group);',
-    'addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group, true);',
-)
-text = text.replace(
-    'addBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group);',
-    'addTaperedBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group, 0.96, 0.86);',
-)
-text = text.replace(
-    'addBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group);',
-    'addTaperedBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group, 0.97, 0.9);',
-)
-text = text.replace(
-    'addBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group);',
-    'addTaperedBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group, van ? 0.92 : 0.78, van ? 0.9 : 0.68);',
-)
+    const windshieldZ = -length * (van ? 0.29 : 0.18);
+    const rearGlassZ = length * (van ? 0.34 : 0.23);
+    addBox(`${name}-windshield`, [width * 0.79, van ? 0.78 : 0.62, 0.055], [0, van ? 1.63 : 1.48, windshieldZ], glass, group, false);
+    addBox(`${name}-rear-glass`, [width * 0.76, van ? 0.7 : 0.55, 0.055], [0, van ? 1.61 : 1.43, rearGlassZ], glass, group, false);
+    for (const side of [-1, 1]) {
+      addBox(`${name}-side-glass-${side}`, [0.045, van ? 0.78 : 0.56, van ? 2.2 : 1.35], [side * (width / 2 + 0.02), van ? 1.64 : 1.5, van ? 0.12 : 0.03], glass, group, false);
+      addBox(`${name}-mirror-${side}`, [0.18, 0.11, 0.28], [side * (width / 2 + 0.12), 1.34, -length * 0.18], darkMetal, group, false);
+      for (const axle of [-1, 1]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.22, 14), tire);
+        wheel.name = `${name}-wheel-${side}-${axle}`;
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(side * (width / 2 + 0.03), 0.42, axle * length * 0.31);
+        wheel.receiveShadow = true;
+        group.add(wheel);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.232, 12), rim);
+        hub.name = `${name}-hub-${side}-${axle}`;
+        hub.rotation.z = Math.PI / 2;
+        hub.position.copy(wheel.position);
+        group.add(hub);
+      }
+    }
+    for (const side of [-0.55, 0.55]) {
+      addBox(`${name}-headlight-${side}`, [0.32, 0.16, 0.07], [side, 0.83, -length / 2 - 0.05], lampMaterial, group, false);
+      addBox(`${name}-taillight-${side}`, [0.28, 0.15, 0.07], [side, 0.8, length / 2 + 0.05], redLight, group, false);
+    }
+  };
+  addCar("target-near-car", -4.6, -11.5, 0.02, paints[0]);
+  addCar("mid-blue-car", 4.5, -48, Math.PI, paints[1]);
+  addCar("cross-street-van", 29, -32.5, Math.PI / 2, paints[2], true);
+  addCar("far-taxi", -4.3, -79, 0, paints[2]);
+  addCar("parked-east", 13.2, -61, Math.PI, paints[3]);
+'''
+    text, count = car_pattern.subn(car_replacement, text, count=1)
+    if count != 1:
+        raise SystemExit('car block not replaced')
 
 scene.write_text(text)
