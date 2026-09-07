@@ -11,8 +11,8 @@ export type ModeDef = {
 };
 
 export const MODES: ModeDef[] = [
-  { key: "protan", label: "Protan-like", category: "Human", confidence: "Strong", note: "Reduced red-channel discrimination approximation." },
-  { key: "deutan", label: "Deutan-like", category: "Human", confidence: "Strong", note: "Reduced green-channel discrimination approximation." },
+  { key: "protan", label: "Protan-like", category: "Human", confidence: "Strong", note: "Protanomaly-style red-green color-discrimination approximation." },
+  { key: "deutan", label: "Deutan-like", category: "Human", confidence: "Strong", note: "Deuteranomaly-style red-green color-discrimination approximation." },
   { key: "tritan", label: "Tritan-like", category: "Human", confidence: "Strong", note: "Blue-yellow discrimination shift approximation." },
   { key: "blur", label: "Blur", category: "Human", confidence: "Strong", note: "Lower visual sharpness approximation." },
   { key: "low_contrast", label: "Low Contrast", category: "Human", confidence: "Strong", note: "Reduced contrast sensitivity approximation." },
