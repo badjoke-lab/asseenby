@@ -6,7 +6,8 @@ The repository contains:
 - browser-side image transforms and evidence metadata;
 - a production-verified Three.js 360° spatial reference implementation;
 - accepted Human spatial perception modes on that reference scene;
-- a production-verified image/release-polish track through R14, with R15 Tunnel image aspect-ratio correction validated and awaiting its own closeout.
+- a production-verified image/release-polish track through R15;
+- an active Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference.
 
 The historical 360° pilot is no longer the target architecture for the 3D product.
 
@@ -28,16 +29,14 @@ A spatial comparison experience built around **Scene / Observer / Vision**.
 Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
 
 ## Immediate priority order
-1. close the already-validated R15 Tunnel image aspect-ratio fix without broadening its scope;
-2. begin Explore 3D Step E1: split the current spatial architecture into Scene / Observer / Vision;
-3. retain Hansaplatz as `360° Photo Reference`, not as the whole 3D product;
-4. build the first geometry-based `Night Intersection` scene;
-5. add bounded Human movement and integrate accepted Human spatial Vision modes;
-6. add Dog observer, then refine Dog-like 3D detail behavior;
-7. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
-8. select a concrete first Bird species and implement real flight/perch behavior;
-9. evaluate that Bird species' visual model separately from its movement/viewpoint;
-10. expand to additional dense scenes after the first architecture is stable.
+1. complete and production-verify Explore 3D Step E1: explicit Scene / Observer / Vision architecture while retaining Hansaplatz as `360° Photo Reference`;
+2. build the first geometry-based `Night Intersection` scene;
+3. add bounded Human movement and integrate accepted Human spatial Vision modes;
+4. add Dog observer, then refine Dog-like 3D detail behavior;
+5. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
+6. select a concrete first Bird species and implement real flight/perch behavior;
+7. evaluate that Bird species' visual model separately from its movement/viewpoint;
+8. expand to additional dense scenes after the first architecture is stable.
 
 ## Explore 3D architecture
 ### Scene

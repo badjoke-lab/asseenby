@@ -35,6 +35,11 @@ Therefore:
 
 The term `approximation` refers to this claim boundary. It should not be interpreted as permission to substitute a decorative static filter where live spatial modeling is required by the specification.
 
+### Current Explore 3D architecture boundary
+The Scene / Observer / Vision split does not by itself create geometry, depth, parallax, collision, observer-height differences, climbing, or flight. The current public `360° Photo Reference` remains a fixed-position photographic source, so its Human observer supports look-around only. Features that require translation or physical observer differences remain unavailable until the scheduled geometry/observer phases are implemented and production-verified.
+
+Dog-like remains available on the Photo Reference as a **Vision proxy** while the current Observer remains Human. That visual switch must not be read as a Dog-height camera or canine movement model. Cat and Bird observers are likewise not claimed until their movement/viewpoint phases exist; Bird flight and Bird spectral/color Vision remain separate requirements.
+
 ## Human-mode limitation
 Human modes are simplified visual proxies or generic simulations.
 They are useful for comparative viewing, but they are not exact reconstructions of lived perception.

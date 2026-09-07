@@ -392,12 +392,42 @@ async function mobileImageSmoke(browser) {
   await context.close();
 }
 
+async function waitForExplore3DArchitecture(page, label) {
+  for (let attempt = 1; attempt <= 12; attempt += 1) {
+    await page.goto(`${BASE}/?view=spatial&architecture_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
+    await page.waitForTimeout(1_500);
+    const stable = await page.evaluate(() => {
+      const scene = document.querySelector("#spatial-scene-select");
+      const observer = document.querySelector("#spatial-observer-select");
+      const card = document.querySelector('.spatial-card[data-scene-id="photo-reference"][data-observer-id="human"]');
+      const vision = document.querySelector('[role="group"][aria-label="Vision"]');
+      const canvas = document.querySelector('canvas.spatial-canvas[data-scene-id="photo-reference"][data-observer-id="human"]');
+      return scene instanceof HTMLSelectElement
+        && scene.value === "photo-reference"
+        && observer instanceof HTMLSelectElement
+        && observer.value === "human"
+        && card instanceof HTMLElement
+        && vision instanceof HTMLElement
+        && canvas instanceof HTMLCanvasElement
+        && canvas.clientWidth > 0
+        && canvas.clientHeight > 0;
+    });
+    if (stable) {
+      result.notes.push(`${label}: stable Explore 3D Scene/Observer/Vision architecture detected on attempt ${attempt}`);
+      return;
+    }
+    result.notes.push(`${label}: architecture attempt ${attempt} did not reach the stable E1 fingerprint`);
+    if (attempt < 12) await page.waitForTimeout(5_000);
+  }
+  throw new Error(`${label}: current Explore 3D Scene/Observer/Vision architecture was not detected`);
+}
+
 async function desktopSpatialSmoke(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const errors = collectErrors(page);
-  await page.goto(`${BASE}/?view=spatial&production_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
-  await page.getByRole("heading", { name: "360° photographic night-city scene" }).waitFor({ timeout: 30_000 });
+  await waitForExplore3DArchitecture(page, "desktop spatial");
+  await page.getByRole("heading", { name: "360° Photo Reference" }).waitFor({ timeout: 30_000 });
   const canvas = page.locator("canvas.spatial-canvas");
   await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "desktop spatial");
@@ -405,10 +435,46 @@ async function desktopSpatialSmoke(browser) {
   assert((await spatialNav.getByRole("link", { name: "Compare image", exact: true }).count()) === 1, "desktop spatial: Compare image navigation is missing or duplicated");
   assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "desktop spatial: duplicate Back to image action is still exposed");
 
-  const modeGroup = page.getByRole("group", { name: "Spatial perception mode" });
+  assert((await spatialNav.getByRole("link", { name: "Explore 3D", exact: true }).count()) === 1, "desktop spatial: Explore 3D navigation is missing or duplicated");
+  const sceneSelect = page.locator("#spatial-scene-select");
+  const observerSelect = page.locator("#spatial-observer-select");
+  assert((await sceneSelect.inputValue()) === "photo-reference", "desktop spatial: Photo Reference scene is not active");
+  assert((await observerSelect.inputValue()) === "human", "desktop spatial: Human observer is not active");
+  assert(JSON.stringify(await sceneSelect.locator("option").allTextContents()) === JSON.stringify(["360° Photo Reference"]), "desktop spatial: unexpected Scene options");
+  assert(JSON.stringify(await observerSelect.locator("option").allTextContents()) === JSON.stringify(["Human"]), "desktop spatial: unexpected Observer options");
+
+  const modeGroup = page.getByRole("group", { name: "Vision" });
   const labels = await modeGroup.getByRole("button").allTextContents();
   assert(JSON.stringify(labels) === JSON.stringify(expectedSpatialModes), `desktop spatial: unexpected controls ${JSON.stringify(labels)}`);
   assert(!labels.some((label) => /Cat-like|Bird-like|Bee-like/i.test(label)), "desktop spatial: blocked/rejected animal control exposed");
+
+  await canvas.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(120);
+  const beforeVisionSwitch = await canvas.evaluate((element) => ({
+    scene: element.dataset.sceneId,
+    observer: element.dataset.observerId,
+    yaw: element.dataset.cameraYaw,
+    pitch: element.dataset.cameraPitch,
+    fov: element.dataset.cameraFov,
+    position: element.dataset.cameraPosition,
+  }));
+  const tunnelButton = modeGroup.getByRole("button", { name: "Tunnel Vision", exact: true });
+  await tunnelButton.click();
+  await page.waitForTimeout(120);
+  const afterVisionSwitch = await canvas.evaluate((element) => ({
+    scene: element.dataset.sceneId,
+    observer: element.dataset.observerId,
+    yaw: element.dataset.cameraYaw,
+    pitch: element.dataset.cameraPitch,
+    fov: element.dataset.cameraFov,
+    position: element.dataset.cameraPosition,
+    vision: element.dataset.visionMode,
+  }));
+  assert(afterVisionSwitch.vision === "tunnel", `desktop spatial: Vision runtime did not record tunnel (${JSON.stringify(afterVisionSwitch)})`);
+  for (const key of ["scene", "observer", "yaw", "pitch", "fov", "position"]) {
+    assert(afterVisionSwitch[key] === beforeVisionSwitch[key], `desktop spatial: Vision switch changed ${key}: ${beforeVisionSwitch[key]} -> ${afterVisionSwitch[key]}`);
+  }
 
   for (const label of expectedSpatialModes) {
     const button = modeGroup.getByRole("button", { name: label, exact: true });
@@ -446,7 +512,11 @@ async function mobileSpatialSmoke(browser) {
   const spatialNav = page.getByRole("navigation", { name: "Spatial navigation" });
   assert((await spatialNav.getByRole("link", { name: "Compare image", exact: true }).count()) === 1, "mobile spatial: Compare image navigation is missing or duplicated");
   assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "mobile spatial: duplicate Back to image action is still exposed");
-  const group = page.getByRole("group", { name: "Spatial perception mode" });
+  assert((await spatialNav.getByRole("link", { name: "Explore 3D", exact: true }).count()) === 1, "mobile spatial: Explore 3D navigation is missing or duplicated");
+  assert((await page.locator("#spatial-scene-select").inputValue()) === "photo-reference", "mobile spatial: Photo Reference Scene is not active");
+  assert((await page.locator("#spatial-observer-select").inputValue()) === "human", "mobile spatial: Human Observer is not active");
+  await assertTouchTargets(page.locator(".spatial-layer-control select"), "mobile spatial Scene/Observer controls");
+  const group = page.getByRole("group", { name: "Vision" });
   await group.getByRole("button", { name: "Central Loss", exact: true }).click();
   await page.waitForTimeout(400);
   const before = await canvas.screenshot();

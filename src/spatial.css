@@ -246,6 +246,11 @@
     align-items: center;
   }
 
+  .spatial-layer-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
   .spatial-mode-bar {
     padding: 10px 12px;
   }
@@ -261,4 +266,56 @@
   .spatial-render-host {
     min-height: 240px;
   }
+}
+
+
+.spatial-layer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #d8d1c5;
+  background: #f3eee4;
+}
+
+.spatial-layer-control {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.spatial-layer-control select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #aaa294;
+  border-radius: 8px;
+  background: #fbf8f1;
+  color: #35332f;
+  padding: 0 38px 0 12px;
+  font: inherit;
+}
+
+.spatial-layer-control select:focus-visible {
+  outline: 3px solid #7f786b;
+  outline-offset: 2px;
+}
+
+.spatial-layer-control small {
+  color: #6a645a;
+  line-height: 1.45;
+}
+
+.spatial-vision-section {
+  background: #eee8dc;
+  border-bottom: 1px solid #d8d1c5;
+}
+
+.spatial-vision-label {
+  display: block;
+  padding: 12px 16px 0;
+}
+
+.spatial-vision-section .spatial-mode-bar {
+  border-bottom: 0;
+  padding-top: 9px;
 }
