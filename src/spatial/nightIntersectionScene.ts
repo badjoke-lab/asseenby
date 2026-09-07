@@ -538,41 +538,56 @@ export function mountNightIntersectionScene(
     paint: THREE.Material,
     parent: THREE.Object3D,
   ) => {
-    const shape = new THREE.Shape();
-    const points = van
+    const profile: Array<[number, number]> = van
       ? [
-          [-length / 2, 0.46],
-          [-length * 0.44, 1.05],
-          [-length * 0.31, 1.82],
-          [-length * 0.18, 2.02],
-          [length * 0.34, 2.02],
-          [length * 0.45, 1.72],
+          [-length / 2, 0.48],
+          [-length / 2, 0.9],
+          [-length * 0.4, 1.12],
+          [-length * 0.29, 1.9],
+          [-length * 0.18, 2.04],
+          [length * 0.38, 2.04],
+          [length * 0.46, 1.76],
+          [length / 2, 1.08],
           [length / 2, 0.5],
         ]
       : [
-          [-length / 2, 0.46],
-          [-length * 0.44, 0.84],
-          [-length * 0.28, 1.02],
-          [-length * 0.13, 1.58],
-          [length * 0.04, 1.76],
-          [length * 0.22, 1.68],
-          [length * 0.37, 1.08],
-          [length * 0.46, 0.92],
-          [length / 2, 0.5],
+          [-length / 2, 0.48],
+          [-length / 2, 0.78],
+          [-length * 0.42, 0.96],
+          [-length * 0.26, 1.02],
+          [-length * 0.11, 1.55],
+          [length * 0.02, 1.7],
+          [length * 0.18, 1.65],
+          [length * 0.31, 1.1],
+          [length * 0.43, 0.98],
+          [length / 2, 0.78],
+          [length / 2, 0.48],
         ];
-    shape.moveTo(points[0][0], points[0][1]);
-    for (const [px, py] of points.slice(1)) shape.lineTo(px, py);
-    shape.lineTo(points[0][0], points[0][1]);
-    const geometry = new THREE.ExtrudeGeometry(shape, {
-      depth: width,
-      bevelEnabled: true,
-      bevelSegments: 1,
-      steps: 1,
-      bevelSize: 0.055,
-      bevelThickness: 0.055,
-    });
-    geometry.translate(0, 0, -width / 2);
-    geometry.rotateY(Math.PI / 2);
+
+    const halfWidth = width / 2;
+    const positions: number[] = [];
+    for (const side of [-halfWidth, halfWidth]) {
+      for (const [pz, py] of profile) positions.push(side, py, pz);
+    }
+    const count = profile.length;
+    const indices: number[] = [];
+
+    for (let i = 1; i < count - 1; i += 1) {
+      indices.push(0, i + 1, i);
+      indices.push(count, count + i, count + i + 1);
+    }
+    for (let i = 0; i < count; i += 1) {
+      const next = (i + 1) % count;
+      const leftA = i;
+      const leftB = next;
+      const rightA = count + i;
+      const rightB = count + next;
+      indices.push(leftA, rightA, rightB, leftA, rightB, leftB);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
     geometry.computeVertexNormals();
     const shell = new THREE.Mesh(geometry, paint);
     shell.name = `${name}-shell`;
