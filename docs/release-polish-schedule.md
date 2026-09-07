@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R12 PASS / resolution-normalized image blur production verified / R11 CVD model fidelity production verified**
+Status: **Step R13 VALIDATED / CVD public mode copy accuracy / awaiting production verification**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -697,3 +697,22 @@ Status: **PASS / production verified**
 R12 is closed. The remaining public image blur-bearing renderers now normalize pixel blur radii against the processed image short edge while preserving the 1440×900 built-in sample endpoints, and the behavior is verified both in local before/after A/B browser output and on the public production deployment.
 
 Do not reopen R12 merely for further tuning. Reopen image-transform work only for a new concrete renderer/model/output defect found by evidence review or controlled output audit.
+
+
+## Step R13 — CVD public mode copy accuracy
+Status: **PASS / validated / awaiting production verification**
+
+Finding:
+- R11 aligned Protan-like / Deutan-like / Tritan-like with the Machado severity-matrix model, but the short public mode notes in `src/modes.ts` still described Protan-like as `Reduced red-channel` and Deutan-like as `Reduced green-channel`;
+- those phrases imply simple RGB channel reduction, which is not the current renderer and is less accurate than the already-correct methodology/evidence wording.
+
+Implementation:
+- describe Protan-like as a protanomaly-style red-green color-discrimination approximation;
+- describe Deutan-like as a deuteranomaly-style red-green color-discrimination approximation;
+- do not change the R11 renderer, evidence scores, Strength semantics, or other public modes.
+
+Acceptance:
+- public copy no longer describes Protan-like / Deutan-like as simple red/green channel reduction — **PASS**;
+- browser-rendered page contains the corrected protanomaly/deuteranomaly wording — **PASS**;
+- typecheck/build and full local desktop/390px image + spatial regression remain green — **PASS**;
+- matching main build and production copy verification remain required before production closeout.
