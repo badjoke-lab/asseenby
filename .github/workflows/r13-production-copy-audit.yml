@@ -1,0 +1,33 @@
+name: R13 production copy audit
+
+on:
+  push:
+    branches: [audit/r13-production-copy]
+    paths: [.github/workflows/r13-production-copy-audit.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/r13-production-copy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify corrected CVD copy in production
+        run: node scripts/r13-production-copy-audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r13-production-copy-audit
+          path: r13-production-copy-audit.json
+          if-no-files-found: error
