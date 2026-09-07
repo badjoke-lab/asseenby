@@ -9,6 +9,7 @@ import {
   SPATIAL_OBSERVERS,
   SPATIAL_SCENES,
   SPATIAL_VISIONS,
+  type SpatialGuidedViewpoint,
   type SpatialObserverId,
   type SpatialSceneId,
   type SpatialVisionMode,
@@ -21,6 +22,7 @@ type SpatialController = {
   setScene: (sceneId: SpatialSceneId) => void;
   setObserver: (observerId: SpatialObserverId) => void;
   setVision: (vision: SpatialVisionMode) => void;
+  setViewpoint: (viewpoint: SpatialGuidedViewpoint) => void;
   render: () => void;
 };
 
@@ -34,11 +36,12 @@ const VISION_DESCRIPTIONS: Record<SpatialVisionMode, string> = {
 };
 
 export default function SpatialPage() {
-  const [sceneId, setSceneId] = useState<SpatialSceneId>("photo-reference");
+  const [sceneId, setSceneId] = useState<SpatialSceneId>("night-intersection");
   const [observerId, setObserverId] = useState<SpatialObserverId>("human");
   const [vision, setVision] = useState<SpatialVisionMode>("normal");
   const evidenceModeKey = vision === "normal" ? null : vision;
   const evidenceMode = evidenceModeKey ? MODES.find((item) => item.key === evidenceModeKey) ?? null : null;
+  const isGeometryScene = sceneId === "night-intersection";
 
   return (
     <div className="page-shell">
@@ -57,7 +60,7 @@ export default function SpatialPage() {
             <p className="spatial-kicker">Explore 3D</p>
             <h1 className="spatial-title">Separate the scene, the observer, and the way of seeing.</h1>
             <p className="spatial-lead">
-              Explore 3D is organized as Scene / Observer / Vision. The current available Scene is the Hansaplatz 360° Photo Reference, so it supports look-around from the source camera point. Geometry scenes will add translation, depth, occlusion, and observer-specific movement without turning the experience into a game.
+              Night Intersection is the first geometry-based Explore 3D scene, built to make depth, occlusion, authored lighting, and camera translation visible. Hansaplatz remains available as the 360° Photo Reference for photographic same-view Vision comparisons.
             </p>
           </section>
 
@@ -71,7 +74,15 @@ export default function SpatialPage() {
           />
 
           <section className="spatial-note" aria-label="Explore 3D comparison limitation">
-            <strong>Comparison rule:</strong> changing only Vision keeps the active Scene, Observer, camera position, look direction, and FOV unchanged. The current photographic reference has no translation depth, so its Human observer is deliberately look-only. Dog-like here is a visual proxy only; it does not claim that the camera has become a Dog observer. Species-specific observers and geometry movement are separate implementation steps with their own evidence and model boundaries.
+            {isGeometryScene ? (
+              <>
+                <strong>E2 geometry boundary:</strong> the two authored viewpoints change only camera position, making real parallax visible while direction and FOV stay unchanged. Bounded Human free movement and collision arrive in E3. Night Intersection intentionally exposes Normal only until the accepted Human Vision modes are integrated and reviewed for geometry in E4.
+              </>
+            ) : (
+              <>
+                <strong>Comparison rule:</strong> changing only Vision keeps the active Scene, Observer, camera position, look direction, and FOV unchanged. The Photo Reference has no translation depth, so its Human observer remains look-only. Dog-like here is a Vision proxy only; it does not claim a Dog-height observer.
+              </>
+            )}
           </section>
 
           {evidenceModeKey && evidenceMode ? (
@@ -87,7 +98,11 @@ export default function SpatialPage() {
           ) : (
             <section className="spatial-baseline-note" aria-label="Normal mode information">
               <div className="control-label">Normal baseline</div>
-              <p>No Vision simulation is applied. Use this view as the reference before switching the Vision layer.</p>
+              <p>
+                {isGeometryScene
+                  ? "No Vision simulation is applied. Use Normal to inspect the geometry, lighting hierarchy, depth, occlusion, near/mid/far targets, and viewpoint parallax before perception effects are introduced on this scene."
+                  : "No Vision simulation is applied. Use this view as the reference before switching the Vision layer."}
+              </p>
             </section>
           )}
         </main>
@@ -114,6 +129,7 @@ function SpatialRenderer({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<SpatialController | null>(null);
   const [error, setError] = useState("");
+  const [viewpoint, setViewpoint] = useState<SpatialGuidedViewpoint>("baseline");
 
   useEffect(() => {
     controllerRef.current?.setScene(sceneId);
@@ -126,6 +142,10 @@ function SpatialRenderer({
   useEffect(() => {
     controllerRef.current?.setVision(vision);
   }, [vision]);
+
+  useEffect(() => {
+    controllerRef.current?.setViewpoint(viewpoint);
+  }, [viewpoint]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -160,7 +180,7 @@ function SpatialRenderer({
       scene.background = new THREE.Color(0x05070a);
       scene.fog = null;
 
-      const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 100);
+      const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 280);
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -184,6 +204,9 @@ function SpatialRenderer({
         activeSceneRuntime = createSpatialSceneRuntime(nextSceneId, scene, renderScene);
         canvas.dataset.sceneId = nextSceneId;
         canvas.dataset.sceneSupportsTranslation = String(activeSceneRuntime.supportsTranslation);
+        canvas.dataset.sceneObjectCount = String(activeSceneRuntime.objectCount);
+        canvas.dataset.sceneLightCount = String(activeSceneRuntime.lightCount);
+        canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "150x150x60" : "photographic-reference";
         renderScene();
       };
 
@@ -191,6 +214,7 @@ function SpatialRenderer({
         if (activeObserverRuntime?.id === nextObserverId) return;
         activeObserverRuntime?.dispose();
         activeObserverRuntime = createSpatialObserverRuntime(nextObserverId, { camera, canvas, renderScene });
+        activeObserverRuntime.setGuidedViewpoint(viewpoint);
         renderScene();
       };
 
@@ -198,6 +222,7 @@ function SpatialRenderer({
         setScene: applyScene,
         setObserver: applyObserver,
         setVision: (nextVision) => visionRuntime?.setVision(nextVision),
+        setViewpoint: (nextViewpoint) => activeObserverRuntime?.setGuidedViewpoint(nextViewpoint),
         render: renderScene,
       };
 
@@ -218,6 +243,7 @@ function SpatialRenderer({
       resize();
       applyScene(sceneId);
       applyObserver(observerId);
+      activeObserverRuntime?.setGuidedViewpoint(viewpoint);
       visionRuntime.setVision(vision);
       return cleanup;
     } catch (cause) {
@@ -230,6 +256,8 @@ function SpatialRenderer({
 
   const sceneDefinition = SPATIAL_SCENES.find((item) => item.id === sceneId) ?? SPATIAL_SCENES[0];
   const observerDefinition = SPATIAL_OBSERVERS.find((item) => item.id === observerId) ?? SPATIAL_OBSERVERS[0];
+  const isGeometryScene = sceneId === "night-intersection";
+  const visibleVisions = isGeometryScene ? SPATIAL_VISIONS.filter((item) => item.id === "normal") : SPATIAL_VISIONS;
 
   if (error) {
     return (
@@ -248,7 +276,7 @@ function SpatialRenderer({
           <div className="control-label">Current Scene</div>
           <h2>{sceneDefinition.label}</h2>
         </div>
-        <span className="spatial-status">Reference scene</span>
+        <span className="spatial-status">{sceneDefinition.status}</span>
       </div>
 
       <div className="spatial-layer-grid" aria-label="Explore 3D configuration">
@@ -257,7 +285,12 @@ function SpatialRenderer({
           <select
             id="spatial-scene-select"
             value={sceneId}
-            onChange={(event) => setSceneId(event.target.value as SpatialSceneId)}
+            onChange={(event) => {
+              const nextSceneId = event.target.value as SpatialSceneId;
+              setViewpoint("baseline");
+              if (nextSceneId === "night-intersection") setVision("normal");
+              setSceneId(nextSceneId);
+            }}
           >
             {SPATIAL_SCENES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
@@ -280,7 +313,7 @@ function SpatialRenderer({
       <div className="spatial-vision-section">
         <div className="control-label spatial-vision-label">Vision</div>
         <div className="spatial-mode-bar" role="group" aria-label="Vision">
-          {SPATIAL_VISIONS.map((item) => (
+          {visibleVisions.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -292,12 +325,45 @@ function SpatialRenderer({
             </button>
           ))}
         </div>
+        {isGeometryScene ? (
+          <p className="spatial-mode-availability">Geometry Vision integration is intentionally deferred to E4. E2 is judged in Normal.</p>
+        ) : null}
       </div>
 
       <p className="spatial-mode-description" aria-live="polite">{VISION_DESCRIPTIONS[vision]}</p>
       <div ref={hostRef} className="spatial-render-host" />
+
+      {isGeometryScene ? (
+        <div className="spatial-viewpoint-section" aria-label="Authored comparison viewpoints">
+          <div>
+            <span className="control-label">Comparison viewpoint</span>
+            <small>Position changes; look direction and FOV stay fixed so nearby and distant geometry reveal parallax.</small>
+          </div>
+          <div className="spatial-viewpoint-buttons" role="group" aria-label="Comparison viewpoint">
+            <button
+              type="button"
+              className={viewpoint === "baseline" ? "spatial-viewpoint-button spatial-viewpoint-button--active" : "spatial-viewpoint-button"}
+              aria-pressed={viewpoint === "baseline"}
+              onClick={() => setViewpoint("baseline")}
+            >
+              Reference
+            </button>
+            <button
+              type="button"
+              className={viewpoint === "offset" ? "spatial-viewpoint-button spatial-viewpoint-button--active" : "spatial-viewpoint-button"}
+              aria-pressed={viewpoint === "offset"}
+              onClick={() => setViewpoint("offset")}
+            >
+              Offset
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="spatial-caption">
-        This Photo Reference supports look-around only. Drag or use arrow keys to look around; press R to reset. Changing Vision keeps the exact same Scene, Human observer, viewpoint, direction, and FOV.
+        {isGeometryScene
+          ? "Night Intersection is a real geometry baseline. Switch Reference / Offset to compare parallax, drag or use arrow keys to look around, and press R to return to the canonical view. Bounded free ground movement is scheduled for E3."
+          : "This Photo Reference supports look-around only. Drag or use arrow keys to look around; press R to reset. Changing Vision keeps the exact same Scene, Human observer, viewpoint, direction, and FOV."}
       </div>
     </section>
   );
