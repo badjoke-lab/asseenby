@@ -13,8 +13,9 @@ import {
   type SpatialObserverId,
   type SpatialSceneId,
   type SpatialVisionMode,
+  type SpatialViewpointState,
 } from "./spatial/catalog";
-import { createSpatialObserverRuntime, type SpatialObserverRuntime } from "./spatial/observerRuntime";
+import { createSpatialObserverRuntime, type SpatialMoveDirection, type SpatialObserverRuntime } from "./spatial/observerRuntime";
 import { createSpatialSceneRuntime, type SpatialSceneRuntime } from "./spatial/sceneRuntime";
 import { createSpatialVisionRuntime, type SpatialVisionRuntime } from "./spatial/visionRuntime";
 
@@ -23,6 +24,8 @@ type SpatialController = {
   setObserver: (observerId: SpatialObserverId) => void;
   setVision: (vision: SpatialVisionMode) => void;
   setViewpoint: (viewpoint: SpatialGuidedViewpoint) => void;
+  setMovementInput: (direction: SpatialMoveDirection, active: boolean) => void;
+  resetObserver: () => void;
   render: () => void;
 };
 
@@ -76,7 +79,7 @@ export default function SpatialPage() {
           <section className="spatial-note" aria-label="Explore 3D comparison limitation">
             {isGeometryScene ? (
               <>
-                <strong>E2 geometry boundary:</strong> the two authored viewpoints change only camera position, making real parallax visible while direction and FOV stay unchanged. Bounded Human free movement and collision arrive in E3. Night Intersection intentionally exposes Normal only until the accepted Human Vision modes are integrated and reviewed for geometry in E4.
+                <strong>E3 movement boundary:</strong> the Human observer can move through the authored Night Intersection walking area with collision-aware ground navigation while keeping a 1.6 m reference eye height. This is a generic comparison viewpoint, not a claim about every person. Night Intersection intentionally exposes Normal only until Human Vision integration is reviewed in E4.
               </>
             ) : (
               <>
@@ -129,7 +132,7 @@ function SpatialRenderer({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<SpatialController | null>(null);
   const [error, setError] = useState("");
-  const [viewpoint, setViewpoint] = useState<SpatialGuidedViewpoint>("baseline");
+  const [viewpoint, setViewpoint] = useState<SpatialViewpointState>("baseline");
 
   useEffect(() => {
     controllerRef.current?.setScene(sceneId);
@@ -144,7 +147,7 @@ function SpatialRenderer({
   }, [vision]);
 
   useEffect(() => {
-    controllerRef.current?.setViewpoint(viewpoint);
+    if (viewpoint !== "free") controllerRef.current?.setViewpoint(viewpoint);
   }, [viewpoint]);
 
   useEffect(() => {
@@ -203,6 +206,7 @@ function SpatialRenderer({
         if (!scene || activeSceneRuntime?.id === nextSceneId) return;
         activeSceneRuntime?.dispose();
         activeSceneRuntime = createSpatialSceneRuntime(nextSceneId, scene, renderScene);
+        activeObserverRuntime?.setNavigation(activeSceneRuntime.navigation);
         canvas.dataset.sceneId = nextSceneId;
         canvas.dataset.sceneSupportsTranslation = String(activeSceneRuntime.supportsTranslation);
         canvas.dataset.sceneObjectCount = String(activeSceneRuntime.objectCount);
@@ -214,8 +218,14 @@ function SpatialRenderer({
       const applyObserver = (nextObserverId: SpatialObserverId) => {
         if (activeObserverRuntime?.id === nextObserverId) return;
         activeObserverRuntime?.dispose();
-        activeObserverRuntime = createSpatialObserverRuntime(nextObserverId, { camera, canvas, renderScene });
-        activeObserverRuntime.setGuidedViewpoint(viewpoint);
+        activeObserverRuntime = createSpatialObserverRuntime(nextObserverId, {
+          camera,
+          canvas,
+          renderScene,
+          navigation: activeSceneRuntime?.navigation ?? null,
+          onViewpointChange: setViewpoint,
+        });
+        activeObserverRuntime.setGuidedViewpoint(viewpoint === "free" ? "baseline" : viewpoint);
         renderScene();
       };
 
@@ -224,6 +234,8 @@ function SpatialRenderer({
         setObserver: applyObserver,
         setVision: (nextVision) => visionRuntime?.setVision(nextVision),
         setViewpoint: (nextViewpoint) => activeObserverRuntime?.setGuidedViewpoint(nextViewpoint),
+        setMovementInput: (direction, active) => activeObserverRuntime?.setMovementInput(direction, active),
+        resetObserver: () => activeObserverRuntime?.reset(),
         render: renderScene,
       };
 
@@ -326,7 +338,7 @@ function SpatialRenderer({
           ))}
         </div>
         {isGeometryScene ? (
-          <p className="spatial-mode-availability">Geometry Vision integration is intentionally deferred to E4. E2 is judged in Normal.</p>
+          <p className="spatial-mode-availability">Geometry Vision integration remains deferred to E4. E3 validates Human movement in Normal.</p>
         ) : null}
       </div>
 
@@ -334,10 +346,52 @@ function SpatialRenderer({
       <div ref={hostRef} className="spatial-render-host" />
 
       {isGeometryScene ? (
+        <div className="spatial-movement-section" aria-label="Human movement controls">
+          <div className="spatial-movement-copy">
+            <span className="control-label">Move</span>
+            <small>Desktop: W/A/S/D to walk, Shift for faster movement, drag or arrow keys to look, R to reset. Movement stays inside the authored walking area and avoids major obstacles.</small>
+          </div>
+          <div className="spatial-movement-actions">
+            <div className="spatial-move-pad" role="group" aria-label="Mobile movement">
+              {([
+                ["forward", "↑", "Move forward"],
+                ["left", "←", "Move left"],
+                ["back", "↓", "Move back"],
+                ["right", "→", "Move right"],
+              ] as Array<[SpatialMoveDirection, string, string]>).map(([direction, symbol, label]) => (
+                <button
+                  key={direction}
+                  type="button"
+                  className={`spatial-move-button spatial-move-button--${direction}`}
+                  aria-label={label}
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    controllerRef.current?.setMovementInput(direction, true);
+                  }}
+                  onPointerUp={() => controllerRef.current?.setMovementInput(direction, false)}
+                  onPointerCancel={() => controllerRef.current?.setMovementInput(direction, false)}
+                  onLostPointerCapture={() => controllerRef.current?.setMovementInput(direction, false)}
+                >
+                  {symbol}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="spatial-reset-button"
+              onClick={() => controllerRef.current?.resetObserver()}
+            >
+              Reset observer
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {isGeometryScene ? (
         <div className="spatial-viewpoint-section" aria-label="Authored comparison viewpoints">
           <div>
             <span className="control-label">Comparison viewpoint</span>
-            <small>Position changes; look direction and FOV stay fixed so nearby and distant geometry reveal parallax.</small>
+            <small>These guided positions remain available alongside free movement. Selecting one changes position while preserving the current look direction and FOV.</small>
           </div>
           <div className="spatial-viewpoint-buttons" role="group" aria-label="Comparison viewpoint">
             <button
@@ -362,7 +416,7 @@ function SpatialRenderer({
 
       <div className="spatial-caption">
         {isGeometryScene
-          ? "Night Intersection is a real geometry baseline. Switch Reference / Offset to compare parallax, drag or use arrow keys to look around, and press R to return to the canonical view. Bounded free ground movement is scheduled for E3."
+          ? "Night Intersection supports bounded Human ground movement. Walk with W/A/S/D on desktop or the compact mobile controls, use Shift for faster desktop movement, drag to look around, and use Reset observer or R to return to the canonical 1.6 m Human start."
           : "This Photo Reference supports look-around only. Drag or use arrow keys to look around; press R to reset. Changing Vision keeps the exact same Scene, Human observer, viewpoint, direction, and FOV."}
       </div>
     </section>

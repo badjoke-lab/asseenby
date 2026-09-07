@@ -112,7 +112,9 @@
 }
 
 .spatial-mode-button,
-.spatial-viewpoint-button {
+.spatial-viewpoint-button,
+.spatial-reset-button,
+.spatial-move-button {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid #aaa294;
@@ -131,7 +133,9 @@
 }
 
 .spatial-mode-button:focus-visible,
-.spatial-viewpoint-button:focus-visible {
+.spatial-viewpoint-button:focus-visible,
+.spatial-reset-button:focus-visible,
+.spatial-move-button:focus-visible {
   outline: 3px solid #7f786b;
   outline-offset: 2px;
 }
@@ -310,6 +314,48 @@
   justify-content: flex-end;
 }
 
+.spatial-movement-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 13px 16px;
+  border-top: 1px solid #d8d1c5;
+  background: #f4efe5;
+}
+
+.spatial-movement-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.spatial-movement-copy small {
+  color: #6a645a;
+  line-height: 1.45;
+}
+
+.spatial-movement-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spatial-reset-button {
+  white-space: nowrap;
+}
+
+.spatial-move-pad {
+  display: none;
+}
+
+.spatial-move-button {
+  min-width: 44px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 @media (max-width: 760px) {
   .experience-switch {
     width: min(100% - 24px, 1180px);
@@ -359,11 +405,29 @@
     margin: -2px 12px 11px;
   }
 
+  .spatial-movement-section,
   .spatial-viewpoint-section {
     grid-template-columns: 1fr;
     gap: 10px;
     padding: 12px;
   }
+
+  .spatial-movement-actions {
+    justify-content: space-between;
+    align-items: end;
+  }
+
+  .spatial-move-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 6px;
+  }
+
+  .spatial-move-button--forward { grid-column: 2; grid-row: 1; }
+  .spatial-move-button--left { grid-column: 1; grid-row: 2; }
+  .spatial-move-button--back { grid-column: 2; grid-row: 2; }
+  .spatial-move-button--right { grid-column: 3; grid-row: 2; }
 
   .spatial-viewpoint-buttons {
     justify-content: stretch;

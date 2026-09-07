@@ -1,12 +1,22 @@
 import * as THREE from "three";
 import type { SpatialSceneId } from "./catalog";
-import { mountNightIntersectionScene } from "./nightIntersectionScene";
+import { mountNightIntersectionScene, NIGHT_INTERSECTION_NAVIGATION } from "./nightIntersectionScene";
+
+export type SpatialGroundNavigation = {
+  kind: "ground";
+  eyeY: number;
+  radius: number;
+  speed: number;
+  fastSpeed: number;
+  canOccupy: (x: number, z: number, radius?: number) => boolean;
+};
 
 export type SpatialSceneRuntime = {
   id: SpatialSceneId;
   supportsTranslation: boolean;
   objectCount: number;
   lightCount: number;
+  navigation: SpatialGroundNavigation | null;
   dispose: () => void;
 };
 
@@ -22,6 +32,7 @@ export function createSpatialSceneRuntime(
       supportsTranslation: true,
       objectCount: mounted.objectCount,
       lightCount: mounted.lightCount,
+      navigation: NIGHT_INTERSECTION_NAVIGATION,
       dispose: mounted.dispose,
     };
   }
@@ -60,6 +71,7 @@ export function createSpatialSceneRuntime(
     supportsTranslation: false,
     objectCount: 0,
     lightCount: 0,
+    navigation: null,
     dispose: () => {
       disposed = true;
       if (activeTexture && scene.background === activeTexture) scene.background = null;

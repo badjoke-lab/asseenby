@@ -1,7 +1,7 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **E3 ACTIVE / Human observer and bounded movement**
+Status: **E3 IMPLEMENTED / release verification pending**
 
 Explore 3D Steps E1 and E2 are production verified. `Night Intersection` is now the default real-geometry scene while Hansaplatz remains the `360° Photo Reference`.
 
@@ -99,7 +99,7 @@ Validation:
 - production smoke artifact `10024024552` was uploaded.
 
 ## Step E3 — Human observer and bounded movement
-Status: **ACTIVE**
+Status: **IMPLEMENTED / release verification pending**
 
 Add a generic standing Human observer around 1.6 m with bounded ground movement.
 
@@ -120,6 +120,22 @@ Acceptance:
 - camera translation produces correct parallax;
 - Vision switching never moves the observer;
 - no game-loop mechanics are introduced.
+
+Implemented E3:
+- Night Intersection Human uses a 1.6 m reference eye height with yaw-relative W/A/S/D ground movement;
+- Shift provides a moderate desktop speed increase; R and the visible Reset observer control restore position, direction, FOV and movement state;
+- mobile exposes a compact four-direction movement pad plus the same Reset observer control;
+- navigation is constrained to an authored cross-shaped road/sidewalk area and rejects entry into listed major vehicle/street obstacles; axis-separated collision resolution allows sliding instead of requiring a physics engine;
+- free movement marks the camera viewpoint as `free`, so the guided Reference/Offset controls do not falsely remain selected;
+- `360° Photo Reference` remains look-only and receives no ground-movement controls;
+- Night Intersection still exposes Normal only; Human Vision integration remains E4.
+
+Validation requirement before merge:
+- build;
+- desktop keyboard movement / faster Shift movement / Reset / navigation bound checks;
+- mobile movement-pad touch targets / movement / Reset;
+- Photo Reference look-only regression;
+- full Compare image + Explore 3D production-smoke regression with an E3-specific stale-release fingerprint.
 
 ## Step E4 — Human spatial Vision integration
 Status: **queued**

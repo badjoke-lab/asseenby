@@ -27,6 +27,56 @@ export type NightIntersectionSceneMount = {
   dispose: () => void;
 };
 
+type GroundCollisionRect = {
+  x: number;
+  z: number;
+  halfWidth: number;
+  halfDepth: number;
+};
+
+const NIGHT_INTERSECTION_COLLISIONS: GroundCollisionRect[] = [
+  { x: -4.6, z: -11.5, halfWidth: 1.35, halfDepth: 2.7 },
+  { x: 4.5, z: -48, halfWidth: 1.35, halfDepth: 2.7 },
+  { x: 29, z: -32.5, halfWidth: 3.1, halfDepth: 1.35 },
+  { x: -4.3, z: -79, halfWidth: 1.35, halfDepth: 2.7 },
+  { x: 13.2, z: -61, halfWidth: 1.35, halfDepth: 2.7 },
+  { x: 14.4, z: -24.5, halfWidth: 2.65, halfDepth: 1.3 },
+  { x: -14.2, z: -8.3, halfWidth: 0.62, halfDepth: 1.45 },
+  { x: 14.4, z: -50.5, halfWidth: 0.62, halfDepth: 1.45 },
+  { x: -14.5, z: -44.5, halfWidth: 0.9, halfDepth: 0.65 },
+  { x: 14.2, z: -11, halfWidth: 0.72, halfDepth: 0.72 },
+  { x: -15.2, z: 17, halfWidth: 0.9, halfDepth: 0.9 },
+  { x: 15.4, z: 21, halfWidth: 0.9, halfDepth: 0.9 },
+  { x: -15.5, z: -69, halfWidth: 0.95, halfDepth: 0.95 },
+  { x: 15.7, z: -75, halfWidth: 0.95, halfDepth: 0.95 },
+  { x: -15.3, z: -49, halfWidth: 0.85, halfDepth: 0.85 },
+  { x: -8.4, z: -18.2, halfWidth: 0.48, halfDepth: 0.48 },
+  { x: 8.4, z: -18.2, halfWidth: 0.48, halfDepth: 0.48 },
+  { x: -8.4, z: -37.8, halfWidth: 0.48, halfDepth: 0.48 },
+  { x: 9.2, z: -36.2, halfWidth: 0.48, halfDepth: 0.48 },
+];
+
+const insideRect = (x: number, z: number, radius: number, minX: number, maxX: number, minZ: number, maxZ: number) => (
+  x >= minX + radius && x <= maxX - radius && z >= minZ + radius && z <= maxZ - radius
+);
+
+export const NIGHT_INTERSECTION_NAVIGATION = {
+  kind: 'ground' as const,
+  eyeY: 0,
+  radius: 0.36,
+  speed: 3.0,
+  fastSpeed: 5.2,
+  canOccupy(x: number, z: number, radius = 0.36) {
+    const inNorthSouth = insideRect(x, z, radius, -16.3, 16.3, -95, 35);
+    const inEastWest = insideRect(x, z, radius, -48, 48, -41.8, -14.2);
+    if (!inNorthSouth && !inEastWest) return false;
+    return !NIGHT_INTERSECTION_COLLISIONS.some((obstacle) => (
+      Math.abs(x - obstacle.x) < obstacle.halfWidth + radius
+      && Math.abs(z - obstacle.z) < obstacle.halfDepth + radius
+    ));
+  },
+};
+
 export function mountNightIntersectionScene(
   scene: THREE.Scene,
   renderScene: () => void,
