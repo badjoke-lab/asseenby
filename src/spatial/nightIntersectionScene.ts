@@ -230,13 +230,17 @@ export function mountNightIntersectionScene(
   };
 
   scene.background = new THREE.Color(0x111927);
-  scene.fog = new THREE.FogExp2(0x111722, 0.0042);
+  scene.fog = new THREE.FogExp2(0x111722, 0.0030);
 
-  const hemisphere = new THREE.HemisphereLight(0x91a9c7, 0x2a2018, 1.3);
+  const hemisphere = new THREE.HemisphereLight(0xa8bad0, 0x3d3024, 2.15);
   hemisphere.name = "night-sky-fill";
   root.add(hemisphere);
 
-  const moon = new THREE.DirectionalLight(0xa7bdd7, 1.28);
+  const ambient = new THREE.AmbientLight(0x8f9baa, 0.72);
+  ambient.name = "street-ambient-fill";
+  root.add(ambient);
+
+  const moon = new THREE.DirectionalLight(0xb4c8de, 1.85);
   moon.name = "moon-key";
   moon.position.set(-38, 58, 30);
   moon.castShadow = true;
@@ -247,6 +251,11 @@ export function mountNightIntersectionScene(
   moon.shadow.camera.bottom = -70;
   moon.shadow.bias = -0.0007;
   root.add(moon);
+
+  const intersectionFill = new THREE.PointLight(0xffddb0, 9.5, 36, 1.7);
+  intersectionFill.name = "intersection-fill";
+  intersectionFill.position.set(-2, 7.5, -25);
+  root.add(intersectionFill);
 
   addBox("district-base", [150, 0.28, 150], [0, GROUND_Y - 0.18, -28], asphaltEdge, root, false);
   addBox("north-south-road", [19, 0.09, 150], [0, GROUND_Y, -28], asphalt, root, false);
@@ -396,12 +405,34 @@ export function mountNightIntersectionScene(
     return group;
   };
 
-  addBuilding("north-west-block", { x: -34, z: -59, width: 34, depth: 34, height: 20, floors: 6, facade: 0x6a5b50, trim: 0x303136, front: "south", side: "east", sign: "NIGHT MARKET", signTone: "warm", balconies: true });
-  addBuilding("north-east-block", { x: 33, z: -61, width: 32, depth: 38, height: 28, floors: 8, facade: 0x59636b, trim: 0x30363b, front: "south", side: "west", sign: "BLUE HOUR", signTone: "cool" });
-  addBuilding("south-west-block", { x: -36, z: 8, width: 38, depth: 42, height: 16, floors: 5, facade: 0x715d4f, trim: 0x362f2a, front: "north", side: "east", sign: "CAFE 24", signTone: "warm" });
-  addBuilding("south-east-block", { x: 36, z: 7, width: 38, depth: 40, height: 23, floors: 7, facade: 0x566469, trim: 0x2c3437, front: "north", side: "west", sign: "CITY BOOKS", signTone: "cool", balconies: true });
-  addBuilding("far-north-left", { x: -31, z: -101, width: 34, depth: 24, height: 25, floors: 7, facade: 0x50565e, trim: 0x292e33, front: "south", sign: "HOTEL", signTone: "warm" });
-  addBuilding("far-north-right", { x: 33, z: -101, width: 34, depth: 24, height: 19, floors: 5, facade: 0x625850, trim: 0x302e2b, front: "south", sign: "DINER", signTone: "warm" });
+  addBuilding("north-west-block", { x: -34, z: -59, width: 34, depth: 34, height: 20, floors: 6, facade: 0x8a7868, trim: 0x303136, front: "south", side: "east", sign: "NIGHT MARKET", signTone: "warm", balconies: true });
+  addBuilding("north-east-block", { x: 33, z: -61, width: 32, depth: 38, height: 28, floors: 8, facade: 0x72818a, trim: 0x30363b, front: "south", side: "west", sign: "BLUE HOUR", signTone: "cool" });
+  addBuilding("south-west-block", { x: -36, z: 8, width: 38, depth: 42, height: 16, floors: 5, facade: 0x8d7563, trim: 0x362f2a, front: "north", side: "east", sign: "CAFE 24", signTone: "warm" });
+  addBuilding("south-east-block", { x: 36, z: 7, width: 38, depth: 40, height: 23, floors: 7, facade: 0x71848a, trim: 0x2c3437, front: "north", side: "west", sign: "CITY BOOKS", signTone: "cool", balconies: true });
+  addBuilding("far-north-left", { x: -31, z: -101, width: 34, depth: 24, height: 25, floors: 7, facade: 0x68737e, trim: 0x292e33, front: "south", sign: "HOTEL", signTone: "warm" });
+  addBuilding("far-north-right", { x: 33, z: -101, width: 34, depth: 24, height: 19, floors: 5, facade: 0x796b60, trim: 0x302e2b, front: "south", sign: "DINER", signTone: "warm" });
+
+  const addStreetSign = (name: string, label: string, tone: "warm" | "cool", x: number, y: number, z: number, width: number, height: number) => {
+    const texture = makeSignTexture(label, tone);
+    const signMaterial = trackMaterial(new THREE.MeshStandardMaterial({
+      map: texture,
+      emissiveMap: texture,
+      emissive: 0xffffff,
+      emissiveIntensity: 1.45,
+      roughness: 0.28,
+      side: THREE.DoubleSide,
+    }));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(width, height), signMaterial);
+    sign.name = name;
+    sign.position.set(x, GROUND_Y + y, z);
+    sign.castShadow = false;
+    root.add(sign);
+    addBox(`${name}-frame`, [width + 0.18, height + 0.18, 0.08], [x, GROUND_Y + y, z + 0.04], darkMetal, root);
+  };
+
+  addStreetSign("corner-market-sign", "MARKET", "warm", -12.8, 4.2, -41.75, 5.6, 1.25);
+  addStreetSign("corner-books-sign", "BOOKS", "cool", 12.8, 4.2, -41.75, 5.2, 1.25);
+  addStreetSign("bus-stop-sign", "BUS", "cool", -10.8, 2.8, -22.2, 1.1, 1.75);
 
   const backgroundBuildings: Array<[number, number, number, number, number]> = [
     [-62, -74, 22, 28, 30], [-62, -25, 24, 30, 18], [62, -74, 24, 30, 24], [62, -22, 24, 30, 34],
@@ -543,6 +574,16 @@ export function mountNightIntersectionScene(
   };
   addBench("bench-west", -14.2, -8.3, Math.PI / 2);
   addBench("bench-east", 14.4, -50.5, -Math.PI / 2);
+
+  const shelter = new THREE.Group();
+  shelter.name = "bus-shelter-east";
+  shelter.position.set(14.4, GROUND_Y, -24.5);
+  root.add(shelter);
+  addBox("bus-shelter-roof", [4.6, 0.16, 1.8], [0, 2.65, 0], darkMetal, shelter);
+  addBox("bus-shelter-back", [4.5, 2.25, 0.08], [0, 1.35, 0.78], glass, shelter, false);
+  addBox("bus-shelter-side", [0.08, 2.25, 1.55], [-2.15, 1.35, 0], glass, shelter, false);
+  for (const px of [-2.15, 2.15]) addCylinder(`bus-shelter-post-${px}`, 0.07, 2.65, [px, 1.33, 0.72], darkMetal, shelter, 10);
+  addBox("bus-shelter-seat", [2.7, 0.16, 0.48], [0.4, 0.58, 0.42], paleMetal, shelter);
   addBox("utility-cabinet", [1.25, 1.62, 0.76], [-14.5, GROUND_Y + 0.82, -44.5], paleMetal);
   addCylinder("bin-east", 0.4, 1.08, [14.2, GROUND_Y + 0.54, -11], darkMetal, root, 16);
   for (const z of [-5, 3, 11]) addCylinder(`bollard-west-${z}`, 0.13, 0.88, [-9.9, GROUND_Y + 0.44, z], paleMetal, root, 12);
@@ -592,11 +633,11 @@ export function mountNightIntersectionScene(
   addBox("target-rooftop-ledge", [8.4, 0.48, 1.3], [33, GROUND_Y + 28.4, -43], paleMetal);
   addCylinder("roof-antenna", 0.1, 7.2, [33, GROUND_Y + 31.4, -61], paleMetal, root, 10);
 
-  const shopWest = new THREE.PointLight(0xff9b55, 10.5, 20, 2.0);
+  const shopWest = new THREE.PointLight(0xff9b55, 18.0, 23, 2.0);
   shopWest.name = "storefront-west-light";
   shopWest.position.set(-18, GROUND_Y + 3.1, -40);
   root.add(shopWest);
-  const shopEast = new THREE.PointLight(0x72c5de, 9.4, 19, 2.0);
+  const shopEast = new THREE.PointLight(0x72c5de, 16.5, 22, 2.0);
   shopEast.name = "storefront-east-light";
   shopEast.position.set(17, GROUND_Y + 3.2, -41);
   root.add(shopEast);
