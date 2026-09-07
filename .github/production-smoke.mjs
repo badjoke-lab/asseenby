@@ -106,6 +106,85 @@ async function assertBuiltInSampleDimensions(page) {
   await page.locator('#mode-select').selectOption('protan');
 }
 
+async function assertTunnelAspectSymmetry(page) {
+  const cases = [
+    { name: "wide", width: 1600, height: 900 },
+    { name: "square", width: 900, height: 900 },
+    { name: "tall", width: 900, height: 1600 },
+  ];
+
+  for (const item of cases) {
+    await page.goto(`${BASE}/?tunnel_aspect=${item.name}-${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${item.width}" height="${item.height}" viewBox="0 0 ${item.width} ${item.height}"><rect width="100%" height="100%" fill="rgb(220,220,220)"/></svg>`;
+    await page.locator('input[type="file"]').setInputFiles({
+      name: `tunnel-${item.name}.svg`,
+      mimeType: "image/svg+xml",
+      buffer: Buffer.from(svg),
+    });
+    await page.locator("#category-select").selectOption("Human");
+    await page.locator("#mode-select").selectOption("tunnel");
+    const before = await page.locator('img[alt="Approximation"]').first().getAttribute("src");
+    await setReactRangeValue(page, "#strength-range", 100);
+    await page.waitForFunction(
+      (previous) => {
+        const img = document.querySelector('img[alt="Approximation"]');
+        return img instanceof HTMLImageElement
+          && img.src.startsWith("blob:")
+          && img.src !== previous
+          && img.complete
+          && img.naturalWidth > 0
+          && document.querySelector(".compare-card")?.getAttribute("aria-busy") === "false";
+      },
+      before,
+      { timeout: 10_000 },
+    );
+
+    const deltas = await page.evaluate(async () => {
+      const original = document.querySelector('img[alt="Original"]');
+      const approximation = document.querySelector('img[alt="Approximation"]');
+      if (!(original instanceof HTMLImageElement) || !(approximation instanceof HTMLImageElement)) throw new Error("comparison images unavailable");
+      const load = async (src) => {
+        const img = new Image();
+        img.src = src;
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) throw new Error("canvas context unavailable");
+        ctx.drawImage(img, 0, 0);
+        return { canvas, ctx };
+      };
+      const source = await load(original.src);
+      const output = await load(approximation.src);
+      const sample = (xRatio, yRatio) => {
+        const ox = Math.min(output.canvas.width - 1, Math.max(0, Math.round((output.canvas.width - 1) * xRatio)));
+        const oy = Math.min(output.canvas.height - 1, Math.max(0, Math.round((output.canvas.height - 1) * yRatio)));
+        const sx = Math.min(source.canvas.width - 1, Math.max(0, Math.round((source.canvas.width - 1) * xRatio)));
+        const sy = Math.min(source.canvas.height - 1, Math.max(0, Math.round((source.canvas.height - 1) * yRatio)));
+        const a = source.ctx.getImageData(sx, sy, 1, 1).data;
+        const b = output.ctx.getImageData(ox, oy, 1, 1).data;
+        const luma = (pixel) => 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2];
+        return luma(a) - luma(b);
+      };
+      return {
+        center: sample(0.5, 0.5),
+        top: sample(0.5, 0.05),
+        left: sample(0.05, 0.5),
+      };
+    });
+
+    assert(Math.abs(deltas.center) <= 2, `desktop image: Tunnel ${item.name} center changed unexpectedly (${deltas.center})`);
+    assert(deltas.top >= 5 && deltas.left >= 5, `desktop image: Tunnel ${item.name} edge effect is too weak (${JSON.stringify(deltas)})`);
+    assert(Math.abs(deltas.top - deltas.left) <= 2, `desktop image: Tunnel ${item.name} aspect-axis bias returned (${JSON.stringify(deltas)})`);
+  }
+
+  await page.goto(`${BASE}/?tunnel_aspect_reset=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
+  await page.locator("#category-select").selectOption("Human");
+  await page.locator("#mode-select").selectOption("protan");
+  await setReactRangeValue(page, "#strength-range", 65);
+}
+
 async function assertImageStrengthZeroIdentity(page) {
   await setReactRangeValue(page, "#strength-range", 0);
   await page.waitForFunction(() => {
@@ -231,7 +310,8 @@ async function desktopImageSmoke(browser) {
   assert(!humanBodyText.includes("Night / Low Light"), "desktop image: removed Night / Low Light image mode is still visible");
 
   await assertBuiltInSampleDimensions(page);
-    await assertImageStrengthZeroIdentity(page);
+  await assertTunnelAspectSymmetry(page);
+  await assertImageStrengthZeroIdentity(page);
 
   const split = page.getByRole("button", { name: "Split" });
   await split.click();
