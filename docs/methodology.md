@@ -54,6 +54,9 @@ The user can compare them through:
 
 The strength control changes the degree of transformation applied. At 0%, Approximation is the Original source with no perception transform; 100% applies the full configured transform for that mode. Intermediate values interpolate within the renderer model and are not a validated clinical severity scale. Image-space blur radii are normalized to the processed image short edge against a 900 px normalization reference, so the same image content at different source pixel resolutions receives a comparable relative blur effect. The built-in SVG explicitly declares its intended 1440×900 intrinsic size; preprocessing fits it to 1400×875 before transformation.
 
+### Tunnel Vision image geometry
+Uploaded still images do not provide reliable visual-angle, camera field-of-view, or patient-perimetry metadata. The image Tunnel Vision renderer therefore defines its peripheral mask in normalized frame coordinates: equal normalized displacement from the image center receives the same mask strength across portrait, square, and landscape sources. This prevents source aspect ratio alone from deciding which image axis receives the peripheral effect. The normalization is an image-space communication convention, not a claim that the mask corresponds to measured degrees of visual field or an individual's field-loss boundary.
+
 ### Spatial comparison
 Spatial comparison uses the same rendered scene from the same camera state while only the perception renderer changes.
 

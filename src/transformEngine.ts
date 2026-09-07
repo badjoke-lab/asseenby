@@ -73,7 +73,7 @@ export function applyTransform(
   }
 
   if (modeKey === "tunnel") {
-    const edgeMask = createMaskCanvas(width, height, 0.44 - amount * 0.14, 0.84 - amount * 0.05, false);
+    const edgeMask = createNormalizedMaskCanvas(width, height, 0.44 - amount * 0.14, 0.84 - amount * 0.05, false);
     const edgeBlur = blurCanvas(baseCanvas, amount * 8.2 * blurScale);
     const edgeGray = grayscaleCanvas(baseCanvas);
     overlayMaskedCanvas(ctx, edgeBlur, edgeMask, amount * 0.74);
@@ -206,6 +206,45 @@ function createMaskCanvas(
   return canvas;
 }
 
+function createNormalizedMaskCanvas(
+  width: number,
+  height: number,
+  innerRatio: number,
+  outerRatio: number,
+  invert: boolean,
+) {
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+
+  // Uploaded still images do not provide reliable visual-angle/FOV metadata.
+  // Build Tunnel masks in a square normalized frame, then scale that frame to
+  // the image so equal normalized displacement from center behaves the same
+  // across portrait, square, and landscape sources.
+  const size = Math.max(width, height);
+  const normalized = createCanvas(size, size);
+  const normalizedCtx = normalized.getContext("2d");
+  if (!normalizedCtx) return canvas;
+  const center = size / 2;
+  const base = size * 0.5;
+  const inner = Math.max(0, base * innerRatio);
+  const outer = Math.max(inner + 1, base * outerRatio);
+  const gradient = normalizedCtx.createRadialGradient(center, center, inner, center, center, outer);
+  if (invert) {
+    gradient.addColorStop(0, "rgba(0,0,0,1)");
+    gradient.addColorStop(0.65, "rgba(0,0,0,1)");
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+  } else {
+    gradient.addColorStop(0, "rgba(0,0,0,0)");
+    gradient.addColorStop(0.65, "rgba(0,0,0,0)");
+    gradient.addColorStop(1, "rgba(0,0,0,1)");
+  }
+  normalizedCtx.fillStyle = gradient;
+  normalizedCtx.fillRect(0, 0, size, size);
+  ctx.drawImage(normalized, 0, 0, width, height);
+  return canvas;
+}
+
 const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900;
 
 function relativeBlurScale(width: number, height: number) {
@@ -285,18 +324,20 @@ function drawWarmVeil(ctx: CanvasRenderingContext2D, width: number, height: numb
 }
 
 function addTunnelMask(ctx: CanvasRenderingContext2D, width: number, height: number, amount: number) {
-  const cx = width / 2;
-  const cy = height / 2;
-  const inner = Math.max(width, height) * (0.42 - amount * 0.16);
-  const outer = Math.max(width, height) * 0.98;
-  const gradient = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+  const size = Math.max(width, height);
+  const normalized = createCanvas(size, size);
+  const normalizedCtx = normalized.getContext("2d");
+  if (!normalizedCtx) return;
+  const center = size / 2;
+  const inner = size * (0.42 - amount * 0.16);
+  const outer = size * 0.98;
+  const gradient = normalizedCtx.createRadialGradient(center, center, inner, center, center, outer);
   gradient.addColorStop(0, "rgba(0,0,0,0)");
   gradient.addColorStop(0.7, `rgba(18,14,12,${amount * 0.2})`);
   gradient.addColorStop(1, `rgba(18,14,12,${amount * 0.82})`);
-  ctx.save();
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
+  normalizedCtx.fillStyle = gradient;
+  normalizedCtx.fillRect(0, 0, size, size);
+  ctx.drawImage(normalized, 0, 0, width, height);
 }
 
 function addCentralLossMask(ctx: CanvasRenderingContext2D, width: number, height: number, amount: number) {
