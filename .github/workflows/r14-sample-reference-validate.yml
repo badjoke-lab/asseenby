@@ -1,4 +1,4 @@
-name: R14 sample dimension discovery
+name: R14 built-in sample intrinsic validation
 
 on:
   push:
@@ -6,21 +6,84 @@ on:
     paths: [.github/workflows/r14-sample-reference-validate.yml]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/r14-sample-blur-reference
+          fetch-depth: 0
+      - name: Patch built-in sample dimensions and docs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app = Path('src/App.tsx')
+          text = app.read_text()
+          old = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900">'
+          new = '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">'
+          if old not in text:
+              raise SystemExit('sample SVG opening tag not found')
+          app.write_text(text.replace(old, new, 1))
+
+          methodology = Path('docs/methodology.md')
+          text = methodology.read_text()
+          old = 'Image-space blur radii are normalized to the processed image short edge against the 900 px built-in-sample reference, so the same image content at different source pixel resolutions receives a comparable relative blur effect.'
+          new = 'Image-space blur radii are normalized to the processed image short edge against a 900 px normalization reference, so the same image content at different source pixel resolutions receives a comparable relative blur effect. The built-in SVG explicitly declares its intended 1440×900 intrinsic size; preprocessing fits it to 1400×875 before transformation.'
+          if old not in text:
+              raise SystemExit('methodology blur-reference sentence not found')
+          methodology.write_text(text.replace(old, new, 1))
+
+          smoke = Path('.github/production-smoke.mjs')
+          text = smoke.read_text()
+          anchor = 'async function assertImageStrengthZeroIdentity(page) {'
+          if anchor not in text:
+              raise SystemExit('production smoke strength helper anchor not found')
+          helper = '''async function assertBuiltInSampleDimensions(page) {\n  const original = page.locator('img[alt="Original"]').first();\n  await original.waitFor({ state: "visible" });\n  const originalSize = await original.evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight }));\n  if (originalSize.width !== 1440 || originalSize.height !== 900) {\n    throw new Error(`Built-in sample intrinsic size mismatch: ${originalSize.width}x${originalSize.height}`);\n  }\n\n  await page.locator('#category-select').selectOption('Human');\n  await page.locator('#mode-select').selectOption('blur');\n  await setReactRangeValue(page, '#strength-range', 100);\n  await page.waitForFunction(() => {\n    const img = document.querySelector('img[alt="Approximation"]');\n    return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0;\n  });\n  const approximation = page.locator('img[alt="Approximation"]').first();\n  const transformedSize = await approximation.evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight }));\n  if (transformedSize.width !== 1400 || transformedSize.height !== 875) {\n    throw new Error(`Built-in transformed sample size mismatch: ${transformedSize.width}x${transformedSize.height}`);\n  }\n\n  await setReactRangeValue(page, '#strength-range', 65);\n  await page.locator('#mode-select').selectOption('protan');\n}\n\n'''
+          text = text.replace(anchor, helper + anchor, 1)
+          call_anchor = 'await assertImageStrengthZeroIdentity(page);'
+          if call_anchor not in text:
+              raise SystemExit('production smoke strength call anchor not found')
+          text = text.replace(call_anchor, 'await assertBuiltInSampleDimensions(page);\n    ' + call_anchor, 1)
+          smoke.write_text(text)
+
+          schedule = Path('docs/release-polish-schedule.md')
+          text = schedule.read_text()
+          old = 'Status: **Step R13 PASS / CVD public mode copy production verified**'
+          new = 'Status: **Step R14 VALIDATED / built-in sample intrinsic resolution / awaiting production verification**'
+          if old not in text:
+              raise SystemExit('current state marker not found')
+          text = text.replace(old, new, 1)
+          text += '''\n\n## Step R14 — Built-in sample intrinsic resolution\nStatus: **PASS / validated / awaiting production verification**\n\nFinding:\n- R12 documentation treated the built-in SVG as a 1440×900 source, but `createSampleImage()` supplied only a `viewBox` and no intrinsic `width` / `height`;\n- real Chromium discovery run `34077057531` measured the public sample at **240×150** and its transformed blob at **240×150**;\n- therefore the sample source was being heavily upscaled by the UI and R12's historical statement that it was a 1440×900 source was not true in-browser;\n- the R12 blur normalization itself remains valid: with `blurPx = coefficient × shortEdge / 900`, relative blur is `coefficient / 900` regardless of source resolution, so fixing intrinsic sample dimensions does not require retuning the 900 px normalization denominator.\n\nImplementation:\n- explicitly declare `width="1440" height="900"` on the built-in SVG while retaining the existing 1440×900 viewBox;\n- keep `prepareBaseCanvas()` limits at 1400×960, so the transform path receives **1400×875** for the built-in sample;\n- keep `IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900` and all transform coefficients unchanged;\n- add permanent production-smoke assertions for Original **1440×900** and transformed sample **1400×875**.\n\nAcceptance:\n- real browser reports built-in Original natural size 1440×900 — **PASS**;\n- at a nonzero image transform, generated Approximation is 1400×875 — **PASS**;\n- normalized relative blur remains mathematically unchanged at `coefficient / 900` — **PASS**;\n- Strength 0 identity, R11 CVD behavior, and R12 cross-resolution proportionality remain unchanged — **PASS**;\n- typecheck/build and full desktop/390px image + spatial browser regression remain green — **PASS**;\n- matching main build and production smoke remain required before R14 production closeout.\n\nValidation history:\n- initial R14 run `34076927943` — **test-assumption failure**, not a product failure; it assumed the viewBox provided 1440×900 intrinsic dimensions and therefore expected a 1400×875 blob before measuring the actual browser intrinsic size; no product commit was emitted;\n- dimension-discovery run `34077057531` — **success**, measuring Original **240×150** and transformed blob **240×150** and establishing the concrete defect.\n'''
+          schedule.write_text(text)
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Build
+        run: npm run build
+      - name: Static invariants
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const app = fs.readFileSync('src/App.tsx', 'utf8');
+          const engine = fs.readFileSync('src/transformEngine.ts', 'utf8');
+          if (!app.includes('<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">')) throw new Error('explicit sample dimensions missing');
+          if (!app.includes('fitWithin(image.width, image.height, 1400, 960)')) throw new Error('preprocess bounds changed');
+          if (!engine.includes('const IMAGE_BLUR_REFERENCE_SHORT_EDGE = 900;')) throw new Error('R12 normalization denominator changed');
+          const ratio = Math.min(1400 / 1440, 960 / 900, 1);
+          const width = Math.round(1440 * ratio);
+          const height = Math.round(900 * ratio);
+          if (width !== 1400 || height !== 875) throw new Error(`unexpected processed sample size ${width}x${height}`);
+          const oldRelative = (9 * (150 / 900)) / 150;
+          const newRelative = (9 * (875 / 900)) / 875;
+          if (Math.abs(oldRelative - newRelative) > 1e-12) throw new Error('relative Blur strength changed');
+          NODE
       - name: Install browser runtime
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
@@ -34,16 +97,16 @@ jobs:
           done
           cat /tmp/r14-preview.log
           exit 1
-      - name: Print intrinsic and transformed sample dimensions
+      - name: Verify actual sample dimensions
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
           await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
-          const original = page.locator('img[alt="Original"]');
-          await original.waitFor();
-          const originalInfo = await original.evaluate((img) => ({ src: img.src.slice(0, 40), naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }));
+          const original = page.locator('img[alt="Original"]').first();
+          const originalSize = await original.evaluate((img) => ({ width: img.naturalWidth, height: img.naturalHeight }));
+          if (originalSize.width !== 1440 || originalSize.height !== 900) throw new Error(`Original is ${originalSize.width}x${originalSize.height}`);
 
           await page.locator('#mode-select').selectOption('blur');
           const slider = page.locator('#strength-range');
@@ -55,11 +118,23 @@ jobs:
           });
           await page.waitForFunction(() => {
             const img = document.querySelector('img[alt="Approximation"]');
-            return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0;
+            return img instanceof HTMLImageElement && img.src.startsWith('blob:') && img.complete && img.naturalWidth === 1400 && img.naturalHeight === 875;
           }, null, { timeout: 15000 });
-          const approximation = page.locator('img[alt="Approximation"]');
-          const transformedInfo = await approximation.evaluate((img) => ({ src: img.src.slice(0, 40), naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight }));
-          const result = { originalInfo, transformedInfo };
-          console.log(JSON.stringify(result, null, 2));
+          console.log(JSON.stringify({ original: originalSize, approximation: { width: 1400, height: 875 } }, null, 2));
           await browser.close();
           NODE
+      - name: Full local browser regression
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+      - name: Commit validated product change
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add src/App.tsx .github/production-smoke.mjs docs/methodology.md docs/release-polish-schedule.md
+          git commit -m "Declare built-in sample intrinsic dimensions"
+          git push origin HEAD:fix/r14-sample-blur-reference
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r14-built-in-sample-validation
+          path: production-smoke
+          if-no-files-found: warn
