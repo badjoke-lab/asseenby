@@ -171,8 +171,8 @@ export const MODE_EVIDENCE: Record<string, ModeEvidence> = {
     evidenceScore: "A",
     modelScore: "B",
     basisNote: "Peripheral vision loss is a standard clinical description in glaucoma and related visual-field conditions.",
-    modelNote: "The current output now combines radial masking with peripheral blur and desaturation tendencies. It communicates peripheral field restriction more convincingly than a black vignette alone, but it still cannot represent a measured patient field exactly.",
-    caveat: "Real visual-field loss is often irregular rather than perfectly circular. This mode is a simplified communication tool.",
+    modelNote: "The current output combines normalized-frame radial masking with peripheral blur and desaturation tendencies. Frame normalization prevents source aspect ratio alone from deciding whether top/bottom or left/right periphery receives the effect. It remains a generic image-space communication model and cannot represent a measured patient field exactly.",
+    caveat: "Real visual-field loss is often irregular, and a still image does not provide patient perimetry or reliable visual-angle/FOV metadata. This mode is a simplified normalized-frame communication tool.",
     primarySource: {
       title: "National Eye Institute — Glaucoma",
       url: "https://www.nei.nih.gov/index.php/eye-health-information/eye-conditions-and-diseases/glaucoma",

@@ -1,7 +1,7 @@
 # AsSeenBy — Release / Polish Schedule
 
 ## Current state
-Status: **Step R14 PASS / built-in sample intrinsic resolution production verified**
+Status: **Step R15 VALIDATED / Tunnel image aspect-ratio symmetry / awaiting production verification**
 
 Current main includes:
 - accepted image comparison baseline;
@@ -777,3 +777,26 @@ Resume the remaining transform/evidence audit and open another release step only
 Validation history:
 - initial R14 run `34076927943` — **test-assumption failure**, not a product failure; it assumed the viewBox provided 1440×900 intrinsic dimensions and therefore expected a 1400×875 blob before measuring the actual browser intrinsic size; no product commit was emitted;
 - dimension-discovery run `34077057531` — **success**, measuring Original **240×150** and transformed blob **240×150** and establishing the concrete defect.
+
+
+## Step R15 — Tunnel image aspect-ratio symmetry
+Status: **PASS / validated / awaiting production verification**
+
+Finding:
+- the Tunnel image renderer used two different spatial coordinate systems: peripheral blur/desaturation used a short-edge radial mask while the dark peripheral overlay used a long-edge radial mask;
+- controlled uniform-gray browser audit `34092347452` isolated the dark overlay and confirmed an orientation-dependent output defect at Strength 100: square top/left deltas were **8 / 8**, landscape was **0 / 8**, and portrait was **8 / 0**; artifact `10007298129`;
+- rotating the source aspect ratio therefore changed which image axis received the peripheral darkening even though the normalized sample point was unchanged.
+
+Implementation:
+- define both Tunnel-only peripheral masks in one normalized square field and scale that field to the source frame, so equal normalized displacement from center receives equal mask strength across portrait, square, and landscape inputs;
+- keep Central Loss and Cataract-like masks unchanged;
+- keep Tunnel Strength coefficients and square-image endpoints unchanged;
+- document that this is a normalized-frame image proxy because ordinary still images do not provide reliable visual-angle/FOV or patient-perimetry metadata;
+- add a permanent production-smoke regression using wide, square, and tall controlled uploads.
+
+Acceptance:
+- controlled wide/square/tall Tunnel outputs keep center delta near zero and produce a non-trivial peripheral effect — **required**;
+- top-vs-left delta at the same normalized radius differs by no more than 2 luma units for all three aspect ratios — **required**;
+- square-image Tunnel output geometry/endpoints remain unchanged — **required**;
+- typecheck/build and full desktop/390px image + spatial regression remain green — **required**;
+- matching main build and production smoke remain required before R15 production closeout.

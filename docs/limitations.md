@@ -44,7 +44,8 @@ Examples:
 - image blur and contrast modes are image-space approximations;
 - Fatigue-like is no longer public because digital eye strain is a symptom cluster rather than one validated visual phenotype, and the former renderer only combined generic blur with contrast reduction;
 - Dry-eye-like is no longer public because blur/fluctuating clarity are real symptoms but the former static renderer added fixed localized artifacts that were not derived from tear-film measurements or a validated dry-eye observer model;
-- current image tunnel and central-loss views are simplified transforms;
+- image Tunnel Vision uses a normalized-frame peripheral mask because ordinary still images do not supply reliable visual-angle/FOV or patient-perimetry metadata; the mask is therefore not a measured field boundary;
+- the current image Central Loss view is also a simplified transform;
 - spatial Tunnel Vision remains generic unless future work accepts measured individual field data;
 - spatial Central Loss must not be interpreted as a patient's actual scotoma shape, size, opacity, severity, or perimetry result;
 - spatial Cataract-like remains generic unless future work accepts validated individual optical measurements.
