@@ -5,9 +5,6 @@ on:
     branches: [feat/e1-scene-observer-vision]
     paths: [.github/workflows/e1-validate.yml]
 
-permissions:
-  contents: write
-
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -40,33 +37,7 @@ jobs:
           done
           cat /tmp/e1-preview.log
           exit 1
-      - name: Diagnose E1 runtime
+      - name: Diagnose exact E1 release fingerprint
         run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e1_diagnostic.mjs
-      - name: Full local browser regression
-        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
-      - name: Commit validated E1 product change
-        run: |
-          git config user.name badjoke-lab
-          git config user.email badjoke.lab@gmail.com
-          git add \
-            src/SpatialPage.tsx \
-            src/spatial.css \
-            src/spatial/catalog.ts \
-            src/spatial/sceneRuntime.ts \
-            src/spatial/observerRuntime.ts \
-            src/spatial/visionRuntime.ts \
-            .github/production-smoke.mjs \
-            docs/methodology.md \
-            docs/limitations.md \
-            docs/roadmap.md \
-            docs/explore-3d-schedule.md
-          git commit -m "Split Explore 3D into Scene Observer and Vision layers"
-          git push origin HEAD:feat/e1-scene-observer-vision
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e1-scene-observer-vision-validation
-          path: production-smoke/
-          if-no-files-found: warn
 
-# validation v5: require a stable Scene/Observer/Vision/canvas state across StrictMode remount
+# diagnostic-only v6: isolate the exact false release-fingerprint condition before rerunning the full suite
