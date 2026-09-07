@@ -243,7 +243,6 @@ function SpatialRenderer({
       resize();
       applyScene(sceneId);
       applyObserver(observerId);
-      activeObserverRuntime?.setGuidedViewpoint(viewpoint);
       visionRuntime.setVision(vision);
       return cleanup;
     } catch (cause) {
