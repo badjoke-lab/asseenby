@@ -248,7 +248,7 @@ export function mountNightIntersectionScene(
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, segments), meshMaterial);
     mesh.name = name;
     mesh.position.set(...position);
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
     parent.add(mesh);
     return mesh;
@@ -269,7 +269,7 @@ export function mountNightIntersectionScene(
   moon.name = "moon-key";
   moon.position.set(-38, 58, 30);
   moon.castShadow = true;
-  moon.shadow.mapSize.set(1024, 1024);
+  moon.shadow.mapSize.set(512, 512);
   moon.shadow.camera.left = -70;
   moon.shadow.camera.right = 70;
   moon.shadow.camera.top = 70;
@@ -397,15 +397,21 @@ export function mountNightIntersectionScene(
 
     const podiumHeight = Math.min(5.6, options.height * 0.29);
     const upperHeight = options.height - podiumHeight;
-    const upperWidth = Math.max(12, options.width - 2.6);
-    const upperDepth = Math.max(12, options.depth - 2.2);
-    const upperShiftX = options.x < 0 ? 0.65 : -0.65;
-    const upperShiftZ = options.front === "south" ? -0.45 : 0.45;
+    const upperWidth = Math.max(12, options.width - 4.6);
+    const upperDepth = Math.max(12, options.depth - 4.0);
+    const upperShiftX = options.x < 0 ? 1.35 : -1.35;
+    const upperShiftZ = options.front === "south" ? -0.9 : 0.9;
     const podiumY = -options.height / 2 + podiumHeight / 2;
     const upperY = -options.height / 2 + podiumHeight + upperHeight / 2;
 
     addBox(`${name}-podium`, [options.width, podiumHeight, options.depth], [0, podiumY, 0], facadeMaterial, group, true);
     addBox(`${name}-upper`, [upperWidth, upperHeight, upperDepth], [upperShiftX, upperY, upperShiftZ], facadeMaterial, group, true);
+    const bayWidth = Math.max(5.2, upperWidth * 0.34);
+    const bayHeight = Math.max(6.2, upperHeight * 0.72);
+    const bayX = upperShiftX + (options.x < 0 ? upperWidth * 0.31 : -upperWidth * 0.31);
+    const bayZ = upperShiftZ + (options.front === "south" ? upperDepth * 0.12 : -upperDepth * 0.12);
+    const bayY = -options.height / 2 + podiumHeight + bayHeight / 2 + 0.18;
+    addBox(`${name}-corner-bay`, [bayWidth, bayHeight, upperDepth + 0.9], [bayX, bayY, bayZ], facadeMaterial, group, true);
     addBox(`${name}-podium-cornice`, [options.width + 0.45, 0.32, options.depth + 0.45], [0, -options.height / 2 + podiumHeight + 0.16, 0], trimMaterial, group);
     addBox(`${name}-roof-cap`, [upperWidth + 0.75, 0.48, upperDepth + 0.75], [upperShiftX, options.height / 2 + 0.24, upperShiftZ], trimMaterial, group);
     addBox(`${name}-ground-belt`, [options.width + 0.28, 0.7, options.depth + 0.28], [0, -options.height / 2 + 0.35, 0], trimMaterial, group);
@@ -524,31 +530,56 @@ export function mountNightIntersectionScene(
 
   const paints = [0x7e3432, 0x31566f, 0xc0ad83, 0x45484d].map((color) => trackMaterial(new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.28 })));
 
-  const addTaperedBox = (
+  const addCarShell = (
     name: string,
-    size: [number, number, number],
-    position: [number, number, number],
-    meshMaterial: THREE.Material,
+    length: number,
+    width: number,
+    van: boolean,
+    paint: THREE.Material,
     parent: THREE.Object3D,
-    topWidth = 0.82,
-    topLength = 0.72,
   ) => {
-    const geometry = new THREE.BoxGeometry(...size);
-    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
-    for (let index = 0; index < attribute.count; index += 1) {
-      const x = attribute.getX(index);
-      const y = attribute.getY(index);
-      const z = attribute.getZ(index);
-      if (y > 0) attribute.setXYZ(index, x * topWidth, y, z * topLength);
-    }
+    const shape = new THREE.Shape();
+    const points = van
+      ? [
+          [-length / 2, 0.46],
+          [-length * 0.44, 1.05],
+          [-length * 0.31, 1.82],
+          [-length * 0.18, 2.02],
+          [length * 0.34, 2.02],
+          [length * 0.45, 1.72],
+          [length / 2, 0.5],
+        ]
+      : [
+          [-length / 2, 0.46],
+          [-length * 0.44, 0.84],
+          [-length * 0.28, 1.02],
+          [-length * 0.13, 1.58],
+          [length * 0.04, 1.76],
+          [length * 0.22, 1.68],
+          [length * 0.37, 1.08],
+          [length * 0.46, 0.92],
+          [length / 2, 0.5],
+        ];
+    shape.moveTo(points[0][0], points[0][1]);
+    for (const [px, py] of points.slice(1)) shape.lineTo(px, py);
+    shape.lineTo(points[0][0], points[0][1]);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: width,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      steps: 1,
+      bevelSize: 0.055,
+      bevelThickness: 0.055,
+    });
+    geometry.translate(0, 0, -width / 2);
+    geometry.rotateY(Math.PI / 2);
     geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, meshMaterial);
-    mesh.name = name;
-    mesh.position.set(...position);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    parent.add(mesh);
-    return mesh;
+    const shell = new THREE.Mesh(geometry, paint);
+    shell.name = `${name}-shell`;
+    shell.castShadow = true;
+    shell.receiveShadow = true;
+    parent.add(shell);
+    return shell;
   };
 
   const addCar = (name: string, x: number, z: number, rotationY: number, paint: THREE.Material, van = false) => {
@@ -558,34 +589,34 @@ export function mountNightIntersectionScene(
     group.rotation.y = rotationY;
     root.add(group);
     const length = van ? 5.5 : 4.5;
-    addBox(`${name}-lower`, [1.92, 0.58, length], [0, 0.64, 0], paint, group, true);
-    addTaperedBox(`${name}-hood`, [1.78, 0.34, van ? 1.25 : 1.2], [0, 1.0, -length * 0.31], paint, group, 0.96, 0.86);
-    addTaperedBox(`${name}-trunk`, [1.76, 0.32, van ? 0.62 : 1.0], [0, 0.96, length * 0.35], paint, group, 0.97, 0.9);
-    addTaperedBox(`${name}-cabin`, [1.62, van ? 1.45 : 1.02, van ? 2.9 : 2.15], [0, van ? 1.5 : 1.36, van ? 0.15 : 0.02], paint, group, van ? 0.92 : 0.78, van ? 0.9 : 0.68);
-    addBox(`${name}-windshield`, [1.46, van ? 0.82 : 0.72, 0.08], [0, van ? 1.72 : 1.57, -length * 0.2], glass, group, false);
-    addBox(`${name}-rear-glass`, [1.46, van ? 0.78 : 0.68, 0.08], [0, van ? 1.65 : 1.52, length * 0.22], glass, group, false);
+    const width = van ? 1.95 : 1.9;
+    addCarShell(name, length, width, van, paint, group);
+
+    const windshieldZ = -length * (van ? 0.29 : 0.18);
+    const rearGlassZ = length * (van ? 0.34 : 0.23);
+    addBox(`${name}-windshield`, [width * 0.79, van ? 0.78 : 0.62, 0.055], [0, van ? 1.63 : 1.48, windshieldZ], glass, group, false);
+    addBox(`${name}-rear-glass`, [width * 0.76, van ? 0.7 : 0.55, 0.055], [0, van ? 1.61 : 1.43, rearGlassZ], glass, group, false);
     for (const side of [-1, 1]) {
-      addBox(`${name}-side-glass-${side}`, [0.08, van ? 0.86 : 0.67, van ? 1.95 : 1.35], [side * 0.83, van ? 1.65 : 1.53, 0.03], glass, group, false);
-      addBox(`${name}-mirror-${side}`, [0.22, 0.12, 0.34], [side * 1.05, 1.44, -length * 0.18], darkMetal, group);
+      addBox(`${name}-side-glass-${side}`, [0.045, van ? 0.78 : 0.56, van ? 2.2 : 1.35], [side * (width / 2 + 0.02), van ? 1.64 : 1.5, van ? 0.12 : 0.03], glass, group, false);
+      addBox(`${name}-mirror-${side}`, [0.18, 0.11, 0.28], [side * (width / 2 + 0.12), 1.34, -length * 0.18], darkMetal, group, false);
       for (const axle of [-1, 1]) {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.24, 18), tire);
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.22, 14), tire);
         wheel.name = `${name}-wheel-${side}-${axle}`;
         wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(side * 0.99, 0.4, axle * length * 0.31);
-        wheel.castShadow = true;
+        wheel.position.set(side * (width / 2 + 0.03), 0.42, axle * length * 0.31);
+        wheel.receiveShadow = true;
         group.add(wheel);
-        const wheelRim = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.252, 18), rim);
-        wheelRim.rotation.z = Math.PI / 2;
-        wheelRim.position.copy(wheel.position);
-        group.add(wheelRim);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.232, 12), rim);
+        hub.name = `${name}-hub-${side}-${axle}`;
+        hub.rotation.z = Math.PI / 2;
+        hub.position.copy(wheel.position);
+        group.add(hub);
       }
     }
     for (const side of [-0.55, 0.55]) {
-      addBox(`${name}-headlight-${side}`, [0.34, 0.18, 0.08], [side, 0.86, -length / 2 - 0.08], lampMaterial, group, false);
-      addBox(`${name}-taillight-${side}`, [0.3, 0.16, 0.08], [side, 0.82, length / 2 + 0.08], redLight, group, false);
+      addBox(`${name}-headlight-${side}`, [0.32, 0.16, 0.07], [side, 0.83, -length / 2 - 0.05], lampMaterial, group, false);
+      addBox(`${name}-taillight-${side}`, [0.28, 0.15, 0.07], [side, 0.8, length / 2 + 0.05], redLight, group, false);
     }
-    addBox(`${name}-front-bumper`, [1.68, 0.16, 0.16], [0, 0.47, -length / 2 - 0.1], paleMetal, group);
-    addBox(`${name}-rear-bumper`, [1.68, 0.16, 0.16], [0, 0.47, length / 2 + 0.1], paleMetal, group);
   };
   addCar("target-near-car", -4.6, -11.5, 0.02, paints[0]);
   addCar("mid-blue-car", 4.5, -48, Math.PI, paints[1]);
@@ -659,7 +690,7 @@ export function mountNightIntersectionScene(
       crown.name = `${name}-crown-${index}`;
       crown.position.set(dx, height * dy, dz);
       crown.scale.y = 1.25;
-      crown.castShadow = true;
+      crown.castShadow = false;
       group.add(crown);
     });
   };
