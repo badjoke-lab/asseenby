@@ -1,0 +1,68 @@
+name: E3 Human bounded movement validation v3
+
+on:
+  push:
+    branches:
+      - feat/e3-human-bounded-movement
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out E3 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/e3-human-bounded-movement
+          fetch-depth: 0
+      - name: Apply E3 implementation and validation fixes
+        run: |
+          python3 scripts/e3_patch.py
+          python3 scripts/e3_runtime_fix.py
+          python3 scripts/e3_touch_harness_fix.py
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Install temporary browser dependency
+        run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start local production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/e3-preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/e3-preview.log
+          exit 1
+      - name: Validate E3 movement, collision, reset, and Photo Reference boundary
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node scripts/e3_validate_v2.mjs
+      - name: Run full local production smoke with E3 fingerprint
+        run: ASSEENBY_PRODUCTION_URL=http://127.0.0.1:4173 node .github/production-smoke.mjs
+      - name: Commit validated E3 product changes
+        if: success()
+        run: |
+          git config user.name badjoke-lab
+          git config user.email badjoke.lab@gmail.com
+          git add src/SpatialPage.tsx src/spatial.css src/spatial/catalog.ts src/spatial/nightIntersectionScene.ts src/spatial/observerRuntime.ts src/spatial/sceneRuntime.ts .github/production-smoke.mjs docs/ui-spec.md docs/limitations.md docs/explore-3d-schedule.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Add bounded Human movement to Night Intersection"
+          git push origin HEAD:feat/e3-human-bounded-movement
+      - name: Upload E3 validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e3-human-bounded-movement-validation-v3
+          path: |
+            e3-validation-v2/
+            production-smoke/
+          if-no-files-found: warn
