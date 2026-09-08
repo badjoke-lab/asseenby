@@ -19,50 +19,94 @@ jobs:
           ref: feat/blender-world-authoring-pipeline-20260908
           fetch-depth: 0
 
-      - name: Patch SpatialPage diagnostics
+      - name: Wire observer position to chunk streaming and normalize diagnostics
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("src/SpatialPage.tsx")
-          text = path.read_text()
+          observer = Path("src/spatial/observerRuntime.ts")
+          text = observer.read_text()
 
-          old = '''      composer = new EffectComposer(renderer);
-                composer.addPass(new RenderPass(scene, camera));
-                const renderScene = () => composer?.render();
-                const canvas = renderer.domElement;
-                visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);'''.replace("        ", "")
-          new = '''      composer = new EffectComposer(renderer);
-                composer.addPass(new RenderPass(scene, camera));
-                const canvas = renderer.domElement;
-                const syncStreamingDiagnostics = () => {
-                  const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
-                  canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
-                  canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
-                };
-                const renderScene = () => {
-                  composer?.render();
-                  syncStreamingDiagnostics();
-                };
-                visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);'''.replace("        ", "")
-
+          old = '''  navigation: SpatialGroundNavigation | null;
+          onViewpointChange?: (viewpoint: SpatialViewpointState) => void;
+        };'''.replace("        ", "")
+          new = '''  navigation: SpatialGroundNavigation | null;
+          onViewpointChange?: (viewpoint: SpatialViewpointState) => void;
+          onPositionChange?: (position: THREE.Vector3) => void;
+        };'''.replace("        ", "")
           if old not in text:
-              raise SystemExit("renderScene anchor not found")
+              raise SystemExit("ObserverRuntimeOptions anchor not found")
           text = text.replace(old, new, 1)
 
-          old_volume = 'canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "150x150x60" : "photographic-reference";'
-          new_volume = 'canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "500x500x80-streamed-envelope" : "photographic-reference";'
-          if old_volume not in text:
-              raise SystemExit("sceneVolume anchor not found")
-          text = text.replace(old_volume, new_volume, 1)
+          old = '''  { camera, canvas, renderScene, navigation: initialNavigation, onViewpointChange }: ObserverRuntimeOptions,'''
+          new = '''  { camera, canvas, renderScene, navigation: initialNavigation, onViewpointChange, onPositionChange }: ObserverRuntimeOptions,'''
+          if old not in text:
+              raise SystemExit("observer destructuring anchor not found")
+          text = text.replace(old, new, 1)
 
-          path.write_text(text)
+          old = '''    canvas.dataset.cameraPosition = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(3)},${camera.position.z.toFixed(3)}`;
+          };'''.replace("        ", "")
+          new = '''    canvas.dataset.cameraPosition = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(3)},${camera.position.z.toFixed(3)}`;
+            onPositionChange?.(camera.position);
+          };'''.replace("        ", "")
+          if old not in text:
+              raise SystemExit("syncCamera anchor not found")
+          text = text.replace(old, new, 1)
+          observer.write_text(text)
+
+          page = Path("src/SpatialPage.tsx")
+          text = page.read_text()
+
+          old = '''      const syncStreamingDiagnostics = () => {
+        const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+        canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+        canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+      };
+      const renderScene = () => {
+        composer?.render();
+        syncStreamingDiagnostics();
+      };'''
+          if old not in text:
+              # The first patch intentionally tolerated formatting; normalize that exact form too.
+              old = '''      const syncStreamingDiagnostics = () => {
+const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+      };
+      const renderScene = () => {
+composer?.render();
+syncStreamingDiagnostics();
+      };'''
+          new = '''      const syncStreamingDiagnostics = () => {
+        const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+        canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+        canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+      };
+      const renderScene = () => {
+        composer?.render();
+        syncStreamingDiagnostics();
+      };'''
+          if old not in text:
+              raise SystemExit("streaming diagnostics anchor not found")
+          text = text.replace(old, new, 1)
+
+          old = '''          navigation: activeSceneRuntime?.navigation ?? null,
+          onViewpointChange: setViewpoint,
+        });'''
+          new = '''          navigation: activeSceneRuntime?.navigation ?? null,
+          onViewpointChange: setViewpoint,
+          onPositionChange: (position) => activeSceneRuntime?.updateObserverPosition(position),
+        });'''
+          if old not in text:
+              raise SystemExit("observer options anchor not found")
+          text = text.replace(old, new, 1)
+          page.write_text(text)
           PY
 
           git diff --check
-          git diff -- src/SpatialPage.tsx
+          git diff -- src/SpatialPage.tsx src/spatial/observerRuntime.ts
 
       - name: Commit patch
         shell: bash
@@ -70,6 +114,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/SpatialPage.tsx
-          git commit -m "Expose authored chunk lifecycle on spatial canvas"
+          git add src/SpatialPage.tsx src/spatial/observerRuntime.ts
+          git commit -m "Wire authored chunk streaming to observer position"
           git push origin HEAD:feat/blender-world-authoring-pipeline-20260908
