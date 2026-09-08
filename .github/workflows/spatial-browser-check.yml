@@ -3,14 +3,27 @@ name: spatial browser check
 on:
   push:
     branches:
-      - 'feat/spatial-*'
-      - 'feat/blender-*'
+      - main
+    paths:
+      - 'src/spatial/**'
+      - 'src/SpatialPage.tsx'
+      - 'public/assets/3d/**'
+      - 'public/assets/panoramas/**'
+      - 'assets-src/**'
+      - 'scripts/reference/**'
+      - 'scripts/blender/**'
+      - 'docs/blender-asset-pipeline.md'
+      - '.github/spatial-browser-check.mjs'
+      - '.github/spatial-turn-check.mjs'
+      - '.github/workflows/spatial-browser-check.yml'
   pull_request:
     paths:
       - 'src/spatial/**'
       - 'src/SpatialPage.tsx'
       - 'public/assets/3d/**'
+      - 'public/assets/panoramas/**'
       - 'assets-src/**'
+      - 'scripts/reference/**'
       - 'scripts/blender/**'
       - 'docs/blender-asset-pipeline.md'
       - '.github/spatial-browser-check.mjs'
@@ -24,7 +37,7 @@ jobs:
   browser-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out branch
+      - name: Check out current revision
         uses: actions/checkout@v4
 
       - name: Set up Node.js
