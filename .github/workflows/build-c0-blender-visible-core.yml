@@ -6,6 +6,10 @@ on:
       - feat/blender-c0-visible-core-20260908
     paths:
       - .github/workflows/build-c0-blender-visible-core.yml
+      - scripts/blender/build_night_intersection_c0.py
+      - scripts/blender/normalize_c0_runtime_frame.py
+      - scripts/blender/export_night_intersection.py
+      - assets-src/blender/night-intersection/materials/SOURCES.md
 
 permissions:
   contents: write
@@ -90,6 +94,14 @@ jobs:
             --material-dir assets-src/blender/night-intersection/materials \
             --blend-out assets-src/blender/night-intersection/c0/night-intersection-c0.blend
 
+      - name: Normalize runtime coordinate frame and export topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/normalize_c0_runtime_frame.py -- \
+            --collection C0
+
       - name: Export canonical C0 GLB
         shell: bash
         run: |
@@ -113,10 +125,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             scripts/blender/build_night_intersection_c0.py \
+            scripts/blender/normalize_c0_runtime_frame.py \
             assets-src/blender/night-intersection/materials \
             assets-src/blender/night-intersection/c0 \
             public/assets/3d/night-intersection/c0/core
-          git commit -m "Add Blender-authored C0 visible core"
+          git commit -m "Rebuild Blender-authored C0 visible core"
           git fetch origin feat/blender-c0-visible-core-20260908
           git rebase origin/feat/blender-c0-visible-core-20260908
           git push origin HEAD:feat/blender-c0-visible-core-20260908
