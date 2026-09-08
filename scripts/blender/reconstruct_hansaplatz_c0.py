@@ -1,26 +1,26 @@
-"""Rebuild the C0 macro-layout from the real Hansaplatz photographic reference.
+"""Rebuild C0 around the real Hansaplatz photographic reference.
 
-This pass runs after the generic authored-prop/refinement passes. It deliberately
-removes the invented four-brick-block intersection architecture and replaces the
-primary-visible macro geometry with a Hansaplatz-inspired modernist plaza:
-low white-tile retail pavilions around an atrium/plaza, continuous flat canopies
-on slender steel columns, a taller theatre volume, glazed storefronts, a subway
-entrance/sign, and open paved space.
+This pass runs after the older generic authored-prop/refinement passes. It removes
+the invented four-brick-block intersection architecture and replaces the
+primary-visible macro geometry with a Hansaplatz-driven modernist plaza:
+low tiled retail pavilions around open public space, continuous flat canopies on
+slender steel columns, a taller theatre volume, glazed storefronts, a U-Bahn
+entrance/sign and scanned PBR paving/facade materials.
 
 Reference basis:
-- Poly Haven Hansaplatz 360 HDRI by Greg Zaal, CC0-1.0 (runtime/reference plate)
-- Hansaviertel architectural record: the northern Hansaplatz shopping centre is
-  a mostly single-storey ensemble around an atrium, linked by continuous roofs
-  on slender steel supports; small white ceramic tiles are a defining finish.
+- Poly Haven Hansaplatz 360 HDRI by Greg Zaal, CC0-1.0;
+- reproducible rectilinear plates generated from that panorama;
+- Hansaviertel architectural records describing the low shopping-centre ensemble,
+  continuous roofs/slender supports and small ceramic-tile finish.
 
-The script uses runtime XYZ values and maps them into the normalized Blender
-frame with (x, y, z) -> (x, -z, y).
+The file is already in the normalized Blender frame. Runtime XYZ maps to Blender
+(x, -z, y).
 """
 
 from __future__ import annotations
 
 import argparse
-import math
+from pathlib import Path
 import sys
 
 import bpy
@@ -31,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     argv = argv[argv.index("--") + 1 :] if "--" in argv else []
     parser = argparse.ArgumentParser()
     parser.add_argument("--collection", default="C0")
+    parser.add_argument("--material-dir", required=True)
     return parser.parse_args(argv)
 
 
@@ -54,7 +55,7 @@ def relink(obj: bpy.types.Object, target: bpy.types.Collection) -> None:
             current.objects.unlink(obj)
 
 
-def mat(
+def flat_material(
     name: str,
     color: tuple[float, float, float, float],
     roughness: float,
@@ -78,6 +79,90 @@ def mat(
         strength_input = bsdf.inputs.get("Emission Strength")
         if strength_input is not None:
             strength_input.default_value = emission_strength
+    return material
+
+
+def scanned_box_material(
+    name: str,
+    material_dir: Path,
+    asset_id: str,
+    capture_width_m: float,
+    *,
+    saturation: float = 1.0,
+    value: float = 1.0,
+    normal_strength: float = 0.8,
+) -> bpy.types.Material:
+    """Create a real-scale triplanar PBR material from checked-in Poly Haven maps."""
+    existing = bpy.data.materials.get(name)
+    if existing is not None:
+        return existing
+
+    paths = {
+        kind: material_dir / f"{asset_id}_{kind}_1k.jpg"
+        for kind in ("diff", "nor_gl", "rough")
+    }
+    missing = [str(path) for path in paths.values() if not path.exists()]
+    if missing:
+        raise RuntimeError(f"Missing Hansaplatz PBR maps: {missing}")
+
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+
+    texcoord = nodes.new("ShaderNodeTexCoord")
+    texcoord.name = f"{asset_id}_object_coordinates"
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.name = f"{asset_id}_meter_scale"
+    repeat = 1.0 / max(capture_width_m, 0.01)
+    mapping.inputs["Scale"].default_value = (repeat, repeat, repeat)
+    links.new(texcoord.outputs["Object"], mapping.inputs["Vector"])
+
+    diffuse = nodes.new("ShaderNodeTexImage")
+    diffuse.name = f"{asset_id}_diffuse"
+    diffuse.image = bpy.data.images.load(str(paths["diff"].resolve()), check_existing=True)
+    diffuse.image.colorspace_settings.name = "sRGB"
+    diffuse.extension = "REPEAT"
+    diffuse.projection = "BOX"
+    diffuse.projection_blend = 0.12
+    links.new(mapping.outputs["Vector"], diffuse.inputs["Vector"])
+
+    hue = nodes.new("ShaderNodeHueSaturation")
+    hue.name = f"{asset_id}_reference_color_adjustment"
+    hue.inputs["Saturation"].default_value = saturation
+    hue.inputs["Value"].default_value = value
+    links.new(diffuse.outputs["Color"], hue.inputs["Color"])
+    links.new(hue.outputs["Color"], bsdf.inputs["Base Color"])
+
+    normal_texture = nodes.new("ShaderNodeTexImage")
+    normal_texture.name = f"{asset_id}_normal"
+    normal_texture.image = bpy.data.images.load(str(paths["nor_gl"].resolve()), check_existing=True)
+    normal_texture.image.colorspace_settings.name = "Non-Color"
+    normal_texture.extension = "REPEAT"
+    normal_texture.projection = "BOX"
+    normal_texture.projection_blend = 0.12
+    links.new(mapping.outputs["Vector"], normal_texture.inputs["Vector"])
+    normal = nodes.new("ShaderNodeNormalMap")
+    normal.name = f"{asset_id}_normal_strength"
+    normal.inputs["Strength"].default_value = normal_strength
+    links.new(normal_texture.outputs["Color"], normal.inputs["Color"])
+    links.new(normal.outputs["Normal"], bsdf.inputs["Normal"])
+
+    roughness = nodes.new("ShaderNodeTexImage")
+    roughness.name = f"{asset_id}_roughness"
+    roughness.image = bpy.data.images.load(str(paths["rough"].resolve()), check_existing=True)
+    roughness.image.colorspace_settings.name = "Non-Color"
+    roughness.extension = "REPEAT"
+    roughness.projection = "BOX"
+    roughness.projection_blend = 0.12
+    links.new(mapping.outputs["Vector"], roughness.inputs["Vector"])
+    links.new(roughness.outputs["Color"], bsdf.inputs["Roughness"])
+
+    material["source_provider"] = "Poly Haven"
+    material["source_asset_id"] = asset_id
+    material["license"] = "CC0-1.0"
+    material["capture_width_m"] = capture_width_m
     return material
 
 
@@ -142,6 +227,7 @@ def remove_invented_architecture() -> int:
         "c0_lane_",
         "c0_qr2_asphalt_patch_",
         "c0_qr2_stop_line_",
+        "hansaplatz_",
     )
     doomed = [obj for obj in list(bpy.data.objects) if obj.name.startswith(prefixes)]
     for obj in doomed:
@@ -149,36 +235,26 @@ def remove_invented_architecture() -> int:
     return len(doomed)
 
 
-def add_tile_field(
-    visual: bpy.types.Collection,
-    paving: bpy.types.Material,
-    joint: bpy.types.Material,
-) -> int:
+def add_paving_field(visual: bpy.types.Collection, paving: bpy.types.Material) -> int:
+    # Larger slabs reduce draw/object overhead; the scanned PBR surface supplies
+    # the small-scale joints, wear and aggregate that the earlier flat blocks lacked.
     created = 0
-    tile = 3.0
-    for ix in range(-8, 9):
-        for iz in range(-8, 9):
-            x = ix * tile
-            z = -28 + iz * tile
-            # Keep the very outer ring as service/road margin.
+    slab = 8.0
+    for ix in range(-3, 4):
+        for iz in range(-3, 4):
+            x = ix * slab
+            z = -28 + iz * slab
             if abs(x) > 25.0 or z < -53.0 or z > -3.0:
                 continue
             add_box(
                 visual,
-                f"hansaplatz_paver_{ix:+03d}_{iz:+03d}",
-                (x, 0.015, z),
-                (2.94, 0.05, 2.94),
+                f"hansaplatz_paving_slab_{ix:+02d}_{iz:+02d}",
+                (x, 0.012, z),
+                (7.96, 0.045, 7.96),
                 paving,
-                bevel=0.025,
+                bevel=0.018,
             )
             created += 1
-    # Thin darker bands break the large ground plane and echo modular paving joints.
-    for idx, x in enumerate((-12.0, 0.0, 12.0)):
-        add_box(visual, f"hansaplatz_joint_ns_{idx}", (x, 0.045, -28), (0.11, 0.018, 49.0), joint)
-        created += 1
-    for idx, z in enumerate((-43.0, -28.0, -13.0)):
-        add_box(visual, f"hansaplatz_joint_ew_{idx}", (0, 0.046, z), (49.0, 0.018, 0.11), joint)
-        created += 1
     return created
 
 
@@ -193,19 +269,22 @@ def add_storefront_strip(
     warm: bpy.types.Material,
     cool: bpy.types.Material,
 ) -> int:
-    cx, cy, cz = center
+    cx, _, cz = center
     created = 0
-    bays = max(4, int(width // 3.0))
+    bays = max(4, int(width // 2.6))
     bay_w = width / bays
     for i in range(bays):
         x = cx - width / 2 + bay_w * (i + 0.5)
-        back = warm if i % 4 in (0, 3) else cool if i % 4 == 1 else frame
-        add_box(visual, f"{prefix}_interior_{i:02d}", (x, 1.55, cz - outward_z * 0.34), (bay_w - 0.12, 2.7, 0.10), back, bevel=0.015)
-        add_box(visual, f"{prefix}_glass_{i:02d}", (x, 1.55, cz), (bay_w - 0.13, 2.75, 0.055), glass, bevel=0.012)
-        add_box(visual, f"{prefix}_mullion_{i:02d}", (cx - width / 2 + bay_w * i, 1.55, cz + outward_z * 0.035), (0.07, 2.85, 0.09), frame, bevel=0.015)
+        back = warm if i % 5 in (0, 4) else cool if i % 5 == 2 else frame
+        add_box(visual, f"{prefix}_interior_{i:02d}", (x, 1.48, cz - outward_z * 0.48), (bay_w - 0.12, 2.55, 0.10), back, bevel=0.015)
+        add_box(visual, f"{prefix}_glass_{i:02d}", (x, 1.52, cz), (bay_w - 0.11, 2.72, 0.05), glass, bevel=0.012)
+        add_box(visual, f"{prefix}_mullion_{i:02d}", (cx - width / 2 + bay_w * i, 1.52, cz + outward_z * 0.035), (0.065, 2.84, 0.09), frame, bevel=0.012)
         created += 3
-    add_box(visual, f"{prefix}_mullion_end", (cx + width / 2, 1.55, cz + outward_z * 0.035), (0.07, 2.85, 0.09), frame, bevel=0.015)
-    return created + 1
+    add_box(visual, f"{prefix}_mullion_end", (cx + width / 2, 1.52, cz + outward_z * 0.035), (0.065, 2.84, 0.09), frame, bevel=0.012)
+    # Continuous transom and plinth are visible cues in the photographic shopfront rhythm.
+    add_box(visual, f"{prefix}_transom", (cx, 2.93, cz + outward_z * 0.04), (width + 0.08, 0.07, 0.09), frame, bevel=0.012)
+    add_box(visual, f"{prefix}_plinth", (cx, 0.14, cz + outward_z * 0.05), (width + 0.08, 0.18, 0.11), frame, bevel=0.018)
+    return created + 3
 
 
 def add_pavilion(
@@ -225,23 +304,17 @@ def add_pavilion(
     cx, cz = center
     width, depth = size
     created = 0
-    add_box(visual, f"{prefix}_body", (cx, height / 2 + 0.10, cz), (width, height, depth), tile_material, bevel=0.08)
-    add_box(visual, f"{prefix}_roof", (cx, height + 0.20, cz), (width + 0.42, 0.28, depth + 0.42), roof_material, bevel=0.05)
-    add_box(visual, f"{prefix}_base", (cx, 0.22, cz), (width + 0.08, 0.32, depth + 0.08), frame, bevel=0.035)
+    add_box(visual, f"{prefix}_body", (cx, height / 2 + 0.10, cz), (width, height, depth), tile_material, bevel=0.055)
+    add_box(visual, f"{prefix}_roof", (cx, height + 0.20, cz), (width + 0.42, 0.24, depth + 0.42), roof_material, bevel=0.045)
+    add_box(visual, f"{prefix}_base", (cx, 0.19, cz), (width + 0.08, 0.28, depth + 0.08), frame, bevel=0.028)
     created += 3
-
-    # Ceramic-tile seam rhythm is modeled as shallow strips so it survives real-time rendering.
-    for i in range(1, int(width // 1.6)):
-        x = cx - width / 2 + i * 1.6
-        add_box(visual, f"{prefix}_tile_seam_v_{i:02d}", (x, height * 0.55, cz + depth / 2 + 0.011), (0.018, height * 0.72, 0.018), roof_material)
-        created += 1
 
     if storefront_side == "south":
         face_z = cz + depth / 2 + 0.045
-        created += add_storefront_strip(visual, f"{prefix}_storefront", (cx, 0, face_z), width * 0.82, 1.0, glass, frame, warm, cool)
+        created += add_storefront_strip(visual, f"{prefix}_storefront", (cx, 0, face_z), width * 0.84, 1.0, glass, frame, warm, cool)
     elif storefront_side == "north":
         face_z = cz - depth / 2 - 0.045
-        created += add_storefront_strip(visual, f"{prefix}_storefront", (cx, 0, face_z), width * 0.82, -1.0, glass, frame, warm, cool)
+        created += add_storefront_strip(visual, f"{prefix}_storefront", (cx, 0, face_z), width * 0.84, -1.0, glass, frame, warm, cool)
     return created
 
 
@@ -255,20 +328,19 @@ def add_canopy(
 ) -> int:
     cx, cz = center
     width, depth = size
-    add_box(visual, f"{prefix}_roof", (cx, 3.18, cz), (width, 0.16, depth), roof, bevel=0.035)
+    add_box(visual, f"{prefix}_roof", (cx, 3.16, cz), (width, 0.13, depth), roof, bevel=0.025)
     created = 1
-    x_count = max(2, int(width // 3.2))
-    z_count = max(2, int(depth // 3.2))
-    # Put columns along the canopy perimeter rather than filling the walking path.
+    x_count = max(2, int(width // 3.4))
+    z_count = max(2, int(depth // 3.4))
     for i in range(x_count + 1):
         x = cx - width / 2 + width * i / x_count
-        for z in (cz - depth / 2 + 0.18, cz + depth / 2 - 0.18):
-            add_cylinder(visual, f"{prefix}_column_x_{i}_{z:+.1f}", (x, 1.58, z), 0.055, 3.05, metal, 14)
+        for z in (cz - depth / 2 + 0.16, cz + depth / 2 - 0.16):
+            add_cylinder(visual, f"{prefix}_column_x_{i}_{z:+.1f}", (x, 1.56, z), 0.045, 3.03, metal, 16)
             created += 1
     for i in range(1, z_count):
         z = cz - depth / 2 + depth * i / z_count
-        for x in (cx - width / 2 + 0.18, cx + width / 2 - 0.18):
-            add_cylinder(visual, f"{prefix}_column_z_{i}_{x:+.1f}", (x, 1.58, z), 0.055, 3.05, metal, 14)
+        for x in (cx - width / 2 + 0.16, cx + width / 2 - 0.16):
+            add_cylinder(visual, f"{prefix}_column_z_{i}_{x:+.1f}", (x, 1.56, z), 0.045, 3.03, metal, 16)
             created += 1
     return created
 
@@ -281,22 +353,31 @@ def add_subway_entrance(
     blue: bpy.types.Material,
 ) -> int:
     created = 0
-    # Low pavilion and stair void approximation; enough depth to stop the entry reading as a sign stuck on a plane.
-    add_box(visual, "hansaplatz_ubahn_entry_roof", (8.0, 3.05, -22.0), (6.8, 0.20, 5.8), tile_material, bevel=0.05)
-    add_box(visual, "hansaplatz_ubahn_entry_back", (8.0, 1.55, -24.75), (6.8, 2.8, 0.16), frame, bevel=0.03)
+    add_box(visual, "hansaplatz_ubahn_entry_roof", (8.0, 3.02, -22.0), (6.8, 0.16, 5.8), tile_material, bevel=0.045)
+    add_box(visual, "hansaplatz_ubahn_entry_back", (8.0, 1.50, -24.76), (6.8, 2.72, 0.14), frame, bevel=0.025)
     for i in range(3):
         x = 6.0 + i * 2.0
-        add_box(visual, f"hansaplatz_ubahn_glass_{i}", (x, 1.55, -19.12), (1.7, 2.65, 0.07), glass, bevel=0.02)
+        add_box(visual, f"hansaplatz_ubahn_glass_{i}", (x, 1.50, -19.10), (1.72, 2.58, 0.055), glass, bevel=0.018)
         created += 1
-    add_box(visual, "hansaplatz_ubahn_stair_dark", (8.0, 0.30, -21.4), (4.8, 0.15, 4.6), frame, bevel=0.03)
-    # Blue U sign block; text can be replaced by a proper mesh/decal in a later fidelity pass.
-    add_box(visual, "hansaplatz_ubahn_sign", (11.9, 3.65, -19.0), (0.78, 0.78, 0.22), blue, bevel=0.08)
-    add_cylinder(visual, "hansaplatz_ubahn_sign_pole", (11.9, 1.75, -19.0), 0.055, 3.5, frame, 14)
-    return created + 6
+    # Descending stair treads create actual parallax/depth instead of one dark slab.
+    for step in range(8):
+        add_box(
+            visual,
+            f"hansaplatz_ubahn_step_{step:02d}",
+            (8.0, 0.08 - step * 0.12, -20.05 - step * 0.48),
+            (4.7, 0.12, 0.48),
+            frame,
+            bevel=0.01,
+        )
+        created += 1
+    add_box(visual, "hansaplatz_ubahn_sign", (11.9, 3.62, -19.0), (0.74, 0.74, 0.18), blue, bevel=0.07)
+    add_cylinder(visual, "hansaplatz_ubahn_sign_pole", (11.9, 1.74, -19.0), 0.045, 3.45, frame, 16)
+    return created + 5
 
 
 def main() -> None:
     args = parse_args()
+    material_dir = Path(args.material_dir)
     root = bpy.data.collections.get(args.collection)
     if root is None:
         raise RuntimeError(f"Missing collection: {args.collection}")
@@ -304,52 +385,70 @@ def main() -> None:
 
     removed = remove_invented_architecture()
 
-    ceramic = mat("hansaplatz_small_white_ceramic", (0.78, 0.79, 0.76, 1), 0.46)
-    ceramic_shadow = mat("hansaplatz_ceramic_joint", (0.22, 0.23, 0.22, 1), 0.72)
-    roof = mat("hansaplatz_roof_dark", (0.085, 0.09, 0.095, 1), 0.50, 0.18)
-    frame = mat("hansaplatz_steel_frame", (0.045, 0.055, 0.06, 1), 0.30, 0.78)
-    glass = mat("hansaplatz_glass", (0.035, 0.075, 0.085, 1), 0.12, 0.08)
-    paving = mat("hansaplatz_paving", (0.34, 0.34, 0.32, 1), 0.78)
-    paving_joint = mat("hansaplatz_paving_joint", (0.10, 0.11, 0.11, 1), 0.88)
-    warm = mat("hansaplatz_store_warm", (0.42, 0.18, 0.055, 1), 0.32, emission=(1.0, 0.28, 0.05, 1), emission_strength=3.0)
-    cool = mat("hansaplatz_store_cool", (0.045, 0.12, 0.16, 1), 0.28, emission=(0.06, 0.24, 0.42, 1), emission_strength=1.4)
-    subway_blue = mat("hansaplatz_ubahn_blue", (0.02, 0.15, 0.55, 1), 0.24, emission=(0.04, 0.25, 1.0, 1), emission_strength=2.8)
+    # Rounded Square Tiled Wall is a close geometric match for the small ceramic
+    # facade module. Desaturate/brighten its photographed beige surface toward
+    # Hansaplatz's white cladding while preserving scanned grout/wear/normal data.
+    ceramic = scanned_box_material(
+        "hansaplatz_small_white_ceramic_pbr",
+        material_dir,
+        "rounded_square_tiled_wall",
+        2.0,
+        saturation=0.22,
+        value=1.34,
+        normal_strength=0.72,
+    )
+    paving = scanned_box_material(
+        "hansaplatz_concrete_pavement_pbr",
+        material_dir,
+        "concrete_pavement",
+        1.8,
+        saturation=0.72,
+        value=0.82,
+        normal_strength=0.82,
+    )
+    ceramic_shadow = flat_material("hansaplatz_ceramic_joint", (0.18, 0.19, 0.18, 1), 0.72)
+    roof = flat_material("hansaplatz_roof_dark", (0.065, 0.072, 0.078, 1), 0.48, 0.28)
+    frame = flat_material("hansaplatz_steel_frame", (0.032, 0.042, 0.048, 1), 0.26, 0.82)
+    glass = flat_material("hansaplatz_glass", (0.025, 0.060, 0.072, 1), 0.10, 0.08)
+    warm = flat_material("hansaplatz_store_warm", (0.40, 0.15, 0.038, 1), 0.30, emission=(1.0, 0.24, 0.035, 1), emission_strength=3.5)
+    cool = flat_material("hansaplatz_store_cool", (0.035, 0.095, 0.13, 1), 0.26, emission=(0.05, 0.20, 0.36, 1), emission_strength=1.6)
+    subway_blue = flat_material("hansaplatz_ubahn_blue", (0.018, 0.11, 0.52, 1), 0.22, emission=(0.035, 0.20, 1.0, 1), emission_strength=3.0)
 
-    created = add_tile_field(visual, paving, paving_joint)
+    created = add_paving_field(visual, paving)
 
-    # Mostly one-storey retail ensemble around the plaza/atrium, with a taller theatre volume.
+    # Hansaplatz is not a four-corner brick canyon. The authored foreground is
+    # rebuilt as a low pavilion/plaza ensemble with the taller theatre volume.
     created += add_pavilion(visual, "hansaplatz_north_retail", (0.0, -47.0), (28.0, 8.0), 4.1, "south", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_east_retail", (19.0, -31.0), (10.0, 21.0), 4.0, "north", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_south_retail", (-3.0, -9.0), (24.0, 7.0), 3.8, "north", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_west_retail", (-20.0, -28.0), (9.0, 18.0), 3.9, "south", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_grips_theatre", (-18.5, -47.0), (11.0, 10.0), 8.3, "south", ceramic, roof, glass, frame, warm, cool)
 
-    # Continuous roof links on slender steel supports are a defining Hansaplatz cue.
     created += add_canopy(visual, "hansaplatz_canopy_north", (0.0, -40.8), (30.0, 3.0), roof, frame)
     created += add_canopy(visual, "hansaplatz_canopy_east", (13.6, -28.0), (3.0, 21.0), roof, frame)
     created += add_canopy(visual, "hansaplatz_canopy_south", (-3.0, -14.0), (25.0, 3.0), roof, frame)
 
-    # Central atrium/kiosk element and transit entrance give the plaza a real destination rather than four empty road corners.
-    add_box(visual, "hansaplatz_kiosk_body", (-4.0, 1.45, -28.5), (5.0, 2.8, 4.0), ceramic, bevel=0.08)
-    add_box(visual, "hansaplatz_kiosk_glass", (-4.0, 1.45, -26.42), (4.25, 2.2, 0.07), glass, bevel=0.025)
-    add_box(visual, "hansaplatz_kiosk_glow", (-4.0, 1.5, -26.55), (3.9, 2.0, 0.05), warm, bevel=0.02)
+    add_box(visual, "hansaplatz_kiosk_body", (-4.0, 1.42, -28.5), (5.0, 2.75, 4.0), ceramic, bevel=0.055)
+    add_box(visual, "hansaplatz_kiosk_glass", (-4.0, 1.43, -26.46), (4.30, 2.20, 0.055), glass, bevel=0.018)
+    add_box(visual, "hansaplatz_kiosk_glow", (-4.0, 1.45, -26.56), (3.92, 2.00, 0.04), warm, bevel=0.015)
     created += 3
     created += add_subway_entrance(visual, ceramic, frame, glass, subway_blue)
 
-    # A few simple edge rails / planters keep near-ground scale readable while higher-fidelity props remain separate CC0 assets.
     for idx, (x, z, sx, sz) in enumerate(((-10.5, -24.0, 5.0, 1.2), (3.0, -34.5, 6.0, 1.2), (12.0, -12.5, 4.0, 1.1))):
-        add_box(visual, f"hansaplatz_planter_{idx}", (x, 0.35, z), (sx, 0.55, sz), ceramic_shadow, bevel=0.12)
+        add_box(visual, f"hansaplatz_planter_{idx}", (x, 0.35, z), (sx, 0.55, sz), ceramic_shadow, bevel=0.10)
         created += 1
 
     root["reference_location"] = "Hansaplatz, Berlin, Germany"
     root["reference_photo_asset"] = "Poly Haven hansaplatz / Greg Zaal / CC0-1.0"
     root["reference_driven_reconstruction"] = True
-    root["reference_macro_layout_pass"] = "hansaplatz-modernist-plaza-v1"
+    root["reference_macro_layout_pass"] = "hansaplatz-modernist-plaza-pbr-v2"
     root["reference_removed_invented_objects"] = removed
     root["reference_created_objects"] = created
+    root["reference_pbr_facade"] = "Poly Haven rounded_square_tiled_wall / CC0-1.0"
+    root["reference_pbr_paving"] = "Poly Haven concrete_pavement / CC0-1.0"
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
-    print(f"Hansaplatz macro reconstruction: removed={removed}, created={created}")
+    print(f"Hansaplatz PBR reconstruction: removed={removed}, created={created}")
 
 
 if __name__ == "__main__":
