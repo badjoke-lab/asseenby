@@ -58,14 +58,25 @@ jobs:
           mkdir -p "$dest"
           ua="AsSeenBy-QR2-C0/1.0 (+https://github.com/badjoke-lab/asseenby)"
 
-          for slug in asphalt_01 brick_wall_001; do
-            for map in diff nor_gl rough; do
-              url="https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/${slug}/${slug}_${map}_1k.jpg"
-              echo "Fetching $url"
-              curl -A "$ua" -fL --retry 3 --retry-delay 2 -o "$dest/${slug}_${map}_1k.jpg" "$url"
-              test -s "$dest/${slug}_${map}_1k.jpg"
-            done
-          done
+          fetch_map() {
+            local slug="$1"
+            local remote_map="$2"
+            local local_map="$3"
+            local url="https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/${slug}/${slug}_${remote_map}_1k.jpg"
+            echo "Fetching $url"
+            curl -A "$ua" -fL --retry 3 --retry-delay 2 \
+              -o "$dest/${slug}_${local_map}_1k.jpg" "$url"
+            test -s "$dest/${slug}_${local_map}_1k.jpg"
+          }
+
+          fetch_map asphalt_01 diff diff
+          fetch_map asphalt_01 nor_gl nor_gl
+          fetch_map asphalt_01 rough rough
+
+          # Brick Wall 001 uses `diffuse` in Poly Haven's file tree rather than `diff`.
+          fetch_map brick_wall_001 diffuse diff
+          fetch_map brick_wall_001 nor_gl nor_gl
+          fetch_map brick_wall_001 rough rough
 
           sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
 
