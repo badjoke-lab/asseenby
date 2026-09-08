@@ -1,22 +1,64 @@
 # AsSeenBy — Explore 3D Quality Recovery
 
 ## Status and authority
-Status: **ACTIVE / BLOCKING E5+**
+Status: **ACTIVE / REFERENCE-DRIVEN / CONTINUOUSLY DEPLOYED / BLOCKING ONLY QUALITY CLOSEOUT AND E5+ SEQUENCING**
 
 This document records the quality recovery required after the deployed E2–E4 Night Intersection implementation was reviewed against the intended Explore 3D product bar.
 
 The E2–E4 deployments remain historical implementation/production-verification facts. They are **not** sufficient evidence that the current Night Intersection scene satisfies the product-quality acceptance boundary.
 
-Until this recovery closes, do not advance the public product roadmap to Dog, Cat or Bird merely by adding observer controls on top of the current procedural scene.
+### Deployment rule
+Quality recovery status no longer blocks work-in-progress deployment. A coherent Explore 3D implementation increment should be merged to `main` and made inspectable on the public site even when the current render is visibly unfinished.
 
-This document is read together with `docs/explore-3d-spec.md`, `docs/explore-3d-schedule.md`, `docs/blender-asset-pipeline.md`, `docs/roadmap.md`, and `AGENTS.md`. Where older E2–E4 completion wording implies that the current scene presentation is accepted as final-quality, this recovery document supersedes that implication.
+The quality gate controls two things only:
+1. whether QR2/QR7 may be called visually complete;
+2. whether the roadmap may advance to E5 Dog / later observer phases as the active sequence.
 
-## Why the gate is reopened
-The current Night Intersection implementation is dominated by programmatically assembled primitive geometry and generated Canvas textures. That was useful for proving Three.js depth, parallax, movement and Vision integration, but it does not meet the intended final presentation bar.
+Do not use “QR2 fail” or “QR7 not yet closed” as a reason to keep current implementation work off production.
 
-The failure is not a Three.js capability limitation. The scene architecture and asset strategy must change.
+This document is read together with `docs/explore-3d-spec.md`, `docs/explore-3d-schedule.md`, `docs/blender-asset-pipeline.md`, `docs/roadmap.md`, and `AGENTS.md`.
 
-A renderer/shader/browser test can pass while the scene still fails the product. Visual/spatial acceptance therefore requires both technical behavior and rendered scene quality.
+## Reference-driven correction
+The earlier rebuild still allowed too much invented generic-city styling. That process is now replaced with a concrete photographic reference loop.
+
+`Night Intersection` uses **Hansaplatz, Berlin** as the canonical current reconstruction reference.
+
+Primary evidence:
+- `public/assets/panoramas/hansaplatz.jpg` — Poly Haven Hansaplatz 360 HDRI tonemapped JPG, Greg Zaal, CC0-1.0;
+- fixed perspective reference plates generated under `assets-src/blender/night-intersection/reference/hansaplatz/`;
+- authoritative Hansaviertel architectural records for major built-form cues.
+
+Current macro cues that must be represented rather than invented away:
+- mostly one-storey commercial/pavilion architecture around the square;
+- atrium/plaza spatial organization rather than four generic closed city blocks;
+- continuous flat roof/canopy elements on slender steel supports;
+- glazed shopfronts;
+- small white ceramic-tile architectural finish;
+- transit entrance / public-square identity;
+- real night-light hierarchy and the photographic background composition.
+
+The production loop is now:
+
+```text
+real reference
+  -> reference plates / source notes
+  -> authored assets + Blender assembly
+  -> GLB
+  -> Three.js production runtime
+  -> browser screenshot / real-site inspection
+  -> compare against reference
+  -> fix the visible mismatch
+  -> publish next increment
+```
+
+The target is not merely “more objects”. The render must converge toward the reference composition, architectural language, material response, lighting and density.
+
+## Why the gate was reopened
+The original Night Intersection implementation was dominated by programmatically assembled primitive geometry and generated Canvas textures. That was useful for proving Three.js depth, parallax, movement and Vision integration, but it did not meet the intended presentation bar.
+
+The failure is not a Three.js capability limitation. The scene architecture and authoring strategy changed accordingly.
+
+A renderer/shader/browser test can pass while the scene still looks poor. Visual/spatial acceptance therefore requires both technical behavior and rendered scene review.
 
 ## Product target
 Explore 3D must feel like a real authored environment that users can enter and move through, not a geometry demo.
@@ -24,17 +66,18 @@ Explore 3D must feel like a real authored environment that users can enter and m
 The target architecture is:
 
 ```text
-Blender authoring / assembly
-  -> glTF/GLB export
-  -> Scene manifest
-     -> streamed/chunked world
-        -> authored high-quality glTF/GLB assets
-        -> PBR materials/textures
-        -> environment + practical lighting
-        -> visual LOD / culling
-        -> separate collision/navigation representation
-        -> Observer runtime
-        -> Vision runtime
+Reference photography / architecture evidence
+  -> Blender authoring / assembly
+     -> glTF/GLB export
+        -> Scene manifest
+           -> streamed/chunked world
+              -> authored high-quality assets
+              -> PBR materials/textures
+              -> environment + practical lighting
+              -> visual LOD / culling
+              -> separate collision/navigation representation
+              -> Observer runtime
+              -> Vision runtime
 ```
 
 The existing Scene / Observer / Vision separation remains correct and must be preserved.
@@ -48,14 +91,14 @@ For final-quality Night Intersection presentation:
 - primary street furniture, vegetation, signs, storefront elements and other close-range objects must use authored/detail-preserving assets where the user can approach them;
 - materials should use physically based inputs where available, including base color, normal, roughness and metallic data as appropriate;
 - emissive maps/materials may be used for signs, windows and practical light sources;
-- procedural geometry remains allowed for invisible collision meshes, navigation/debug helpers, simple distant LODs, road markings, repeated low-salience elements and other cases where it does not make the final scene read as placeholder geometry.
+- procedural geometry remains allowed for invisible collision meshes, navigation/debug helpers, simple distant LODs, road markings, repeated low-salience elements and other cases where it does not become the visible quality ceiling.
 
-The acceptance question is visual: if the scene still reads as cheap low-poly/debug work at normal user viewpoints, it fails regardless of object count.
+The acceptance question is visual: if the scene still reads as cheap low-poly/debug work at normal user viewpoints, it fails the quality label regardless of object count. It may nevertheless remain deployed while the next correction is being built.
 
-Do not add new primary-visible world detail to the old procedural `nightIntersectionScene.ts` merely to improve screenshots. That implementation is now a temporary technical fallback/reference while the Blender-authored path replaces its visible responsibilities.
+Do not add new primary-visible world detail to the old procedural `nightIntersectionScene.ts` merely to improve screenshots. That implementation is a temporary technical fallback/reference while the Blender-authored path replaces its visible responsibilities.
 
 ## Asset pipeline
-The asset runtime must support an asset-first workflow suitable for static hosting. The canonical authoring/export contract is `docs/blender-asset-pipeline.md`.
+The canonical authoring/export contract is `docs/blender-asset-pipeline.md`.
 
 Required capabilities:
 - Blender-authored/assembled source path for new primary-visible world content;
@@ -70,15 +113,15 @@ Required capabilities:
 
 CC0 assets are preferred. CC-BY assets may be used only when attribution is recorded and surfaced as required by the license. Do not import assets with unclear redistribution rights.
 
-The source/runtime layout is now expected to converge on:
+Source/runtime layout:
 
 ```text
 assets-src/blender/night-intersection/
+assets-src/blender/night-intersection/reference/hansaplatz/
 public/assets/3d/night-intersection/
+scripts/reference/extract_hansaplatz_reference_views.py
 scripts/blender/export_night_intersection.py
 ```
-
-The existence of those directories or export automation does not satisfy QR1 by itself.
 
 ## World scale and streaming
 The old `150 m × 150 m` value is no longer a hard product ceiling.
@@ -93,30 +136,7 @@ Target architecture:
 - do not require every chunk to be resident at once;
 - avoid hard-coded navigation assumptions that only work inside the old 150 m box.
 
-A smaller dense authored core may land before the full envelope is populated, but the runtime must no longer make 150 m the architectural limit.
-
-The first authored rebuild target is the central `C0` 64 m chunk. C0 must become a credible close-range environment before the team spends effort populating the full district envelope.
-
-## Chunk model
-Night Intersection should move toward explicit chunks, for example:
-
-```text
-NW3 NW2 NW1 N0 N1 N2 N3
- W3  W2  W1 C0 E1 E2 E3
-SW3 SW2 SW1 S0 S1 S2 S3
-```
-
-Exact naming/layout is implementation-defined. Each chunk should be able to own:
-- visual asset references;
-- light references;
-- collision representation;
-- navigation metadata;
-- indoor portals/entries where present;
-- climb/perch metadata;
-- guided comparison targets;
-- LOD/load priority.
-
-Blender chunk authoring should expose equivalent role structure where applicable, using the collection contract documented in `docs/blender-asset-pipeline.md` (`VISUAL_LOD0/1/2`, `COLLISION`, `NAV`, `PERCH`, `CLIMB`, `PORTAL`, `SPAWN`, `LIGHT_ANCHOR`).
+A smaller dense authored core may land before the full envelope is populated. The first authored rebuild target remains central `C0`.
 
 ## Collision and navigation
 Do not use the visual mesh as the only collision contract.
@@ -128,18 +148,16 @@ Use a separate lightweight representation appropriate to the observer:
 - authored climb/perch transitions for Cat;
 - volumetric bounds plus building/obstacle collision for Bird.
 
-Collision must support a larger streamed scene and must not be a fixed list of hand-entered rectangles tied to one intersection forever.
+Collision must support a larger streamed scene and must not remain a fixed list of hand-entered rectangles tied to one prototype layout.
 
 ## Indoor / outdoor continuity
 The architecture must permit authored interiors connected to the exterior scene.
 
-Initial Night Intersection does not need every building to be enterable. At least one useful interior transition should eventually prove the contract:
-- exterior street -> entrance -> interior space -> exit back to exterior;
+Initial Night Intersection does not need every building to be enterable. At least one useful interior transition should eventually prove:
+- exterior -> entrance -> interior -> exterior;
 - consistent observer/camera state;
 - collision/navigation changes by zone;
-- Vision remains independent from the transition.
-
-Interior work must not be faked as a scene-reset if the public UI presents it as a continuous reachable space.
+- Vision independence from the transition.
 
 ## Observer movement contract after recovery
 ### Human
@@ -159,13 +177,11 @@ Interior work must not be faked as a scene-reset if the public UI presents it as
 ### Cat
 - lower viewpoint;
 - ground movement plus authored climb/perch targets;
-- ledges/benches/low walls/interior furniture may be reachable where authored;
 - Cat observer does not imply Cat-specific Vision.
 
 ### Bird
 - concrete species preset;
 - free-space flight;
-- forward/lateral/turn controls as selected by implementation;
 - ascend/descend;
 - variable altitude;
 - building/major-obstacle collision;
@@ -174,7 +190,7 @@ Interior work must not be faked as a scene-reset if the public UI presents it as
 
 ## Lighting and rendering target
 The rebuilt scene should use a coherent physically plausible night-light hierarchy:
-- environment/sky contribution;
+- Hansaplatz photographic environment/background contribution;
 - streetlights;
 - storefront/practical lights;
 - vehicle lights where present;
@@ -186,8 +202,6 @@ The rebuilt scene should use a coherent physically plausible night-light hierarc
 Post-processing must not be used to hide weak geometry/material work.
 
 ## Performance strategy
-The quality recovery is not permission to make the page unusable on mobile.
-
 Use as appropriate:
 - frustum culling;
 - InstancedMesh for repeated objects;
@@ -205,59 +219,49 @@ A lower mobile quality tier may reduce texture resolution, shadow quality, LOD d
 
 ## Recovery execution order
 ### QR1 — Runtime and asset contract
-Status: **in progress — runtime scaffold landed; Blender authored asset proof still required**
+Status: **PASS / merged / production path proven**
 
-Implemented foundation:
-- scene asset manifest type;
+Proven:
+- scene asset manifest;
 - glTF/GLB loader path;
 - asset lifecycle/disposal path;
 - chunk interfaces/load states;
-- license/provenance manifest type;
+- license/provenance manifest;
 - streamed Night Intersection world envelope/chunk runtime scaffold;
-- canonical Blender authoring/export contract in `docs/blender-asset-pipeline.md`;
-- initial Blender source/runtime directory layout;
-- canonical Blender export automation entry point in `scripts/blender/export_night_intersection.py`.
-
-Still required to close QR1:
-- create/import and integrate at least one **real authored PBR** asset through the Blender/source path or an already-compliant direct GLB path;
-- record its exact provenance/license/local path in `src/spatial/assetManifest.ts`;
-- attach it to the authored `C0` chunk path;
-- prove production runtime mount/unmount without duplicate leaked objects;
-- run build and existing Compare image regressions.
-
-Acceptance:
-- at least one real authored PBR asset loads through the production runtime;
-- load/unload does not leak the scene into duplicate objects after switching scenes;
-- the asset manifest contains explicit source/license metadata;
-- build and existing Compare image regressions remain green.
-
-A scripted/bootstrap primitive, empty GLB, empty manifest, directory scaffold or successful export command alone does **not** close QR1.
+- canonical Blender authoring/export path;
+- a real authored PBR asset in C0;
+- browser-verified load -> unload -> reload without duplicate authored roots.
 
 ### QR2 — Rebuild the visible Night Intersection core
-Status: **queued after QR1**
+Status: **ACTIVE / REFERENCE-DRIVEN / PRODUCTION ITERATION**
 
-Replace the close-range primitive/demo look with authored assets and higher-fidelity materials, beginning with `C0`.
+Current work:
+- Hansaplatz is the reference rather than an invented generic intersection;
+- the real checked-in panorama is used as Night Intersection background/environment while the authored foreground is rebuilt;
+- repeatable 82° perspective plates at six relative yaw headings are generated for visual comparison;
+- the earlier invented brick-block macro layout is being removed;
+- C0 is being rebuilt toward Hansaplatz low-rise modernist retail/pavilion architecture, canopies, plaza/atrium, storefront glazing, transit entrance, white-tile material language and practical night lighting;
+- third-party authored assets are retained only where they fit the reference and licensing remains explicit.
 
-Acceptance:
+Acceptance for **quality closeout**:
 - representative ground-level screenshots no longer read as placeholder/debug/cheap low-poly work;
-- near-field building/storefront/vehicle/street-furniture/vegetation detail survives normal walking distance;
+- architecture and composition materially resemble the real reference;
+- near-field storefront/vehicle/street-furniture/vegetation detail survives normal walking distance;
 - Normal mode is visually credible before any Vision effect;
-- current Human movement still works.
+- Human movement still works.
+
+A failed rendered review keeps QR2 open, but the current implementation remains eligible for production deployment.
 
 ### QR3 — Chunking / LOD / larger district envelope
 Status: **queued**
 
-Move the scene away from one fixed 150 m graph and prove streamed world expansion.
-
 Acceptance:
 - multiple chunks load/unload based on observer position;
-- the runtime can address a district-scale envelope toward 500 m × 500 m without keeping all high-detail assets resident;
-- parallax/lighting/collision remain coherent across chunk boundaries.
+- runtime can address toward 500 m × 500 m without all high-detail assets resident;
+- parallax/lighting/collision remain coherent across boundaries.
 
 ### QR4 — Collision/navigation rebuild
 Status: **queued**
-
-Replace the fixed obstacle-rectangle model with collision/navigation data that scales with authored assets and chunks.
 
 Acceptance:
 - Human cannot cross primary buildings/vehicles/major obstacles;
@@ -267,16 +271,12 @@ Acceptance:
 ### QR5 — Vertical and perch contract
 Status: **queued**
 
-Add vertical structures and authored perch/climb metadata needed by Cat/Bird.
-
 Acceptance:
-- useful rooftops/ledges/wires/branches/poles exist as real reachable spatial targets;
+- useful rooftops/ledges/wires/branches/poles exist as real spatial targets;
 - metadata can support Cat climb/perch and Bird landing without rewriting the scene.
 
 ### QR6 — Interior continuity proof
 Status: **queued**
-
-Add at least one authored enterable interior path.
 
 Acceptance:
 - exterior/interior transition is reachable through normal movement;
@@ -288,9 +288,9 @@ Status: **queued**
 
 Run rendered desktop/mobile review plus browser regression and production verification.
 
-Only after QR7 passes may E5+ resume as the active roadmap sequence.
+Only after QR7 passes may E5+ resume as the active roadmap sequence. Intermediate QR work remains continuously deployable.
 
-## Blocking acceptance gate
+## Quality closeout gate
 Do **not** mark QR7 complete based on:
 - object count;
 - shader metrics alone;
@@ -298,9 +298,9 @@ Do **not** mark QR7 complete based on:
 - source-code inspection alone;
 - the presence of glTF files alone.
 
-QR7 requires actual rendered review at representative user viewpoints.
+QR7 requires actual rendered review at representative user viewpoints and comparison against the real reference.
 
-Fail if any representative close-range view still looks like a primitive prototype/debug environment.
+Fail the quality label if representative close-range views still look like a primitive prototype/debug environment. Continue publishing corrections while fixing it.
 
 ## What remains valid from E1–E4
 Keep and reuse where technically sound:
