@@ -214,13 +214,13 @@ function SpatialRenderer({
       composer.addPass(new RenderPass(scene, camera));
       const canvas = renderer.domElement;
       const syncStreamingDiagnostics = () => {
-const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
-canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
-canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+        const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+        canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+        canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
       };
       const renderScene = () => {
-composer?.render();
-syncStreamingDiagnostics();
+        composer?.render();
+        syncStreamingDiagnostics();
       };
       visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);
 
@@ -246,6 +246,7 @@ syncStreamingDiagnostics();
           renderScene,
           navigation: activeSceneRuntime?.navigation ?? null,
           onViewpointChange: setViewpoint,
+          onPositionChange: (position) => activeSceneRuntime?.updateObserverPosition(position),
         });
         activeObserverRuntime.setGuidedViewpoint(viewpoint === "free" ? "baseline" : viewpoint);
         renderScene();
