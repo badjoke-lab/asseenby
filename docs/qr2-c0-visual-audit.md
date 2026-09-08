@@ -1,51 +1,63 @@
 # QR2 C0 rendered visual audit
 
-Status: **IN PROGRESS / VISUAL FAIL UNTIL RENDERED RECHECK / DO NOT MERGE AS QR2-COMPLETE**
+Status: **IN PROGRESS / VISUAL FAIL / DO NOT MERGE AS QR2-COMPLETE**
 
-Latest accepted technical browser run: `34242568808` on head `dfea5b36f963301ae316a6d6e4a81905061fc594`.
+Latest inspected browser run: `34247303806` on the authored-prop candidate. The run was technically green and its forward, turned, translated, opposite and mobile screenshots were manually inspected.
 
-A newer Blender-generated C0 candidate now exists at `31ca779f52146373c30f3ea4cc96377992b342ae`. It replaces several high-salience placeholders with authored CC0 models, packs them into the canonical Blender source, adds shallow storefront interiors, and adds authored practical lights. This candidate is **not accepted by this document until its generated GLB is re-run through the browser screenshot audit and inspected visually**.
+The current Blender-generated refinement candidate is `848a9c4f8ba6b736f7c9714f33fc40d9849952b7`. It was generated successfully by `Build Blender C0 visible core` run `34250084381`, including the new architecture/street-detail pass. This candidate remains **unaccepted until a fresh browser screenshot run on this generated GLB is inspected visually**.
 
-The earlier run was technically green. It proved that the rebuilt Blender-authored C0 loads, the Human camera turns, and bounded ground translation works. The dedicated movement proof changed yaw from `0` to `-0.966`, translated the observer from `[0,0,0]` to `[0.658,0,-0.455]`, and then swept to yaw `1.218`.
+## What the latest inspected authored-prop run proved
 
-That technical success is **not QR2 acceptance**. Rendered inspection of the earlier candidate failed the product-quality gate.
+- The authored C0 GLB loaded through the real chunk runtime.
+- Human look controls remained active.
+- Bounded ground movement remained active; the browser proof translated the Human observer after a real W input.
+- The CC0 authored street-prop replacement pass rendered without browser failures.
+- Desktop and mobile browser regression remained usable.
 
-## Improvements already confirmed before the authored-prop pass
+That technical success is **not QR2 acceptance**.
 
-- Blender/Three.js axis mismatch is fixed; authored buildings now stand upright in the runtime frame.
-- Poly Haven brick and asphalt scans are projected at approximately physical capture scale instead of stretching one texture over an entire facade/road face.
-- The old procedural primary-visible C0 geometry is retired from the rendered foreground/midground so the Blender-authored core can be judged directly.
-- The browser audit has real turned and translated viewpoints rather than duplicate screenshots caused by attempting pointer input while the canvas was outside the viewport.
+## Rendered failure observed in run `34247303806`
 
-## New candidate awaiting rendered inspection
+The authored-prop candidate still failed the product-quality gate in Normal mode:
 
-The generated C0 at `31ca779f52146373c30f3ea4cc96377992b342ae` adds the following Blender-authored replacements and depth work:
+- primary buildings still read as large rectangular brick masses with insufficient macro-articulation;
+- repeated window rows still read as flat/repetitive blue panels rather than varied occupied architecture;
+- storefront fronts remained shallow and visually weak despite the first interior-depth pass;
+- the turned/moved viewpoints exposed very large flat side facades;
+- a jacaranda placement visibly intersected/pressed into a primary facade because its prior hard-coded position sat inside the building footprint;
+- seating was also too close to the building footprint rather than clearly grounded in the sidewalk strip;
+- street and curb surfaces remained too clean/sparse, with too few drains, covers, patches and close-range scale cues;
+- lighting still lacked enough contact/occlusion depth for a convincing night street;
+- overall composition still read as a staged low-detail intersection rather than a believable lived-in authored environment.
 
-- Poly Haven `street_lamp_02` instances for intersection street lighting;
-- Poly Haven `modular_street_seating` in place of bench blockouts;
-- Poly Haven `utility_box_02` and `metal_trash_can` in place of street-prop blockouts;
-- Poly Haven `covered_car` in place of the blockout delivery vehicle;
-- Poly Haven `jacaranda_tree` instances in place of the obvious tree placeholders;
-- shallow modeled interiors behind all four primary storefront glazing systems, including floor, rear wall, counter, shelving and emissive ceiling panels;
-- authored Blender point lights for four street-practical and four storefront-practical positions.
+## Current refinement candidate `848a9c4f...`
 
-All listed third-party model sources are CC0 and are recorded under `assets-src/blender/night-intersection/third-party/SOURCES.md`.
+The new Blender refinement pass directly targets those rendered defects rather than increasing arbitrary object count.
 
-## Earlier visual failures that must be re-evaluated now
+It now:
 
-- Building macro-geometry still read as simple blocks rather than authored architecture.
-- Window openings were shallow/repetitive and read as flat blue panels at walking distance.
-- Storefronts lacked believable interiors, glazing depth, merchandise/fixtures, door hardware, signage construction, and local practical-light detail.
-- Vegetation was placeholder geometry and visibly unacceptable in the turned/moved viewpoints.
-- The delivery vehicle and several street props were low-detail authored primitives rather than production-quality assets.
-- Lighting was too flat for a night scene; contact/shadow depth and material response were not strong enough.
-- Sidewalk/street edges were clean and sparse; there were too few drains, covers, curb wear, decals, litter, utility details, parked objects, and other close-range scale cues.
-- The scene did not have enough occlusion/variation to feel like a lived-in district rather than a staged intersection blockout.
+- moves the authored jacaranda trees and modular seating out of primary building footprints and onto the sidewalk strip;
+- adds projecting facade pilasters and floor belt courses to break the single-box building read;
+- adds recessed varied window backplanes with dark, warm and cool occupied/unoccupied states behind the existing framed glazing;
+- adds storefront portal shadow/depth, plinths, jambs, door pulls, canopy supports and projecting blade signs;
+- adds side-facade downpipes, belt articulation and compact fire-escape/platform detail on the east-side buildings so turned views are not one uninterrupted brick wall;
+- adds manhole covers, asphalt repair patches, storm drains with grate slots, sidewalk service covers and stop-line detail;
+- keeps all new primary-visible work in Blender/GLB and does not return visible-world responsibility to `nightIntersectionScene.ts`.
 
-## Immediate rendered gate
+The deterministic source pass is `scripts/blender/refine_night_intersection_c0.py`; the canonical Blender workflow runs it after the authored CC0 augmentation and before GLB export.
 
-Run the generated authored-prop C0 through the verified browser audit and inspect forward, turned, translated, opposite and mobile captures. Reject and iterate immediately if imported model scale/orientation/grounding, storefront visibility, lighting, architecture or close-range density is visibly wrong.
+## Remaining blockers to judge in the next render
 
-If the authored-prop pass fixes the vegetation/vehicle/street-furniture blockers, the next Blender pass must focus on the remaining architecture, glazing/storefront construction, lighting depth and street microdetail rather than returning to primitive-object-count growth.
+The next screenshot audit must decide, from actual forward/turned/translated/opposite/mobile views, whether:
+
+- facade articulation is visibly strong enough at walking distance;
+- the tree/seating grounding error is genuinely gone;
+- window variation stops the facade from reading as a repeated grid;
+- storefronts have enough construction and depth to survive close approach;
+- added street microdetail is visible at the user camera scale rather than technically present but visually irrelevant;
+- side-facade detail fixes the most obvious flat-wall failure;
+- the night-light hierarchy still needs a separate shadow/occlusion/runtime-light pass.
+
+If those screenshots still read as cheap low-poly or placeholder work, QR2 remains failed and the next Blender pass will continue architecture/storefront/material/lighting work. Do not advance to QR3 or E5 based on CI alone.
 
 QR2 passes only when representative walking-distance screenshots no longer read as debug, cheap low-poly, or placeholder work. A green build/browser test is necessary but not sufficient.
