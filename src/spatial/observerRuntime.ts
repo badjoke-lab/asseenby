@@ -30,6 +30,7 @@ type ObserverRuntimeOptions = {
   renderScene: () => void;
   navigation: SpatialGroundNavigation | null;
   onViewpointChange?: (viewpoint: SpatialViewpointState) => void;
+  onPositionChange?: (position: THREE.Vector3) => void;
 };
 
 const GUIDED_VIEWPOINT_POSITIONS: Record<SpatialGuidedViewpoint, [number, number, number]> = {
@@ -41,7 +42,7 @@ const MOVE_KEYS = new Set(["w", "a", "s", "d", "shift"]);
 
 export function createSpatialObserverRuntime(
   observerId: SpatialObserverId,
-  { camera, canvas, renderScene, navigation: initialNavigation, onViewpointChange }: ObserverRuntimeOptions,
+  { camera, canvas, renderScene, navigation: initialNavigation, onViewpointChange, onPositionChange }: ObserverRuntimeOptions,
 ): SpatialObserverRuntime {
   if (observerId !== "human") {
     throw new Error(`Unsupported Explore 3D observer: ${observerId}`);
@@ -83,6 +84,7 @@ export function createSpatialObserverRuntime(
     canvas.dataset.cameraPitch = pitch.toFixed(6);
     canvas.dataset.cameraFov = camera.fov.toFixed(3);
     canvas.dataset.cameraPosition = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(3)},${camera.position.z.toFixed(3)}`;
+    onPositionChange?.(camera.position);
   };
 
   const markFree = () => {
