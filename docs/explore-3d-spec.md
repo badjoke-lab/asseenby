@@ -5,18 +5,22 @@ This is the current product specification for post-pilot Three.js work.
 
 `docs/spatial-pilot-spec.md` remains the historical pilot/evidence record. When that older pilot document conflicts with this file on current product shape, camera movement, scene architecture, observer behavior, or execution direction, **this specification controls**.
 
+`docs/explore-3d-quality-recovery.md` is the active blocking implementation-quality gate. Older E2–E4 completion wording does not override that gate.
+
 `Compare image` remains a separate browser-side 2D experience. `Explore 3D` is additive and must not replace it.
 
 ## Product definition
-Explore 3D is not a 360° panorama viewer with filters. Its purpose is to let a user enter the same modeled environment as different observers and compare how **viewpoint, body scale, movement, reachable space, distance, depth, occlusion, lighting, and the selected visual model** change what information is available.
+Explore 3D is not a 360° panorama viewer with filters and is not a primitive geometry showcase. Its purpose is to let a user enter the same credible modeled environment as different observers and compare how **viewpoint, body scale, movement, reachable space, distance, depth, occlusion, lighting, and the selected visual model** change what information is available.
 
 Three.js is justified only when the experience uses spatial variables that a flat image cannot provide. A panorama may remain as a photographic reference scene, but it is not the main Explore 3D architecture.
+
+A technically functioning Three.js scene is not sufficient by itself. Scene presentation must be believable enough that users can focus on viewpoint/perception differences rather than on obvious placeholder geometry.
 
 ## Core architecture: Scene / Observer / Vision
 The public 3D experience has three independent layers.
 
 ### Scene
-The environment being explored. It owns geometry, materials, lights, collision surfaces, navigation bounds, observer spawn points, climb/perch targets, and guided comparison targets.
+The environment being explored. It owns geometry, authored visual assets, materials, lights, chunk/load state, collision surfaces, navigation bounds, observer spawn points, indoor/outdoor zones, climb/perch targets, and guided comparison targets.
 
 ### Observer
 The body/viewpoint and movement model. It owns camera height, movement style, movement speed, reachable space, collision envelope, altitude limits, and other physical-view constraints.
@@ -34,9 +38,10 @@ When only Vision changes:
 - preserve camera direction;
 - preserve FOV;
 - preserve lighting/time/object state;
+- preserve loaded/chunk state except for ordinary streaming caused by position;
 - change only the perception renderer.
 
-When Observer changes, observer-specific camera height, movement model, reachable space, collision envelope, spawn/reset state, and approved FOV rules may change.
+When Observer changes, observer-specific camera height, movement model, reachable space, collision envelope, spawn/reset state, altitude rules, and approved FOV rules may change.
 
 ## Observer set
 Initial architecture must support at least:
@@ -54,10 +59,10 @@ Use a generic standing-adult baseline around 1.6 m for the first implementation.
 Future observer-height presets may include child or seated/wheelchair viewpoints if separately specified.
 
 ### Movement
-Use bounded ground movement inside the active scene.
+Use free authored ground movement inside the active reachable world.
 
 Desktop baseline:
-- pointer/mouse drag: look;
+- pointer/mouse look;
 - W/S: forward/back;
 - A/D: strafe;
 - Shift: moderately faster movement;
@@ -69,6 +74,8 @@ Mobile baseline:
 - compact movement control/virtual stick;
 - restrained pinch/FOV if validated;
 - Reset control.
+
+Human movement may include authored stairs, ramps, doorways and interior transitions where the scene supports them.
 
 No combat, scoring, inventory, jumping game loop, quests, or unrelated game mechanics.
 
@@ -159,16 +166,55 @@ A future UV/spectral observer requires:
 - a documented human-display false-color translation;
 - explicit limitations.
 
+## Scene quality model
+### Asset-first visible presentation
+Final-quality primary visible content should use authored high-quality meshes and materials rather than relying on primitive boxes as the presentation layer.
+
+Use glTF/GLB as the preferred authored asset container where practical. Preserve physically based material inputs and texture detail.
+
+For close-range user-visible assets, prefer:
+- authored building/facade modules;
+- modeled doors/windows/storefront components;
+- authored vehicles;
+- detailed street furniture;
+- authored vegetation;
+- real signage/props suitable for approach distance;
+- PBR base-color/normal/roughness/metallic/emissive data where available.
+
+Primitive/procedural geometry remains valid for:
+- invisible collision meshes;
+- navigation/debug helpers;
+- distant/simple LODs;
+- road markings and repeated low-salience details;
+- temporary development scaffolding that is not presented as accepted final quality.
+
+No object-count threshold can substitute for rendered quality review.
+
+### Asset provenance
+Every third-party visual asset must have recorded provenance and redistribution rights, including:
+- source;
+- creator/author where applicable;
+- license;
+- asset/version identifier where available;
+- local repository/public path;
+- attribution requirement if any.
+
+Prefer CC0. CC-BY may be used only when attribution is tracked and satisfied. Do not ship assets with unclear redistribution rights.
+
 ## Scene portfolio
-Explore 3D should use multiple dense scenes rather than one huge sparse world.
+Explore 3D should use multiple dense scenes rather than one huge sparse world, while allowing a scene to expand through chunking/streaming when that improves exploration.
 
 ### Scene 1 — Night Intersection
 First full 3D production scene.
 
-Target useful volume: approximately 150 m × 150 m × 50–60 m, expandable toward 200 m × 200 m and 80 m height if performance remains acceptable.
+The old `150 m × 150 m` target is no longer a hard ceiling. The Night Intersection runtime should be designed as a streamed/chunked district that can address a horizontal envelope on the order of **500 m × 500 m** when populated, without requiring every high-detail chunk to remain resident.
+
+A smaller dense authored core may be used during recovery and staged expansion. That does not permit hard-coding the old 150 m extent into movement, collision or scene loading architecture.
+
+Useful vertical range should normally support roughly 50–80 m where the city composition needs it, especially for Bird flight/perch behavior.
 
 Required content should include a believable mix of:
-- buildings and facades;
+- detailed buildings and facades;
 - windows, entrances, storefronts and signs;
 - road, curb, sidewalk and crossing details;
 - several vehicles where useful;
@@ -178,17 +224,45 @@ Required content should include a believable mix of:
 - vegetation;
 - dark alleys and bright storefront areas;
 - rooftops, wires, branches, ledges or other Bird perch/height structure;
-- near, mid and far targets.
+- near, mid and far targets;
+- at least one eventual authored enterable interior continuity path.
 
 This scene should support Human, Dog, Cat and Bird observer behavior.
 
 ### Later scenes
 Planned scene families:
-- Daytime Park — approximately 200 m × 200 m with useful vertical tree/flight structure;
+- Daytime Park — approximately 200 m × 200 m or larger if chunked, with useful vertical tree/flight structure;
 - Store / Supermarket — approximately 40 m × 60 m, dense signage/shelf/detail comparisons;
 - Home / Apartment — approximately 15 m × 25 m, strong Human/Dog/Cat viewpoint comparison;
-- Station / Platform — approximately 100 m × 300 m, signage, crowds and long-distance targets;
+- Station / Platform — approximately 100 m × 300 m or chunked equivalent, signage, crowds and long-distance targets;
 - 360° Photo Reference — photographic reference mode retained as a separate scene, not the Explore 3D core.
+
+## Chunking, streaming and LOD
+District-scale scenes must not be implemented by keeping every high-detail asset resident at all times.
+
+Use explicit scene/chunk metadata capable of owning:
+- visual asset references;
+- load priority/state;
+- LOD policy;
+- lights;
+- collision/navigation data;
+- spawn/reset data;
+- guided targets;
+- climb/perch/landing targets;
+- indoor/outdoor portal/zone data.
+
+Use as needed:
+- lazy chunk loading;
+- chunk unloading/disposal;
+- frustum culling;
+- authored or generated LOD;
+- InstancedMesh/reuse for repeated assets;
+- compressed textures;
+- shared materials/textures;
+- bounded dynamic-light counts;
+- baked lighting/lightmaps where appropriate.
+
+The renderer remains browser-side and must preserve the free/static-hosting operating model.
 
 ## 360° photographic reference
 The existing Hansaplatz panorama remains valuable for:
@@ -199,18 +273,33 @@ The existing Hansaplatz panorama remains valuable for:
 
 But it is explicitly a **reference scene**. It must not define the capability ceiling of Explore 3D.
 
-Features requiring translation, parallax, object distance, geometry occlusion, physical lights, altitude, collision, climbing or flight must use a real 3D scene.
+Features requiring translation, parallax, object distance, geometry occlusion, physical lights, altitude, collision, climbing, interior traversal or flight must use a real 3D scene.
 
-## Bounded movement, not a game
+## Free movement, not a game
 The old pilot restriction against walking is superseded.
 
-Current target: **bounded free movement** within each authored scene, plus guided viewpoints/targets.
+Current target: **free authored movement** within reachable scene space, plus guided viewpoints/targets.
 
 This means:
 - movement is allowed where it improves the perception comparison;
-- collision/navigation bounds prevent leaving the useful scene;
+- collision/navigation bounds prevent leaving unsupported space or passing through major obstacles;
 - preset comparison viewpoints may coexist with free movement;
-- no need for a game loop, combat, scoring, inventory, character progression, or unrestricted open-world simulation.
+- streamed world expansion may extend reachable space without replacing the movement model;
+- no need for a game loop, combat, scoring, inventory, character progression, or unrestricted procedural open-world simulation.
+
+## Indoor / outdoor continuity
+The Scene architecture must support authored enterable interiors connected to the exterior world.
+
+Not every building must be enterable.
+
+When an interior is presented as continuously reachable, it should behave as real reachable space:
+- approach and cross an entrance through normal movement;
+- preserve observer/camera state;
+- switch collision/navigation zone appropriately;
+- preserve Vision state;
+- allow exit back to exterior.
+
+Do not present a hidden scene reset/teleport as continuous traversal unless the UI makes the transition explicit.
 
 ## Guided comparison targets
 Each scene should expose useful comparison targets so users do not need to discover every demonstration manually.
@@ -223,7 +312,8 @@ Examples for Night Intersection:
 - bright storefront;
 - dark alley;
 - distant sign;
-- rooftop/perch.
+- rooftop/perch;
+- interior doorway/target once available.
 
 A guided target may move/reset the observer to an authored comparison viewpoint when the user requests it, but must not silently change Vision.
 
@@ -251,45 +341,58 @@ True 3D night scenes must use an authored lighting hierarchy, such as:
 - vehicle lights;
 - signs/emissive sources;
 - deliberately dark regions;
-- occlusion/shadow where performance allows.
+- occlusion/shadow where performance allows;
+- environment/reflection response where useful.
 
 Perception modes may use this scene information but must clearly separate physical scene lighting from physiological claims.
 
+Post-processing must not be used to disguise weak geometry/material work.
+
 ## Collision and navigation
-Use the simplest collision/navigation model that preserves the comparison.
+Use a collision/navigation model that scales with authored assets, chunks and observer types.
+
+Visual meshes and collision representation should be separable.
+
+Use as appropriate:
+- simplified collision meshes;
+- bounding volumes;
+- scene/chunk collision metadata;
+- acceleration structures/BVH when beneficial;
+- ground navigation surfaces/regions;
+- volumetric bounds for Bird.
 
 Human/Dog/Cat:
 - do not pass through buildings, vehicles or major obstacles;
-- stay inside authored navigation bounds.
+- stay inside authored reachable/navigation space;
+- support stairs/ramps/interior transitions where authored.
 
 Cat:
 - explicit climb/perch targets are allowed.
 
 Bird:
-- enforce building collision, altitude bounds and valid perch/landing targets;
+- enforce building/major-obstacle collision, altitude bounds and valid perch/landing targets;
 - ground collision is secondary to volumetric navigation.
+
+A fixed hand-entered rectangle list tied to one prototype intersection is not the long-term collision architecture.
 
 Full rigid-body physics is not required unless a future interaction specifically needs it.
 
 ## Scene scale and performance
-Three.js can support much larger spaces, but AsSeenBy should optimize for comparison density rather than map size.
+AsSeenBy should optimize for comparison density and credible exploration, not map-size marketing.
 
-Preferred initial public scene size: roughly 100–200 m per horizontal dimension, with enough vertical space for Bird observers.
+There is no fixed 150 m product ceiling. A Night Intersection district on the order of 500 m × 500 m is acceptable when implemented through chunking/LOD/streaming and populated with useful content.
 
-A 500 m × 500 m scene may be possible with LOD, instancing and chunking. A 1 km-class world is technically possible but is not a current product goal.
+A 1 km-class world is technically possible but is not a current product goal unless later scenes genuinely need it.
 
-Use as needed:
-- InstancedMesh;
-- texture atlases/compressed textures;
-- LOD;
-- frustum culling;
-- repeated asset reuse;
-- baked lighting where appropriate;
-- controlled dynamic-light count;
-- lazy scene loading;
-- scene chunking.
+Performance quality tiers may adjust:
+- texture resolution;
+- shadow quality;
+- LOD distance;
+- number/range of active lights;
+- reflection/environment detail;
+- chunk prefetch radius.
 
-The renderer remains browser-side and should preserve the free/static-hosting operating model.
+A lower mobile tier must not revert the user-visible scene to placeholder/debug visual quality.
 
 ## UI structure
 Explore 3D should expose the architecture directly.
@@ -326,7 +429,8 @@ Reset restores:
 - camera direction;
 - FOV;
 - movement velocity/state;
-- altitude where relevant.
+- altitude where relevant;
+- canonical authored zone/chunk target as needed.
 
 Preferred behavior: preserve the selected Vision so the user can reset position without losing the comparison mode.
 
@@ -355,22 +459,34 @@ shared metadata / evidence
         |
         +-- Explore 3D
               +-- Scene layer
+              |     +-- asset manifest
+              |     +-- chunk/streaming runtime
+              |     +-- visual assets/PBR
+              |     +-- collision/navigation
               +-- Observer/controller layer
               +-- Vision/post-processing layer
 ```
 
-The current panorama renderer should be refactored into one Scene implementation rather than remaining the entire spatial architecture.
+The current panorama renderer remains one Scene implementation rather than the entire spatial architecture.
+
+The current procedural Night Intersection may remain temporarily as a technical fallback/reference during recovery, but it must not remain the final quality ceiling.
 
 ## Acceptance boundary
-Explore 3D architecture is not considered implemented merely because Scene/Observer/Vision selectors exist.
+Explore 3D architecture is not considered implemented merely because Scene/Observer/Vision selectors exist, assets load, object counts are high, CI is green, or production smoke passes.
 
 Acceptance requires actual rendered behavior showing:
-- a geometry-based scene with depth/parallax;
-- bounded camera translation for ground observers;
+- a high-quality geometry-based scene with depth/parallax that does not read as placeholder/debug/cheap low-detail work;
+- authored close-range assets/material detail suitable for normal user approach distance;
+- scalable chunk/LOD/streaming architecture for larger district space;
+- bounded/free camera translation for ground observers;
 - observer-specific viewpoint height;
 - at least one observer-specific reachable-space difference;
+- scalable collision/navigation representation separate from final visual geometry;
 - Bird flight in three dimensions once the Bird phase begins;
 - Vision switching without unintended scene/camera reset;
 - desktop and mobile usability;
 - evidence/limitations matching the actual implementation;
+- representative rendered review;
 - public production verification.
+
+During the active recovery, E5+ must not resume until QR7 closes the scene/world quality gate.
