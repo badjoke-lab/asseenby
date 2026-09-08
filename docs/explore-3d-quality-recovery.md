@@ -9,7 +9,7 @@ The E2–E4 deployments remain historical implementation/production-verification
 
 Until this recovery closes, do not advance the public product roadmap to Dog, Cat or Bird merely by adding observer controls on top of the current procedural scene.
 
-This document is read together with `docs/explore-3d-spec.md`, `docs/explore-3d-schedule.md`, `docs/roadmap.md`, and `AGENTS.md`. Where older E2–E4 completion wording implies that the current scene presentation is accepted as final-quality, this recovery document supersedes that implication.
+This document is read together with `docs/explore-3d-spec.md`, `docs/explore-3d-schedule.md`, `docs/blender-asset-pipeline.md`, `docs/roadmap.md`, and `AGENTS.md`. Where older E2–E4 completion wording implies that the current scene presentation is accepted as final-quality, this recovery document supersedes that implication.
 
 ## Why the gate is reopened
 The current Night Intersection implementation is dominated by programmatically assembled primitive geometry and generated Canvas textures. That was useful for proving Three.js depth, parallax, movement and Vision integration, but it does not meet the intended final presentation bar.
@@ -24,18 +24,22 @@ Explore 3D must feel like a real authored environment that users can enter and m
 The target architecture is:
 
 ```text
-Scene manifest
-  -> streamed/chunked world
-     -> authored high-quality glTF/GLB assets
-     -> PBR materials/textures
-     -> environment + practical lighting
-     -> visual LOD / culling
-     -> separate collision/navigation representation
-     -> Observer runtime
-     -> Vision runtime
+Blender authoring / assembly
+  -> glTF/GLB export
+  -> Scene manifest
+     -> streamed/chunked world
+        -> authored high-quality glTF/GLB assets
+        -> PBR materials/textures
+        -> environment + practical lighting
+        -> visual LOD / culling
+        -> separate collision/navigation representation
+        -> Observer runtime
+        -> Vision runtime
 ```
 
 The existing Scene / Observer / Vision separation remains correct and must be preserved.
+
+For new primary-visible world content, Blender is the canonical DCC authoring/assembly layer. Three.js remains the browser runtime. A third-party GLB that already meets the runtime contract may be consumed directly when no Blender edit is required, but it still needs the same provenance, chunk, LOD and collision discipline.
 
 ## Visible-asset rule
 For final-quality Night Intersection presentation:
@@ -48,10 +52,13 @@ For final-quality Night Intersection presentation:
 
 The acceptance question is visual: if the scene still reads as cheap low-poly/debug work at normal user viewpoints, it fails regardless of object count.
 
+Do not add new primary-visible world detail to the old procedural `nightIntersectionScene.ts` merely to improve screenshots. That implementation is now a temporary technical fallback/reference while the Blender-authored path replaces its visible responsibilities.
+
 ## Asset pipeline
-The asset runtime must support an asset-first workflow suitable for static hosting.
+The asset runtime must support an asset-first workflow suitable for static hosting. The canonical authoring/export contract is `docs/blender-asset-pipeline.md`.
 
 Required capabilities:
+- Blender-authored/assembled source path for new primary-visible world content;
 - glTF/GLB loading;
 - PBR material preservation;
 - texture compression/transcoding where practical;
@@ -62,6 +69,16 @@ Required capabilities:
 - an asset/license manifest recording source, creator, license, asset version and local path for every third-party visual asset.
 
 CC0 assets are preferred. CC-BY assets may be used only when attribution is recorded and surfaced as required by the license. Do not import assets with unclear redistribution rights.
+
+The source/runtime layout is now expected to converge on:
+
+```text
+assets-src/blender/night-intersection/
+public/assets/3d/night-intersection/
+scripts/blender/export_night_intersection.py
+```
+
+The existence of those directories or export automation does not satisfy QR1 by itself.
 
 ## World scale and streaming
 The old `150 m × 150 m` value is no longer a hard product ceiling.
@@ -77,6 +94,8 @@ Target architecture:
 - avoid hard-coded navigation assumptions that only work inside the old 150 m box.
 
 A smaller dense authored core may land before the full envelope is populated, but the runtime must no longer make 150 m the architectural limit.
+
+The first authored rebuild target is the central `C0` 64 m chunk. C0 must become a credible close-range environment before the team spends effort populating the full district envelope.
 
 ## Chunk model
 Night Intersection should move toward explicit chunks, for example:
@@ -96,6 +115,8 @@ Exact naming/layout is implementation-defined. Each chunk should be able to own:
 - climb/perch metadata;
 - guided comparison targets;
 - LOD/load priority.
+
+Blender chunk authoring should expose equivalent role structure where applicable, using the collection contract documented in `docs/blender-asset-pipeline.md` (`VISUAL_LOD0/1/2`, `COLLISION`, `NAV`, `PERCH`, `CLIMB`, `PORTAL`, `SPAWN`, `LIGHT_ANCHOR`).
 
 ## Collision and navigation
 Do not use the visual mesh as the only collision contract.
@@ -184,29 +205,42 @@ A lower mobile quality tier may reduce texture resolution, shadow quality, LOD d
 
 ## Recovery execution order
 ### QR1 — Runtime and asset contract
-Status: **next**
+Status: **in progress — runtime scaffold landed; Blender authored asset proof still required**
 
-Implement:
-- scene asset manifest;
+Implemented foundation:
+- scene asset manifest type;
 - glTF/GLB loader path;
-- asset lifecycle/disposal;
+- asset lifecycle/disposal path;
 - chunk interfaces/load states;
-- license/provenance manifest;
-- preserve current Scene / Observer / Vision state contracts.
+- license/provenance manifest type;
+- streamed Night Intersection world envelope/chunk runtime scaffold;
+- canonical Blender authoring/export contract in `docs/blender-asset-pipeline.md`;
+- initial Blender source/runtime directory layout;
+- canonical Blender export automation entry point in `scripts/blender/export_night_intersection.py`.
+
+Still required to close QR1:
+- create/import and integrate at least one **real authored PBR** asset through the Blender/source path or an already-compliant direct GLB path;
+- record its exact provenance/license/local path in `src/spatial/assetManifest.ts`;
+- attach it to the authored `C0` chunk path;
+- prove production runtime mount/unmount without duplicate leaked objects;
+- run build and existing Compare image regressions.
 
 Acceptance:
 - at least one real authored PBR asset loads through the production runtime;
 - load/unload does not leak the scene into duplicate objects after switching scenes;
+- the asset manifest contains explicit source/license metadata;
 - build and existing Compare image regressions remain green.
 
-### QR2 — Rebuild the visible Night Intersection core
-Status: **queued**
+A scripted/bootstrap primitive, empty GLB, empty manifest, directory scaffold or successful export command alone does **not** close QR1.
 
-Replace the close-range primitive/demo look with authored assets and higher-fidelity materials.
+### QR2 — Rebuild the visible Night Intersection core
+Status: **queued after QR1**
+
+Replace the close-range primitive/demo look with authored assets and higher-fidelity materials, beginning with `C0`.
 
 Acceptance:
 - representative ground-level screenshots no longer read as placeholder/debug/cheap low-poly work;
-- near-field building/storefront/vehicle/street-furniture detail survives normal walking distance;
+- near-field building/storefront/vehicle/street-furniture/vegetation detail survives normal walking distance;
 - Normal mode is visually credible before any Vision effect;
 - current Human movement still works.
 
