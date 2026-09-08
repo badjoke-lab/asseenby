@@ -9,6 +9,7 @@ on:
       - scripts/blender/build_night_intersection_c0.py
       - scripts/blender/normalize_c0_runtime_frame.py
       - scripts/blender/augment_night_intersection_c0.py
+      - scripts/blender/refine_night_intersection_c0.py
       - scripts/blender/export_night_intersection.py
       - scripts/polyhaven/fetch_model_bundle.py
       - assets-src/blender/night-intersection/materials/SOURCES.md
@@ -133,6 +134,14 @@ jobs:
             --collection C0 \
             --asset-root .tmp/polyhaven-models
 
+      - name: Refine architecture and street microdetail
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/refine_night_intersection_c0.py -- \
+            --collection C0
+
       - name: Export canonical C0 GLB
         shell: bash
         run: |
@@ -160,6 +169,7 @@ jobs:
             scripts/blender/build_night_intersection_c0.py \
             scripts/blender/normalize_c0_runtime_frame.py \
             scripts/blender/augment_night_intersection_c0.py \
+            scripts/blender/refine_night_intersection_c0.py \
             scripts/polyhaven/fetch_model_bundle.py \
             assets-src/blender/night-intersection/materials \
             assets-src/blender/night-intersection/third-party \
@@ -169,7 +179,7 @@ jobs:
             echo "No generated C0 changes to commit"
             exit 0
           fi
-          git commit -m "Upgrade C0 with authored CC0 street assets"
+          git commit -m "Refine C0 architecture and street detail"
           git fetch origin feat/blender-c0-visible-core-20260908
           git rebase origin/feat/blender-c0-visible-core-20260908
           git push origin HEAD:feat/blender-c0-visible-core-20260908
