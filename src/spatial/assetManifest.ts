@@ -61,7 +61,7 @@ export const SPATIAL_ASSET_MANIFEST: readonly SpatialAssetDefinition[] = [
         redistributionAllowed: true,
       },
       notes:
-        "Authored PBR glTF from Poly Haven. The checked-in runtime bundle includes base color, normal and ARM textures plus SOURCE.txt with the exact fetched CDN URLs and fetched glTF SHA-256. This first asset proves the authored asset/runtime path; by itself it does not close the QR2 scene-quality gate.",
+        "Authored PBR glTF exported by Khronos glTF Blender I/O. The checked-in runtime bundle includes base color, normal and ARM textures. Fetched glTF SHA-256: 3a8a42486c5dc4538a8b44aeeef502c64a1c9d0d42fa5610e37886c355337ff8. SOURCE.txt records the exact CDN URLs. This first asset proves the authored asset/runtime path; by itself it does not close the QR2 scene-quality gate.",
     },
   },
 ];
