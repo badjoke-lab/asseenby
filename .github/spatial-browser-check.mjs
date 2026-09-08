@@ -45,6 +45,20 @@ async function dragCanvas(page, canvas, dx, dy) {
   return true;
 }
 
+async function waitForAuthoredChunk(page, expectedCount, expectedChunkId = null) {
+  await page.waitForFunction(
+    ({ expectedCount, expectedChunkId }) => {
+      const canvas = document.querySelector("canvas.spatial-canvas");
+      if (!(canvas instanceof HTMLCanvasElement)) return false;
+      if (canvas.dataset.sceneAuthoredAssetRootCount !== String(expectedCount)) return false;
+      const loaded = (canvas.dataset.sceneLoadedChunks ?? "").split(",").filter(Boolean);
+      return expectedChunkId ? loaded.includes(expectedChunkId) : loaded.length === 0;
+    },
+    { expectedCount, expectedChunkId },
+    { timeout: 15000 },
+  );
+}
+
 async function checkImageExperience(page, label) {
   await attachDiagnostics(page, label);
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
@@ -66,6 +80,15 @@ await desktop.goto("http://127.0.0.1:4173/?view=spatial", { waitUntil: "networki
 const desktopCanvas = desktop.locator("canvas.spatial-canvas");
 await desktopCanvas.waitFor({ state: "visible" });
 await assertNoHorizontalOverflow(desktop, "spatial-desktop");
+
+// QR1 authored-world proof: C0 must mount the locally hosted PBR asset,
+// unload cleanly when leaving Night Intersection, and remount on return.
+await waitForAuthoredChunk(desktop, 1, "c0");
+const sceneSelect = desktop.locator("#spatial-scene-select");
+await sceneSelect.selectOption("photo-reference");
+await waitForAuthoredChunk(desktop, 0, null);
+await sceneSelect.selectOption("night-intersection");
+await waitForAuthoredChunk(desktop, 1, "c0");
 
 // Forward view: hold camera fixed and compare each renderer against Normal.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
@@ -131,6 +154,7 @@ await mobile.goto("http://127.0.0.1:4173/?view=spatial", { waitUntil: "networkid
 const mobileCanvas = mobile.locator("canvas.spatial-canvas");
 await mobileCanvas.waitFor({ state: "visible" });
 await assertNoHorizontalOverflow(mobile, "spatial-mobile");
+await waitForAuthoredChunk(mobile, 1, "c0");
 
 await mobile.screenshot({ path: `${outDir}/mobile-normal-forward.png`, fullPage: true });
 await assertMode(mobile, "Central Loss");
