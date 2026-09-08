@@ -12,6 +12,10 @@ This script wraps all top-level C0 objects in one +90 degree Blender-X frame:
       -> Blender world (x, -z, y)
       -> glTF / Three.js (x, y, z)
 
+It also triangulates exported mesh faces before glTF export. The first C0 export
+showed tangent-generation warnings on beveled/ngon geometry; explicit
+triangulation makes the tangent basis deterministic for normal-mapped materials.
+
 Usage:
   blender --background path/to/night-intersection-c0.blend \
     --python scripts/blender/normalize_c0_runtime_frame.py -- \
@@ -24,6 +28,7 @@ import argparse
 import math
 import sys
 
+import bmesh
 import bpy
 
 
@@ -62,6 +67,25 @@ def collection_objects(root: bpy.types.Collection) -> list[bpy.types.Object]:
     return objects
 
 
+def triangulate_meshes(objects: list[bpy.types.Object]) -> int:
+    count = 0
+    processed_meshes: set[str] = set()
+    for obj in objects:
+        if obj.type != "MESH" or obj.data.name in processed_meshes:
+            continue
+        processed_meshes.add(obj.data.name)
+        mesh = obj.data
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        if bm.faces:
+            bmesh.ops.triangulate(bm, faces=list(bm.faces))
+            bm.to_mesh(mesh)
+            mesh.update()
+        bm.free()
+        count += 1
+    return count
+
+
 def main() -> None:
     args = parse_args()
     root = bpy.data.collections.get(args.collection)
@@ -74,13 +98,16 @@ def main() -> None:
             f"{FRAME_NAME} already exists; refusing to apply the runtime frame twice"
         )
 
+    objects = collection_objects(root)
+    triangulated = triangulate_meshes(objects)
+
     frame = bpy.data.objects.new(FRAME_NAME, None)
     frame.empty_display_type = "PLAIN_AXES"
     frame.rotation_euler.x = math.pi / 2
     frame["asseenby_axis_contract"] = "runtime XYZ -> Blender X,-Z,Y -> glTF XYZ"
+    frame["asseenby_export_triangulated"] = True
     root.objects.link(frame)
 
-    objects = [obj for obj in collection_objects(root) if obj != frame]
     top_level = [obj for obj in objects if obj.parent is None]
     for obj in top_level:
         # Keep the object's existing transform as local runtime-style coordinates.
@@ -93,8 +120,8 @@ def main() -> None:
     bpy.context.view_layer.update()
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(
-        f"Normalized {len(top_level)} top-level C0 objects through {FRAME_NAME} "
-        f"and saved {bpy.data.filepath}"
+        f"Normalized {len(top_level)} top-level C0 objects through {FRAME_NAME}; "
+        f"triangulated {triangulated} unique meshes; saved {bpy.data.filepath}"
     )
 
 
