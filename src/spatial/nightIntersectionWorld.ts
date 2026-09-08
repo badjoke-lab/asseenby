@@ -12,11 +12,10 @@ export const NIGHT_INTERSECTION_WORLD = {
  *
  * QR1 proved the authored asset/chunk runtime with a single secondary lamp.
  * QR2 moves C0's primary-visible responsibility to the Blender-authored core.
- * The authored Blender file uses a conventional ground plane at Y=0, while
- * the existing Explore 3D camera contract places the Human eye at runtime Y=0
- * over a legacy ground level of -1.6 m. The chunk placement therefore applies
- * a single -1.6 m Y offset so authored ground and the existing observer contract
- * remain aligned during the recovery migration.
+ * The Blender source is normalized into the runtime Y-up coordinate frame before
+ * glTF export. Its authored ground is therefore Y=0 in Three.js. The existing
+ * Explore 3D Human observer contract keeps eye Y=0 over the legacy -1.6 m ground,
+ * so the chunk placement applies one -1.6 m Y offset during the recovery migration.
  */
 export const NIGHT_INTERSECTION_CHUNKS: readonly SpatialChunkDefinition[] = [
   {
