@@ -1,0 +1,10 @@
+Asset: Poly Haven Street Lamp 02
+Creator: Josh Dean
+License: CC0-1.0
+Canonical page: https://polyhaven.com/a/street_lamp_02
+Runtime source: https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/street_lamp_02/street_lamp_02_1k.gltf
+Fetched glTF SHA-256: 3a8a42486c5dc4538a8b44aeeef502c64a1c9d0d42fa5610e37886c355337ff8
+Mesh buffer: https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/street_lamp_02/street_lamp_02.bin
+ARM texture: https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_arm_1k.jpg
+Diffuse texture: https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_diff_1k.jpg
+Normal texture: https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_nor_gl_1k.jpg
