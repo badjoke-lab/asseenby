@@ -455,7 +455,7 @@ def main() -> None:
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if hasattr(bpy.types, "EEVEE_NEXT") else scene.render.engine
+    # Keep the installed Blender default render engine; runtime export is engine-independent.
 
     c0 = make_collection("C0")
     visual = make_collection("VISUAL_LOD0", c0)
@@ -486,7 +486,10 @@ def main() -> None:
     roof = principled_material("c0_mat_roof", (0.09, 0.10, 0.11, 1), 0.72)
     glass = principled_material("c0_mat_glass", (0.055, 0.12, 0.16, 1), 0.13, metallic=0.05)
     glass.diffuse_color[3] = 0.72
-    glass.surface_render_method = "DITHERED" if hasattr(glass, "surface_render_method") else glass.surface_render_method
+    if hasattr(glass, "surface_render_method"):
+        glass.surface_render_method = "DITHERED"
+    elif hasattr(glass, "blend_method"):
+        glass.blend_method = "BLEND"
     sign_warm = principled_material("c0_mat_sign_warm", (0.35, 0.12, 0.03, 1), 0.28, emission=(1.0, 0.22, 0.04, 1), emission_strength=3.0)
     sign_cool = principled_material("c0_mat_sign_cool", (0.03, 0.22, 0.30, 1), 0.28, emission=(0.04, 0.45, 1.0, 1), emission_strength=2.6)
     red = principled_material("c0_mat_signal_red", (0.18, 0.01, 0.008, 1), 0.20, emission=(1.0, 0.015, 0.01, 1), emission_strength=5.0)
