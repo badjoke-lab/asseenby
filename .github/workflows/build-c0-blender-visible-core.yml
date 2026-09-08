@@ -1,0 +1,104 @@
+name: Build Blender C0 visible core
+
+on:
+  push:
+    branches:
+      - feat/blender-c0-visible-core-20260908
+    paths:
+      - .github/workflows/build-c0-blender-visible-core.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build-c0:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out QR2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/blender-c0-visible-core-20260908
+          fetch-depth: 0
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+
+      - name: Normalize Blender-version compatibility
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/blender/build_night_intersection_c0.py')
+          text = path.read_text()
+          text = text.replace(
+              '    scene.render.engine = "BLENDER_EEVEE_NEXT" if hasattr(bpy.types, "EEVEE_NEXT") else scene.render.engine\n',
+              '    # Keep the installed Blender default render engine; runtime export is engine-independent.\n',
+          )
+          text = text.replace(
+              '    glass.surface_render_method = "DITHERED" if hasattr(glass, "surface_render_method") else glass.surface_render_method\n',
+              '    if hasattr(glass, "surface_render_method"):\n        glass.surface_render_method = "DITHERED"\n    elif hasattr(glass, "blend_method"):\n        glass.blend_method = "BLEND"\n',
+          )
+          path.write_text(text)
+          PY
+          git diff --check
+
+      - name: Fetch CC0 1K PBR source maps
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="assets-src/blender/night-intersection/materials"
+          mkdir -p "$dest"
+          ua="AsSeenBy-QR2-C0/1.0 (+https://github.com/badjoke-lab/asseenby)"
+
+          for slug in asphalt_01 brick_wall_001; do
+            for map in diff nor_gl rough; do
+              url="https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/${slug}/${slug}_${map}_1k.jpg"
+              echo "Fetching $url"
+              curl -A "$ua" -fL --retry 3 --retry-delay 2 -o "$dest/${slug}_${map}_1k.jpg" "$url"
+              test -s "$dest/${slug}_${map}_1k.jpg"
+            done
+          done
+
+          sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
+
+      - name: Author C0 in Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets-src/blender/night-intersection/c0
+          blender --background --factory-startup \
+            --python scripts/blender/build_night_intersection_c0.py -- \
+            --material-dir assets-src/blender/night-intersection/materials \
+            --blend-out assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+
+      - name: Export canonical C0 GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/assets/3d/night-intersection/c0/core
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/export_night_intersection.py -- \
+            --collection C0 \
+            --out public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          test -s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          sha256sum public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb \
+            > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          du -h public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+
+      - name: Commit authored source and runtime asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            scripts/blender/build_night_intersection_c0.py \
+            assets-src/blender/night-intersection/materials \
+            assets-src/blender/night-intersection/c0 \
+            public/assets/3d/night-intersection/c0/core
+          git commit -m "Add Blender-authored C0 visible core"
+          git push origin HEAD:feat/blender-c0-visible-core-20260908
