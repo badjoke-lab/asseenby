@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - 'feat/spatial-*'
+      - 'feat/blender-*'
+  pull_request:
+    paths:
+      - 'src/spatial/**'
+      - 'src/SpatialPage.tsx'
+      - 'public/assets/3d/**'
+      - 'assets-src/**'
+      - 'scripts/blender/**'
+      - 'docs/blender-asset-pipeline.md'
+      - '.github/spatial-browser-check.mjs'
+      - '.github/workflows/spatial-browser-check.yml'
 
 permissions:
   contents: read
