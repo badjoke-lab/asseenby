@@ -3,9 +3,10 @@ name: Build Blender C0 visible core
 on:
   push:
     branches:
-      - feat/blender-c0-visible-core-20260908
+      - main
     paths:
       - .github/workflows/build-c0-blender-visible-core.yml
+      - scripts/reference/extract_hansaplatz_reference_views.py
       - scripts/blender/build_night_intersection_c0.py
       - scripts/blender/normalize_c0_runtime_frame.py
       - scripts/blender/augment_night_intersection_c0.py
@@ -19,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: blender-c0-visible-core
+  group: blender-c0-visible-core-main
   cancel-in-progress: true
 
 jobs:
@@ -27,17 +28,28 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
-      - name: Check out QR2 branch
+      - name: Check out main
         uses: actions/checkout@v4
         with:
-          ref: feat/blender-c0-visible-core-20260908
+          ref: main
           fetch-depth: 0
 
-      - name: Install Blender
+      - name: Install Blender and reference tooling
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy python3-pil
           blender --version
+
+      - name: Generate Hansaplatz photographic reference plates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/reference/extract_hansaplatz_reference_views.py \
+            --source public/assets/panoramas/hansaplatz.jpg \
+            --out assets-src/blender/night-intersection/reference/hansaplatz \
+            --width 1440 \
+            --height 900 \
+            --fov 82
 
       - name: Normalize Blender-version compatibility
         shell: bash
@@ -64,7 +76,7 @@ jobs:
           set -euo pipefail
           dest="assets-src/blender/night-intersection/materials"
           mkdir -p "$dest"
-          ua="AsSeenBy-QR2-C0/1.0 (+https://github.com/badjoke-lab/asseenby)"
+          ua="AsSeenBy-C0/1.0 (+https://github.com/badjoke-lab/asseenby)"
 
           fetch_map() {
             local slug="$1"
@@ -159,18 +171,20 @@ jobs:
           test "$(stat -c%s assets-src/blender/night-intersection/c0/night-intersection-c0.blend)" -lt 95000000
           test "$(stat -c%s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb)" -lt 95000000
 
-      - name: Commit authored source and runtime asset
+      - name: Commit generated reference and authored runtime assets to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            scripts/reference/extract_hansaplatz_reference_views.py \
             scripts/blender/build_night_intersection_c0.py \
             scripts/blender/normalize_c0_runtime_frame.py \
             scripts/blender/augment_night_intersection_c0.py \
             scripts/blender/refine_night_intersection_c0.py \
             scripts/polyhaven/fetch_model_bundle.py \
+            assets-src/blender/night-intersection/reference \
             assets-src/blender/night-intersection/materials \
             assets-src/blender/night-intersection/third-party \
             assets-src/blender/night-intersection/c0 \
@@ -179,7 +193,7 @@ jobs:
             echo "No generated C0 changes to commit"
             exit 0
           fi
-          git commit -m "Refine C0 architecture and street detail"
-          git fetch origin feat/blender-c0-visible-core-20260908
-          git rebase origin/feat/blender-c0-visible-core-20260908
-          git push origin HEAD:feat/blender-c0-visible-core-20260908
+          git commit -m "Regenerate reference-driven Hansaplatz C0"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
