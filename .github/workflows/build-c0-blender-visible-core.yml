@@ -8,8 +8,11 @@ on:
       - .github/workflows/build-c0-blender-visible-core.yml
       - scripts/blender/build_night_intersection_c0.py
       - scripts/blender/normalize_c0_runtime_frame.py
+      - scripts/blender/augment_night_intersection_c0.py
       - scripts/blender/export_night_intersection.py
+      - scripts/polyhaven/fetch_model_bundle.py
       - assets-src/blender/night-intersection/materials/SOURCES.md
+      - assets-src/blender/night-intersection/third-party/SOURCES.md
 
 permissions:
   contents: write
@@ -21,7 +24,7 @@ concurrency:
 jobs:
   build-c0:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 50
     steps:
       - name: Check out QR2 branch
         uses: actions/checkout@v4
@@ -76,13 +79,32 @@ jobs:
           fetch_map asphalt_01 diff diff
           fetch_map asphalt_01 nor_gl nor_gl
           fetch_map asphalt_01 rough rough
-
-          # Brick Wall 001 uses `diffuse` in Poly Haven's file tree rather than `diff`.
           fetch_map brick_wall_001 diffuse diff
           fetch_map brick_wall_001 nor_gl nor_gl
           fetch_map brick_wall_001 rough rough
 
           sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
+
+      - name: Fetch authored CC0 model bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .tmp/polyhaven-models
+          mkdir -p .tmp/polyhaven-models
+          for asset in \
+            street_lamp_02 \
+            modular_street_seating \
+            utility_box_02 \
+            metal_trash_can \
+            covered_car \
+            jacaranda_tree
+          do
+            python3 scripts/polyhaven/fetch_model_bundle.py \
+              --asset "$asset" \
+              --resolution 1k \
+              --out ".tmp/polyhaven-models/$asset"
+          done
+          du -sh .tmp/polyhaven-models
 
       - name: Author C0 in Blender
         shell: bash
@@ -102,6 +124,15 @@ jobs:
             --python scripts/blender/normalize_c0_runtime_frame.py -- \
             --collection C0
 
+      - name: Replace placeholders and author practical depth
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/augment_night_intersection_c0.py -- \
+            --collection C0 \
+            --asset-root .tmp/polyhaven-models
+
       - name: Export canonical C0 GLB
         shell: bash
         run: |
@@ -116,6 +147,8 @@ jobs:
             > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend
           du -h public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          test "$(stat -c%s assets-src/blender/night-intersection/c0/night-intersection-c0.blend)" -lt 95000000
+          test "$(stat -c%s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb)" -lt 95000000
 
       - name: Commit authored source and runtime asset
         shell: bash
@@ -126,10 +159,17 @@ jobs:
           git add \
             scripts/blender/build_night_intersection_c0.py \
             scripts/blender/normalize_c0_runtime_frame.py \
+            scripts/blender/augment_night_intersection_c0.py \
+            scripts/polyhaven/fetch_model_bundle.py \
             assets-src/blender/night-intersection/materials \
+            assets-src/blender/night-intersection/third-party \
             assets-src/blender/night-intersection/c0 \
             public/assets/3d/night-intersection/c0/core
-          git commit -m "Rebuild Blender-authored C0 visible core"
+          if git diff --cached --quiet; then
+            echo "No generated C0 changes to commit"
+            exit 0
+          fi
+          git commit -m "Upgrade C0 with authored CC0 street assets"
           git fetch origin feat/blender-c0-visible-core-20260908
           git rebase origin/feat/blender-c0-visible-core-20260908
           git push origin HEAD:feat/blender-c0-visible-core-20260908
