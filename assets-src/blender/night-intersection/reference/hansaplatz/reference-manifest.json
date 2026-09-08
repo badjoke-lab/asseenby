@@ -1,0 +1,81 @@
+{
+  "reference_id": "polyhaven-hansaplatz",
+  "role": "canonical photographic reconstruction reference for Night Intersection",
+  "source_local": "public/assets/panoramas/hansaplatz.jpg",
+  "source_canonical": "https://polyhaven.com/a/hansaplatz",
+  "creator": "Greg Zaal",
+  "license": "CC0-1.0",
+  "source_equirectangular_size": [
+    8192,
+    4096
+  ],
+  "orientation_note": "Yaw values are relative to the checked-in equirectangular image seam; they are not asserted geographic bearings.",
+  "views": [
+    {
+      "id": "yaw-000",
+      "file": "yaw-000.jpg",
+      "yaw_degrees_relative": 0.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    },
+    {
+      "id": "yaw-060",
+      "file": "yaw-060.jpg",
+      "yaw_degrees_relative": 60.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    },
+    {
+      "id": "yaw-120",
+      "file": "yaw-120.jpg",
+      "yaw_degrees_relative": 120.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    },
+    {
+      "id": "yaw-180",
+      "file": "yaw-180.jpg",
+      "yaw_degrees_relative": 180.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    },
+    {
+      "id": "yaw-240",
+      "file": "yaw-240.jpg",
+      "yaw_degrees_relative": 240.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    },
+    {
+      "id": "yaw-300",
+      "file": "yaw-300.jpg",
+      "yaw_degrees_relative": 300.0,
+      "pitch_degrees_relative": 0.0,
+      "horizontal_fov_degrees": 82.0,
+      "size": [
+        1440,
+        900
+      ]
+    }
+  ]
+}
