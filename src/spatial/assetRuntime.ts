@@ -40,6 +40,15 @@ const disposeObjectTree = (root: THREE.Object3D) => {
   geometries.forEach((geometry) => geometry.dispose());
 };
 
+const configureVisibleMeshes = (root: THREE.Object3D, qualityRole: string) => {
+  const casts = qualityRole === "primary-visible" || qualityRole === "secondary-visible";
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = casts;
+    object.receiveShadow = casts;
+  });
+};
+
 export class SpatialAssetRuntime {
   private readonly loader = new GLTFLoader();
 
@@ -54,6 +63,7 @@ export class SpatialAssetRuntime {
     root.name = `asset:${assetId}`;
     root.userData.spatialAssetId = assetId;
     root.userData.spatialAssetQualityRole = definition.qualityRole;
+    configureVisibleMeshes(root, definition.qualityRole);
     parent.add(root);
 
     let disposed = false;

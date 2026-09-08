@@ -8,14 +8,14 @@ export const NIGHT_INTERSECTION_WORLD = {
 };
 
 /**
- * The first authored-world target is the central 64 m intersection chunk C0.
- * During QR1/QR2 the procedural Night Intersection remains mounted as a
- * technical fallback/reference while authored assets begin replacing its
- * primary-visible responsibilities.
+ * Central 64 m Night Intersection chunk.
  *
- * Chunk centers are used for load/unload distance. Asset placement is in the
- * scene's existing world coordinates so authored assets can coexist with the
- * temporary procedural baseline during recovery.
+ * QR1 proved the authored asset/chunk runtime with a single secondary lamp.
+ * QR2 moves C0's primary-visible responsibility to the Blender-authored core.
+ * The Blender source is normalized into the runtime Y-up coordinate frame before
+ * glTF export. Its authored ground is therefore Y=0 in Three.js. The existing
+ * Explore 3D Human observer contract keeps eye Y=0 over the legacy -1.6 m ground,
+ * so the chunk placement applies one -1.6 m Y offset during the recovery migration.
  */
 export const NIGHT_INTERSECTION_CHUNKS: readonly SpatialChunkDefinition[] = [
   {
@@ -26,12 +26,9 @@ export const NIGHT_INTERSECTION_CHUNKS: readonly SpatialChunkDefinition[] = [
     unloadRadius: 104,
     assets: [
       {
-        assetId: "polyhaven-street-lamp-02-1k",
-        // Mount the authored wall lamp on the north-facing facade of the
-        // temporary south-east block. It is a QR1 runtime/PBR proof, not the
-        // final C0 facade composition; QR2 will replace the procedural block.
-        position: [20, -1.205, -13.0],
-        rotation: [0, Math.PI, 0],
+        assetId: "asseenby-night-intersection-c0-v1",
+        position: [0, -1.6, 0],
+        rotation: [0, 0, 0],
         scale: 1,
       },
     ],

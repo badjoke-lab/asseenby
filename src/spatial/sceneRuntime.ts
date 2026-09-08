@@ -37,6 +37,34 @@ const countAuthoredAssetRoots = (scene: THREE.Scene) => {
   return count;
 };
 
+/**
+ * QR2 moves C0's primary-visible responsibility to the Blender-authored chunk.
+ * The legacy Night Intersection mount is still temporarily retained for its
+ * accepted navigation contract, environment state and runtime lights. Hide its
+ * close/mid visual geometry so it cannot overlap or visually mask the authored
+ * world. Far background boxes remain only as temporary distant context and the
+ * procedural star field remains as environment detail.
+ *
+ * This is deliberately a migration boundary, not a final architecture. QR3/QR4
+ * move lighting/navigation into authored chunk contracts and remove the legacy
+ * scene mount entirely.
+ */
+const retireLegacyPrimaryVisibleGeometry = (root: THREE.Object3D) => {
+  root.traverse((object) => {
+    if (object instanceof THREE.Points) {
+      object.visible = object.name === "night-sky-stars";
+      return;
+    }
+    if (object instanceof THREE.Line) {
+      object.visible = false;
+      return;
+    }
+    if (object instanceof THREE.Mesh) {
+      object.visible = object.name.startsWith("background-building-") || object.name.startsWith("background-roof-");
+    }
+  });
+};
+
 export function createSpatialSceneRuntime(
   sceneId: SpatialSceneId,
   scene: THREE.Scene,
@@ -44,6 +72,7 @@ export function createSpatialSceneRuntime(
 ): SpatialSceneRuntime {
   if (sceneId === "night-intersection") {
     const mounted = mountNightIntersectionScene(scene, renderScene);
+    retireLegacyPrimaryVisibleGeometry(mounted.root);
     const chunkRuntime = new SpatialChunkRuntime(scene, NIGHT_INTERSECTION_CHUNKS, renderScene);
     return {
       id: sceneId,

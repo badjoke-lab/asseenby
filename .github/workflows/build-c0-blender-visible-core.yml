@@ -1,0 +1,175 @@
+name: Build Blender C0 visible core
+
+on:
+  push:
+    branches:
+      - feat/blender-c0-visible-core-20260908
+    paths:
+      - .github/workflows/build-c0-blender-visible-core.yml
+      - scripts/blender/build_night_intersection_c0.py
+      - scripts/blender/normalize_c0_runtime_frame.py
+      - scripts/blender/augment_night_intersection_c0.py
+      - scripts/blender/export_night_intersection.py
+      - scripts/polyhaven/fetch_model_bundle.py
+      - assets-src/blender/night-intersection/materials/SOURCES.md
+      - assets-src/blender/night-intersection/third-party/SOURCES.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blender-c0-visible-core
+  cancel-in-progress: true
+
+jobs:
+  build-c0:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out QR2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/blender-c0-visible-core-20260908
+          fetch-depth: 0
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
+          blender --version
+
+      - name: Normalize Blender-version compatibility
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/blender/build_night_intersection_c0.py')
+          text = path.read_text()
+          text = text.replace(
+              '    scene.render.engine = "BLENDER_EEVEE_NEXT" if hasattr(bpy.types, "EEVEE_NEXT") else scene.render.engine\n',
+              '    # Keep the installed Blender default render engine; runtime export is engine-independent.\n',
+          )
+          text = text.replace(
+              '    glass.surface_render_method = "DITHERED" if hasattr(glass, "surface_render_method") else glass.surface_render_method\n',
+              '    if hasattr(glass, "surface_render_method"):\n        glass.surface_render_method = "DITHERED"\n    elif hasattr(glass, "blend_method"):\n        glass.blend_method = "BLEND"\n',
+          )
+          path.write_text(text)
+          PY
+          git diff --check
+
+      - name: Fetch CC0 1K PBR source maps
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="assets-src/blender/night-intersection/materials"
+          mkdir -p "$dest"
+          ua="AsSeenBy-QR2-C0/1.0 (+https://github.com/badjoke-lab/asseenby)"
+
+          fetch_map() {
+            local slug="$1"
+            local remote_map="$2"
+            local local_map="$3"
+            local url="https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/${slug}/${slug}_${remote_map}_1k.jpg"
+            echo "Fetching $url"
+            curl -A "$ua" -fL --retry 3 --retry-delay 2 \
+              -o "$dest/${slug}_${local_map}_1k.jpg" "$url"
+            test -s "$dest/${slug}_${local_map}_1k.jpg"
+          }
+
+          fetch_map asphalt_01 diff diff
+          fetch_map asphalt_01 nor_gl nor_gl
+          fetch_map asphalt_01 rough rough
+          fetch_map brick_wall_001 diffuse diff
+          fetch_map brick_wall_001 nor_gl nor_gl
+          fetch_map brick_wall_001 rough rough
+
+          sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
+
+      - name: Fetch authored CC0 model bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .tmp/polyhaven-models
+          mkdir -p .tmp/polyhaven-models
+          for asset in \
+            street_lamp_02 \
+            modular_street_seating \
+            utility_box_02 \
+            metal_trash_can \
+            covered_car \
+            jacaranda_tree
+          do
+            python3 scripts/polyhaven/fetch_model_bundle.py \
+              --asset "$asset" \
+              --resolution 1k \
+              --out ".tmp/polyhaven-models/$asset"
+          done
+          du -sh .tmp/polyhaven-models
+
+      - name: Author C0 in Blender
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets-src/blender/night-intersection/c0
+          blender --background --factory-startup \
+            --python scripts/blender/build_night_intersection_c0.py -- \
+            --material-dir assets-src/blender/night-intersection/materials \
+            --blend-out assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+
+      - name: Normalize runtime coordinate frame and export topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/normalize_c0_runtime_frame.py -- \
+            --collection C0
+
+      - name: Replace placeholders and author practical depth
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/augment_night_intersection_c0.py -- \
+            --collection C0 \
+            --asset-root .tmp/polyhaven-models
+
+      - name: Export canonical C0 GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/assets/3d/night-intersection/c0/core
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/export_night_intersection.py -- \
+            --collection C0 \
+            --out public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          test -s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          sha256sum public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb \
+            > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          du -h public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          test "$(stat -c%s assets-src/blender/night-intersection/c0/night-intersection-c0.blend)" -lt 95000000
+          test "$(stat -c%s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb)" -lt 95000000
+
+      - name: Commit authored source and runtime asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            scripts/blender/build_night_intersection_c0.py \
+            scripts/blender/normalize_c0_runtime_frame.py \
+            scripts/blender/augment_night_intersection_c0.py \
+            scripts/polyhaven/fetch_model_bundle.py \
+            assets-src/blender/night-intersection/materials \
+            assets-src/blender/night-intersection/third-party \
+            assets-src/blender/night-intersection/c0 \
+            public/assets/3d/night-intersection/c0/core
+          if git diff --cached --quiet; then
+            echo "No generated C0 changes to commit"
+            exit 0
+          fi
+          git commit -m "Upgrade C0 with authored CC0 street assets"
+          git fetch origin feat/blender-c0-visible-core-20260908
+          git rebase origin/feat/blender-c0-visible-core-20260908
+          git push origin HEAD:feat/blender-c0-visible-core-20260908
