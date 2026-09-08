@@ -8,15 +8,17 @@ The repository contains:
 - accepted Human spatial perception modes on that reference scene;
 - a production-verified image/release-polish track through R15;
 - a production-verified Explore 3D E1 architecture split that separates Scene / Observer / Vision while retaining the 360° Photo Reference;
-- a production-verified E2 `Night Intersection` real-geometry baseline with authored camera translation/parallax and a permanent production fingerprint;
-- a production-verified E3 Human observer with bounded collision-aware ground movement on Night Intersection;
-- a production-verified E4 Human spatial Vision integration on Night Intersection with Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like.
+- historically deployed E2 `Night Intersection` geometry, E3 Human movement and E4 Human spatial Vision integration;
+- an **active Explore 3D quality recovery gate** because the current Night Intersection implementation proves behavior but does not meet the intended final scene-presentation bar.
 
 The historical 360° pilot is no longer the target architecture for the 3D product.
 
+The current procedural Night Intersection remains useful as a technical proof/reference, but E2–E4 production verification must not be interpreted as final visual-product acceptance. E5+ is blocked until the scene/world quality recovery closes.
+
 Current Explore 3D direction is defined by:
 - `docs/explore-3d-spec.md`;
-- `docs/explore-3d-schedule.md`.
+- `docs/explore-3d-schedule.md`;
+- `docs/explore-3d-quality-recovery.md` for the active blocking recovery.
 
 The old `docs/spatial-pilot-spec.md` and `docs/spatial-pilot-schedule.md` remain historical records of the pilot and prior evidence decisions.
 
@@ -29,18 +31,21 @@ Browser-side static-image comparison. This remains independent of the Three.js r
 ### Explore 3D
 A spatial comparison experience built around **Scene / Observer / Vision**.
 
-Explore 3D is not defined as a 360° panorama viewer. Its purpose is to let users compare how the same environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
+Explore 3D is not defined as a 360° panorama viewer or a primitive geometry demo. Its purpose is to let users compare how the same credible authored environment changes when viewpoint height, movement, reachable space, distance, depth, occlusion, lighting and the selected visual model change.
 
 ## Immediate priority order
-1. add Dog observer in E5, then refine Dog-like 3D detail behavior in E6;
-2. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
-3. select a concrete first Bird species and implement real flight/perch behavior;
-4. evaluate that Bird species' visual model separately from its movement/viewpoint;
-5. expand to additional dense scenes after the first architecture is stable.
+1. complete QR1–QR7 in `docs/explore-3d-quality-recovery.md`: asset-first runtime, high-fidelity Night Intersection rebuild, chunking/LOD, scalable collision/navigation, vertical/perch structure, interior continuity proof, and rendered product-quality closeout;
+2. resume Dog observer in E5 only after the recovery gate passes, then refine Dog-like 3D detail behavior in E6;
+3. add Cat observer movement/viewpoint without automatically restoring Cat-like Vision;
+4. select a concrete first Bird species and implement real flight/perch behavior;
+5. evaluate that Bird species' visual model separately from its movement/viewpoint;
+6. expand to additional dense scenes after the rebuilt Night Intersection architecture is stable.
 
 ## Explore 3D architecture
 ### Scene
-Owns geometry, materials, lights, navigation bounds, collision surfaces, spawn states, climb/perch targets and guided comparison targets.
+Owns geometry, authored assets, materials, lights, chunk/load state, navigation bounds, collision surfaces, spawn states, climb/perch targets, indoor/outdoor zones and guided comparison targets.
+
+The final-quality scene path is asset-first. Primary close-range visible content should use authored detailed meshes and PBR materials rather than treating primitive boxes plus generated textures as the presentation layer. Primitive geometry remains acceptable for collision/proxy/debug/distant-LOD roles where it is not the visible quality ceiling.
 
 ### Observer
 Owns viewpoint/body scale and movement.
@@ -60,10 +65,11 @@ Changing Vision must preserve the exact Scene/Observer/camera state. Changing Ob
 ### Human
 Target baseline:
 - generic standing-adult viewpoint around 1.6 m;
-- bounded ground movement;
+- bounded/free authored ground movement across the active loaded world;
 - pointer/touch look;
 - desktop WASD-style movement;
 - mobile movement control;
+- stairs/ramps/interior transitions where authored;
 - Reset;
 - no game mechanics.
 
@@ -94,26 +100,29 @@ Target behavior:
 - real altitude change;
 - landing/perch targets;
 - major-geometry collision;
-- useful city flight volume roughly 30–50 m initially.
+- useful city flight volume roughly 30–50 m initially, with scene architecture capable of roughly 50–80 m where composition supports it.
 
 Bird flight/viewpoint can be implemented before Bird-specific Vision. Generic Bird-like spectral/color vision remains rejected from ordinary RGB. Species-specific Vision requires its own evidence/data/model review and may require UV/spectral scene data.
 
 ## Scene roadmap
 ### Night Intersection — first full 3D scene
-Target useful volume: approximately 150 m × 150 m × 50–60 m.
+The old approximately 150 m × 150 m × 50–60 m value is no longer a hard architectural limit.
+
+The rebuilt Night Intersection should use a streamed/chunked district architecture that can address a world envelope on the order of **500 m × 500 m**, while keeping only nearby/high-value content at full detail. A smaller dense authored core may ship during recovery, but the runtime must support expansion without replacing the scene architecture again.
 
 The scene should contain enough real geometry and visual density to support Human, Dog, Cat and Bird observers:
 - street/sidewalk/crosswalk;
-- buildings/facades/storefronts/signs;
+- detailed buildings/facades/storefronts/signs;
 - vehicles and pedestrians;
 - traffic signals/streetlights;
 - street furniture;
 - vegetation;
 - dark and bright areas;
 - rooftops/poles/wires/branches/ledges;
-- near/mid/far targets.
+- near/mid/far targets;
+- at least one eventual authored interior continuity path.
 
-The goal is explanatory density, not an open-world map.
+The goal is explanatory density and believable navigable space, not an empty open-world map. Large scale is achieved by chunking/LOD/streaming, not by making every asset resident at once.
 
 ### Later candidate scenes
 - Daytime Park;
@@ -122,7 +131,7 @@ The goal is explanatory density, not an open-world map.
 - Station / Platform;
 - 360° Photo Reference as a retained photographic comparison scene.
 
-A strong 100–200 m scene is preferred over a sparse kilometre-scale environment.
+Scene size is chosen by comparison value and performance. Do not impose an arbitrary 150 m ceiling, and do not pursue kilometre-scale emptiness merely for size.
 
 ## 360° photographic reference
 The Hansaplatz panorama remains accepted and useful, but its role changes.
@@ -157,6 +166,8 @@ In geometry scenes, these should use real spatial information where that materia
 - real scene lighting/current-view context for Night / Low Light;
 - real bright-source/occlusion/distance information for Cataract-like where feasible.
 
+The current E4 implementation remains reusable, but it does not excuse weak underlying geometry/material quality.
+
 ## Animal/species evidence boundary
 ### Dog-like
 Accepted as a conservative human-display visible-range proxy. It does not claim exact canine cone catches, universal breed FOV, motion processing, tapetal/rod low-light reconstruction or literal canine qualia.
@@ -170,6 +181,16 @@ The old generic Bird-like visual concept remains rejected/blocked. Bird Observer
 ### Bee-like
 Still blocked without UV-reflectance/spectral scene data and a documented observer/false-color model.
 
+## Asset and license discipline
+Third-party 3D assets must have recorded provenance and redistribution rights.
+
+Prefer:
+- CC0;
+- clearly compatible permissive licenses;
+- CC-BY only when attribution requirements are tracked and satisfied.
+
+The repository should maintain an asset/license manifest containing at least source, creator, license, asset/version identifier and local path. Do not ship assets with unclear rights.
+
 ## Image track
 The image track remains browser-side and separate.
 
@@ -180,15 +201,18 @@ Continue to maintain:
 - responsive/release polish;
 - production browser regression.
 
-Do not let ongoing image polish delay the active Explore 3D observer/movement work, unless a production regression requires immediate repair.
+Do not let ongoing image polish delay the active Explore 3D scene-quality recovery, unless a production regression requires immediate repair.
 
 ## Engineering / operating constraints
 - browser-side rendering;
 - static/free-hosting-compatible operation;
 - no account/storage requirement unless separately specified;
 - lazy-load heavy 3D assets/scenes;
-- use instancing, LOD, culling, compressed/reused assets and controlled lighting as needed;
+- use glTF/GLB, PBR assets/materials, instancing, LOD, culling, compressed/reused assets and controlled lighting as needed;
+- use chunk streaming so district scale does not imply loading the entire world at full detail;
+- keep visual and collision/navigation representations separable;
 - desktop and mobile must remain usable;
+- allow lower mobile quality tiers without falling back to placeholder visual quality;
 - preserve `Compare image` if WebGL/Three.js fails.
 
 ## Source of truth
@@ -197,4 +221,5 @@ For future implementation agents:
 - `AGENTS.md` defines the required reading discipline;
 - `docs/explore-3d-spec.md` defines current 3D behavior;
 - `docs/explore-3d-schedule.md` defines current 3D execution order;
+- `docs/explore-3d-quality-recovery.md` is the active blocking gate before E5+;
 - when a product decision changes, update those documents in the same implementation change before marking the work complete.
