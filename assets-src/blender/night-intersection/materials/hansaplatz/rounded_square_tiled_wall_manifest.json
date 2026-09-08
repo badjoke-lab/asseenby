@@ -1,0 +1,51 @@
+{
+  "asset_id": "rounded_square_tiled_wall",
+  "name": "Rounded Square Tiled Wall",
+  "authors": {
+    "Charlotte Baglioni": "All"
+  },
+  "canonical_page": "https://polyhaven.com/a/rounded_square_tiled_wall",
+  "api_files_url": "https://api.polyhaven.com/files/rounded_square_tiled_wall",
+  "api_info_url": "https://api.polyhaven.com/info/rounded_square_tiled_wall",
+  "files_hash": "b8d846d8bbe0063867fe12bac45da30ce94aa14e",
+  "license": "CC0-1.0",
+  "requested_resolution": "1k",
+  "maps": {
+    "diff": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rounded_square_tiled_wall/rounded_square_tiled_wall_diff_1k.jpg",
+      "filename": "rounded_square_tiled_wall_diff_1k.jpg",
+      "size": 706150,
+      "md5": "014ffe734d6165fa323c4eac031d9985",
+      "sha256": "18f75c52bb66e985c21d2ec8770a92227848cef9024a5aa25a39ef13aa0d1450",
+      "api_tree_path": [
+        "Diffuse",
+        "1k",
+        "jpg"
+      ]
+    },
+    "nor_gl": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rounded_square_tiled_wall/rounded_square_tiled_wall_nor_gl_1k.jpg",
+      "filename": "rounded_square_tiled_wall_nor_gl_1k.jpg",
+      "size": 825799,
+      "md5": "4a859d09f5de779734e363e024495095",
+      "sha256": "7121d66175ffc7676c86b96280efd79ca88049da40f678c16dc2991be9d2e7ec",
+      "api_tree_path": [
+        "nor_gl",
+        "1k",
+        "jpg"
+      ]
+    },
+    "rough": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rounded_square_tiled_wall/rounded_square_tiled_wall_rough_1k.jpg",
+      "filename": "rounded_square_tiled_wall_rough_1k.jpg",
+      "size": 660439,
+      "md5": "3909fceba48f97b5623ea5a2e35b2621",
+      "sha256": "de178e3c7d2fbc65983b4e22ee6d7f9cf70bcd6f8ada3523337bb18baeaf0f95",
+      "api_tree_path": [
+        "Rough",
+        "1k",
+        "jpg"
+      ]
+    }
+  }
+}

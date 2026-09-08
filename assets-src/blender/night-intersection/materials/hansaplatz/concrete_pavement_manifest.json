@@ -1,0 +1,51 @@
+{
+  "asset_id": "concrete_pavement",
+  "name": "Concrete Pavement",
+  "authors": {
+    "Charlotte Baglioni": "All"
+  },
+  "canonical_page": "https://polyhaven.com/a/concrete_pavement",
+  "api_files_url": "https://api.polyhaven.com/files/concrete_pavement",
+  "api_info_url": "https://api.polyhaven.com/info/concrete_pavement",
+  "files_hash": "13659c72c1314d12b0c5cd809f89ccc9fec09cbf",
+  "license": "CC0-1.0",
+  "requested_resolution": "1k",
+  "maps": {
+    "diff": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_diff_1k.jpg",
+      "filename": "concrete_pavement_diff_1k.jpg",
+      "size": 926197,
+      "md5": "b7a0d071a3406d55a1c3e9a73a06df03",
+      "sha256": "70d3ff969a7421c7ae057b5d16386d11f5e59c6740db643352e1039413f419c4",
+      "api_tree_path": [
+        "Diffuse",
+        "1k",
+        "jpg"
+      ]
+    },
+    "nor_gl": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_nor_gl_1k.jpg",
+      "filename": "concrete_pavement_nor_gl_1k.jpg",
+      "size": 1184345,
+      "md5": "025a1d4e910cf3e5b3d63ada43a791d8",
+      "sha256": "a5009e409ff0f7b2d19e1316fe5e2b2b4f28e4a6b79990a664be69d4e8a0e690",
+      "api_tree_path": [
+        "nor_gl",
+        "1k",
+        "jpg"
+      ]
+    },
+    "rough": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_rough_1k.jpg",
+      "filename": "concrete_pavement_rough_1k.jpg",
+      "size": 475799,
+      "md5": "e5a0fc9831bad12c7b3779179aa706f7",
+      "sha256": "99f81099af07b009134b6a81bf0f95ab16da09c57156cc2ed534975664a68533",
+      "api_tree_path": [
+        "Rough",
+        "1k",
+        "jpg"
+      ]
+    }
+  }
+}
