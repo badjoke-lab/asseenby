@@ -28,7 +28,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
           blender --version
 
       - name: Normalize Blender-version compatibility
