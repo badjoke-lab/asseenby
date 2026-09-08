@@ -1,0 +1,65 @@
+name: Bootstrap Night Intersection PBR asset
+
+on:
+  push:
+    branches:
+      - feat/blender-world-authoring-pipeline-20260908
+    paths:
+      - .github/workflows/bootstrap-night-intersection-pbr-asset.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-poly-haven-street-lamp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/blender-world-authoring-pipeline-20260908
+          fetch-depth: 0
+
+      - name: Fetch CC0 Poly Haven Street Lamp 02 (1K PBR)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="public/assets/3d/night-intersection/c0/street-lamp-02"
+          mkdir -p "$dest/textures"
+
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$dest/street_lamp_02_1k.gltf" \
+            "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/street_lamp_02/street_lamp_02_1k.gltf"
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$dest/street_lamp_02.bin" \
+            "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/street_lamp_02/street_lamp_02.bin"
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$dest/textures/street_lamp_02_arm_1k.jpg" \
+            "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_arm_1k.jpg"
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$dest/textures/street_lamp_02_diff_1k.jpg" \
+            "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_diff_1k.jpg"
+          curl -fL --retry 3 --retry-delay 2 \
+            -o "$dest/textures/street_lamp_02_nor_gl_1k.jpg" \
+            "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_02/street_lamp_02_nor_gl_1k.jpg"
+
+          echo "481dff0c6943e84ef52d3932fe46d4b799ee0fa63c65f2dc12a6e782f45ca89b  $dest/street_lamp_02_1k.gltf" | sha256sum -c -
+
+          test -s "$dest/street_lamp_02.bin"
+          test -s "$dest/textures/street_lamp_02_arm_1k.jpg"
+          test -s "$dest/textures/street_lamp_02_diff_1k.jpg"
+          test -s "$dest/textures/street_lamp_02_nor_gl_1k.jpg"
+
+      - name: Commit runtime asset to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/3d/night-intersection/c0/street-lamp-02
+          if git diff --cached --quiet; then
+            echo "Asset already present; nothing to commit."
+            exit 0
+          fi
+          git commit -m "Add first authored Night Intersection PBR asset"
+          git push origin HEAD:feat/blender-world-authoring-pipeline-20260908
