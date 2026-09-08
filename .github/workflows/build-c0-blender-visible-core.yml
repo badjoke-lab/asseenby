@@ -11,6 +11,7 @@ on:
       - scripts/blender/normalize_c0_runtime_frame.py
       - scripts/blender/augment_night_intersection_c0.py
       - scripts/blender/refine_night_intersection_c0.py
+      - scripts/blender/reconstruct_hansaplatz_c0.py
       - scripts/blender/export_night_intersection.py
       - scripts/polyhaven/fetch_model_bundle.py
       - assets-src/blender/night-intersection/materials/SOURCES.md
@@ -154,6 +155,14 @@ jobs:
             --python scripts/blender/refine_night_intersection_c0.py -- \
             --collection C0
 
+      - name: Replace invented macro-layout with Hansaplatz reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/reconstruct_hansaplatz_c0.py -- \
+            --collection C0
+
       - name: Export canonical C0 GLB
         shell: bash
         run: |
@@ -183,6 +192,7 @@ jobs:
             scripts/blender/normalize_c0_runtime_frame.py \
             scripts/blender/augment_night_intersection_c0.py \
             scripts/blender/refine_night_intersection_c0.py \
+            scripts/blender/reconstruct_hansaplatz_c0.py \
             scripts/polyhaven/fetch_model_bundle.py \
             assets-src/blender/night-intersection/reference \
             assets-src/blender/night-intersection/materials \
