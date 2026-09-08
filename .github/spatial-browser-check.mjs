@@ -87,15 +87,17 @@ await waitForAuthoredChunk(desktop, 1, "c0");
 const sceneSelect = desktop.locator("#spatial-scene-select");
 await sceneSelect.selectOption("photo-reference");
 await waitForAuthoredChunk(desktop, 0, null);
+// Dog-like remains a Photo Reference Vision proxy until the Dog observer phase.
+await assertMode(desktop, "Dog-like");
+await desktop.screenshot({ path: `${outDir}/desktop-photo-dog-like.png`, fullPage: true });
 await sceneSelect.selectOption("night-intersection");
 await waitForAuthoredChunk(desktop, 1, "c0");
+await assertMode(desktop, "Normal");
 
-// Forward view: hold camera fixed and compare each renderer against Normal.
+// Forward view: hold camera fixed and compare each Human geometry Vision against Normal.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
 await assertMode(desktop, "Night / Low Light");
 await desktop.screenshot({ path: `${outDir}/desktop-night-forward.png`, fullPage: true });
-await assertMode(desktop, "Dog-like");
-await desktop.screenshot({ path: `${outDir}/desktop-dog-forward.png`, fullPage: true });
 await assertMode(desktop, "Normal");
 await assertMode(desktop, "Central Loss");
 await desktop.screenshot({ path: `${outDir}/desktop-central-forward.png`, fullPage: true });
@@ -118,8 +120,6 @@ await assertMode(desktop, "Normal");
 await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });
 await assertMode(desktop, "Night / Low Light");
 await desktop.screenshot({ path: `${outDir}/desktop-night-turned.png`, fullPage: true });
-await assertMode(desktop, "Dog-like");
-await desktop.screenshot({ path: `${outDir}/desktop-dog-turned.png`, fullPage: true });
 await assertMode(desktop, "Normal");
 await assertMode(desktop, "Central Loss");
 await desktop.screenshot({ path: `${outDir}/desktop-central-turned.png`, fullPage: true });
@@ -185,8 +185,6 @@ await assertMode(mobile, "Normal");
 await mobile.screenshot({ path: `${outDir}/mobile-normal-turned.png`, fullPage: true });
 await assertMode(mobile, "Night / Low Light");
 await mobile.screenshot({ path: `${outDir}/mobile-night-turned.png`, fullPage: true });
-await assertMode(mobile, "Dog-like");
-await mobile.screenshot({ path: `${outDir}/mobile-dog-turned.png`, fullPage: true });
 await assertMode(mobile, "Tunnel Vision");
 await mobile.screenshot({ path: `${outDir}/mobile-tunnel-turned.png`, fullPage: true });
 await assertMode(mobile, "Cataract-like");
