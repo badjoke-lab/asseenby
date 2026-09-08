@@ -29,6 +29,8 @@ export type SpatialSceneRuntime = {
   dispose: () => void;
 };
 
+const HANSAPLATZ_REFERENCE_URL = "/assets/panoramas/hansaplatz.jpg";
+
 const countAuthoredAssetRoots = (scene: THREE.Scene) => {
   let count = 0;
   scene.traverse((object) => {
@@ -37,13 +39,64 @@ const countAuthoredAssetRoots = (scene: THREE.Scene) => {
   return count;
 };
 
+const loadHansaplatzTexture = (
+  scene: THREE.Scene,
+  renderScene: () => void,
+  options: { useAsEnvironment: boolean },
+) => {
+  let disposed = false;
+  let activeTexture: THREE.Texture | null = null;
+  const previousBackground = scene.background;
+  const previousEnvironment = scene.environment;
+  const previousBackgroundIntensity = scene.backgroundIntensity;
+  const previousEnvironmentIntensity = scene.environmentIntensity;
+  const loader = new THREE.TextureLoader();
+
+  loader.load(
+    HANSAPLATZ_REFERENCE_URL,
+    (texture) => {
+      if (disposed) {
+        texture.dispose();
+        return;
+      }
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.anisotropy = 4;
+      activeTexture = texture;
+      scene.background = texture;
+      scene.backgroundIntensity = options.useAsEnvironment ? 0.86 : 1;
+      if (options.useAsEnvironment) {
+        scene.environment = texture;
+        scene.environmentIntensity = 0.52;
+      }
+      renderScene();
+    },
+    undefined,
+    (error) => {
+      if (!disposed) console.error("Hansaplatz reference environment failed to load", error);
+    },
+  );
+
+  return () => {
+    disposed = true;
+    if (activeTexture && scene.background === activeTexture) scene.background = previousBackground;
+    if (activeTexture && scene.environment === activeTexture) scene.environment = previousEnvironment;
+    scene.backgroundIntensity = previousBackgroundIntensity;
+    scene.environmentIntensity = previousEnvironmentIntensity;
+    activeTexture?.dispose();
+    activeTexture = null;
+  };
+};
+
 /**
  * QR2 moves C0's primary-visible responsibility to the Blender-authored chunk.
  * The legacy Night Intersection mount is still temporarily retained for its
- * accepted navigation contract, environment state and runtime lights. Hide its
- * close/mid visual geometry so it cannot overlap or visually mask the authored
- * world. Far background boxes remain only as temporary distant context and the
- * procedural star field remains as environment detail.
+ * accepted navigation contract and runtime lights. Hide its close/mid visual
+ * geometry so it cannot overlap or visually mask the authored world. The
+ * distant visual context now comes from the real CC0 Hansaplatz panorama used
+ * as the reconstruction reference/environment instead of invented far boxes.
  *
  * This is deliberately a migration boundary, not a final architecture. QR3/QR4
  * move lighting/navigation into authored chunk contracts and remove the legacy
@@ -52,7 +105,7 @@ const countAuthoredAssetRoots = (scene: THREE.Scene) => {
 const retireLegacyPrimaryVisibleGeometry = (root: THREE.Object3D) => {
   root.traverse((object) => {
     if (object instanceof THREE.Points) {
-      object.visible = object.name === "night-sky-stars";
+      object.visible = false;
       return;
     }
     if (object instanceof THREE.Line) {
@@ -60,7 +113,7 @@ const retireLegacyPrimaryVisibleGeometry = (root: THREE.Object3D) => {
       return;
     }
     if (object instanceof THREE.Mesh) {
-      object.visible = object.name.startsWith("background-building-") || object.name.startsWith("background-roof-");
+      object.visible = false;
     }
   });
 };
@@ -73,6 +126,7 @@ export function createSpatialSceneRuntime(
   if (sceneId === "night-intersection") {
     const mounted = mountNightIntersectionScene(scene, renderScene);
     retireLegacyPrimaryVisibleGeometry(mounted.root);
+    const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, { useAsEnvironment: true });
     const chunkRuntime = new SpatialChunkRuntime(scene, NIGHT_INTERSECTION_CHUNKS, renderScene);
     return {
       id: sceneId,
@@ -89,6 +143,7 @@ export function createSpatialSceneRuntime(
       }),
       dispose: () => {
         chunkRuntime.dispose();
+        disposeReferenceEnvironment();
         mounted.dispose();
       },
     };
@@ -98,30 +153,7 @@ export function createSpatialSceneRuntime(
     throw new Error(`Unsupported Explore 3D scene: ${sceneId}`);
   }
 
-  let disposed = false;
-  let activeTexture: THREE.Texture | null = null;
-  scene.fog = null;
-  const loader = new THREE.TextureLoader();
-  loader.load(
-    "/assets/panoramas/hansaplatz.jpg",
-    (texture) => {
-      if (disposed) {
-        texture.dispose();
-        return;
-      }
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.mapping = THREE.EquirectangularReflectionMapping;
-      texture.minFilter = THREE.LinearMipmapLinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      activeTexture = texture;
-      scene.background = texture;
-      renderScene();
-    },
-    undefined,
-    (error) => {
-      if (!disposed) console.error("360° Photo Reference failed to load", error);
-    },
-  );
+  const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, { useAsEnvironment: false });
 
   return {
     id: sceneId,
@@ -134,11 +166,6 @@ export function createSpatialSceneRuntime(
       loadedChunkIds: [],
       authoredAssetRootCount: countAuthoredAssetRoots(scene),
     }),
-    dispose: () => {
-      disposed = true;
-      if (activeTexture && scene.background === activeTexture) scene.background = null;
-      activeTexture?.dispose();
-      activeTexture = null;
-    },
+    dispose: disposeReferenceEnvironment,
   };
 }
