@@ -1,14 +1,28 @@
 # AsSeenBy — Explore 3D Execution Schedule
 
 ## Current state
-Status: **QUALITY RECOVERY ACTIVE / E5+ BLOCKED**
+Status: **REFERENCE-DRIVEN QUALITY RECOVERY ACTIVE / CONTINUOUS PRODUCTION**
 
 Explore 3D Steps E1 through E4 were deployed and production-verified as technical implementation milestones. Those historical deployments remain valid facts, but the current `Night Intersection` presentation has been re-reviewed against the product-quality gate and is **not accepted as the final scene baseline**.
 
-The current procedural scene proves Three.js depth/parallax, Human movement and Human Vision integration. It does not yet satisfy the intended authored high-fidelity scene bar. Therefore the execution order is now:
+The current procedural scene proved Three.js depth/parallax, Human movement and Human Vision integration. The active rebuild replaces that invented presentation with an authored, reference-driven environment.
 
-1. complete QR1–QR7 in `docs/explore-3d-quality-recovery.md`;
-2. only then resume E5 Dog observer and the later observer sequence.
+### Current reference decision
+`Night Intersection` now uses **Hansaplatz, Berlin** as its canonical photographic/architectural reference rather than an invented generic intersection.
+
+Primary reconstruction evidence:
+- checked-in Poly Haven `Hansaplatz` 360 HDRI / tonemapped JPG by Greg Zaal, CC0-1.0;
+- repeatable rectilinear reference plates generated from that panorama under `assets-src/blender/night-intersection/reference/hansaplatz/`;
+- authoritative Hansaviertel architectural records for macro-layout cues such as the mostly single-storey shopping-centre ensemble, atrium arrangement, continuous flat roofs on slender steel supports and small white ceramic-tile finish.
+
+The working sequence is now:
+1. continue QR1–QR7 in `docs/explore-3d-quality-recovery.md`;
+2. build C0 by matching real reference composition/material/architecture rather than inventing detail from scratch;
+3. publish each coherent implementation increment to `main` immediately so the real site remains inspectable during development;
+4. use rendered comparison to determine the next correction;
+5. resume E5 Dog observer after the scene/world recovery closes.
+
+**Important production rule:** QR quality status controls whether a milestone may be called visually complete. It does **not** block deployment of work-in-progress Explore 3D improvements. Completed implementation increments are expected to land on `main` and be visible in production while recovery continues.
 
 Current product direction is defined by `docs/explore-3d-spec.md`, with the active recovery gate in `docs/explore-3d-quality-recovery.md`. Final-quality world authoring/export is governed by `docs/blender-asset-pipeline.md`.
 
@@ -129,55 +143,52 @@ Historical production closeout:
 
 Those checks validate the Vision implementation over the current rendered frame. They do not validate the underlying scene as final-quality.
 
-# Blocking recovery before E5
+# Recovery sequence before E5
 
 ## QR1 — Runtime and asset contract
-Status: **IN PROGRESS — Blender pipeline established; first real PBR asset still required**
+Status: **PASS / merged / production path established**
 
-The runtime foundation now exists:
+Accepted foundation:
 - glTF/GLB loading;
 - asset/texture lifecycle and disposal path;
 - scene/chunk manifest types;
 - chunk load state;
 - third-party asset/license provenance manifest type;
 - compatibility with current Scene / Observer / Vision state contracts;
-- streamed Night Intersection world envelope/chunk scaffold.
+- streamed Night Intersection world envelope/chunk scaffold;
+- real authored PBR asset through the production runtime;
+- browser-verified load -> unload -> remount lifecycle without duplicate authored roots.
 
-The authored production path is now fixed:
+The authored production path is fixed:
 - Blender is the canonical DCC authoring/assembly tool for new primary-visible world content;
 - `docs/blender-asset-pipeline.md` defines units, collection roles, PBR/material, provenance and export rules;
 - `assets-src/blender/night-intersection/` is the source workspace;
 - `public/assets/3d/night-intersection/` is the optimized runtime asset path;
-- `scripts/blender/export_night_intersection.py` is the initial canonical export automation entry point;
+- `scripts/blender/export_night_intersection.py` is the canonical export automation entry point;
 - the first authored target is central 64 m chunk `C0`.
 
 Do **not** add new primary-visible detail to the procedural `nightIntersectionScene.ts` to bypass this path.
 
-Still required for QR1 acceptance:
-- create/import at least one real authored PBR asset through the canonical source path or an already-compliant direct GLB path;
-- record exact provenance/license/local runtime path in `src/spatial/assetManifest.ts`;
-- attach the asset to `C0` in `src/spatial/nightIntersectionWorld.ts`;
-- prove mount/unmount through the production Scene/chunk runtime with no duplicate leaked objects;
-- build and Compare image regression green.
-
-Acceptance:
-- at least one real authored PBR asset loads through the production Scene runtime;
-- switching scenes/load states does not duplicate leaked objects;
-- the asset manifest has explicit source/license metadata;
-- build and Compare image regression remain green.
-
-The Blender docs/directories/export script alone do not close QR1.
-
 ## QR2 — Visible Night Intersection rebuild
-Status: **queued after QR1**
+Status: **ACTIVE / REFERENCE-DRIVEN / CONTINUOUSLY DEPLOYED**
 
-Rebuild the close-range primitive/procedural look as an authored Blender/GLB core, beginning with `C0`.
+C0 is now rebuilt and iterated as an authored Blender/GLB environment against the real Hansaplatz reference rather than as an invented generic street.
 
-Acceptance:
+Current implementation direction:
+- the checked-in Hansaplatz equirectangular photo is the canonical visual reference and runtime far environment;
+- six fixed perspective reference plates are generated reproducibly for comparison;
+- invented brick-block macro geometry is being replaced with Hansaplatz-specific modernist low-rise pavilions, glazed storefronts, continuous canopies on slender steel supports, a plaza/atrium, transit entry and white ceramic-tile architectural language;
+- authored CC0 props/materials remain reusable when they match the reference;
+- each coherent improvement is committed to `main` and allowed to appear on the public site before the final QR2 quality bar is reached.
+
+Acceptance for declaring QR2 visually complete remains:
 - representative desktop and mobile screenshots no longer read as placeholder/debug/cheap low-poly work;
-- primary buildings/facades/storefronts, vehicles, street furniture and vegetation survive close walking distance;
+- primary architecture/storefronts, vehicles, street furniture and vegetation survive close walking distance;
+- rendered composition materially matches the Hansaplatz photographic reference rather than merely being internally detailed;
 - Normal mode is credible before any Vision effect;
 - Human movement remains usable.
+
+Failure to meet those acceptance points means “continue iterating”, **not** “withhold the current implementation from production”.
 
 ## QR3 — Chunking, LOD and district-scale envelope
 Status: **queued**
@@ -232,17 +243,17 @@ Run:
 - Compare image regression;
 - production deployment/smoke verification.
 
-Blocking rule:
+Closeout rule:
 - object count is not enough;
 - source inspection is not enough;
 - shader metrics are not enough;
 - production smoke is not enough;
 - the presence of glTF files is not enough.
 
-QR7 passes only when representative rendered views satisfy the scene-quality bar in `docs/explore-3d-quality-recovery.md`.
+QR7 passes only when representative rendered views satisfy the scene-quality bar in `docs/explore-3d-quality-recovery.md`. The rule determines the quality-closeout label, not whether intermediate implementation is allowed on `main`.
 
 ## Step E5 — Dog observer
-Status: **BLOCKED BY QR1–QR7**
+Status: **BLOCKED BY QR1–QR7 CLOSEOUT / CURRENT WORK MAY STILL DEPLOY**
 
 After the recovery gate passes, add a low ground observer, initially around 0.5–0.6 m.
 
@@ -253,14 +264,14 @@ Acceptance:
 - Dog-like Vision can be toggled without camera reset.
 
 ## Step E6 — Dog-like 3D Vision refinement
-Status: **BLOCKED BY QR1–QR7 / then queued after E5**
+Status: **BLOCKED BY QR1–QR7 CLOSEOUT / then queued after E5**
 
 Move Dog-like detail loss toward distance/projected-angular-size behavior rather than relying only on full-screen softening.
 
 Keep the existing scientific boundary: visible-range human-display proxy, not literal canine perception.
 
 ## Step E7 — Cat observer
-Status: **BLOCKED BY QR1–QR7**
+Status: **BLOCKED BY QR1–QR7 CLOSEOUT**
 
 Add a lower observer around 0.3 m and authored climb/perch interactions.
 
@@ -275,7 +286,7 @@ Acceptance:
 - unsupported Cat-specific Vision remains absent.
 
 ## Step E8 — First Bird species selection and observer
-Status: **BLOCKED BY QR1–QR7 / species decision required before implementation**
+Status: **BLOCKED BY QR1–QR7 CLOSEOUT / species decision required before implementation**
 
 Select one concrete bird species suitable for the first scene. A city species such as Pigeon is a practical candidate, but the choice must be documented before release.
 
@@ -325,7 +336,10 @@ Keep Hansaplatz as a clearly labeled photographic reference scene.
 Do not present it as the full Explore 3D experience.
 
 ## Permanent rules
-- Scene density, material/detail quality and explanatory value are blocking product concerns.
+- **Work-in-progress visual quality does not block deployment.** Completed Explore 3D implementation increments go to `main` so the public site can be inspected continuously.
+- Quality labels still matter: do not call a weak render QR2/QR7 complete merely because it was deployed.
+- Hansaplatz is the canonical current Night Intersection reconstruction reference; new macro architecture must be justified against the real reference instead of invented generic city-block styling.
+- Reference -> authored assets -> Blender assembly -> browser render -> rendered critique -> correction is the normal art-production loop.
 - Blender is the canonical authoring/assembly layer for new primary-visible Explore 3D world content; Three.js remains the runtime.
 - Do not treat a primitive/procedural scene as accepted merely because Three.js, movement, shaders and smoke checks work.
 - Do not extend the old procedural scene with new primary-visible art to evade the authored asset path.
@@ -336,4 +350,4 @@ Do not present it as the full Explore 3D experience.
 - UV/spectral perception is never fabricated from ordinary RGB.
 - Third-party assets require explicit provenance/license tracking.
 - Every completed visual/spatial recovery step requires rendered review where visual behavior matters.
-- If the user changes an accepted product behavior, update `docs/explore-3d-spec.md`, this schedule, and the active quality-recovery document in the same implementation branch/PR before declaring the step complete.
+- If the user changes an accepted product behavior, update `docs/explore-3d-spec.md`, this schedule, and the active quality-recovery document in the same implementation change before declaring the step complete.
