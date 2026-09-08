@@ -44,6 +44,27 @@ export type SpatialAssetDefinition = {
  */
 export const SPATIAL_ASSET_MANIFEST: readonly SpatialAssetDefinition[] = [
   {
+    id: "asseenby-night-intersection-c0-v1",
+    label: "Night Intersection C0 authored visible core v1",
+    format: "glb",
+    localUrl: "/assets/3d/night-intersection/c0/core/night-intersection-c0.glb",
+    qualityRole: "primary-visible",
+    provenance: {
+      creator: "badjoke-lab / AsSeenBy",
+      sourceUrl: "https://github.com/badjoke-lab/asseenby/tree/main/assets-src/blender/night-intersection/c0",
+      sourceAssetId: "night-intersection-c0",
+      sourceVersion: "QR2 C0 v1",
+      license: {
+        spdx: "MIT",
+        name: "MIT License",
+        attributionRequired: true,
+        redistributionAllowed: true,
+      },
+      notes:
+        "Original C0 geometry is authored in Blender and exported through scripts/blender/export_night_intersection.py. The GLB embeds CC0 Poly Haven Asphalt 01 and Brick Wall 001 1K PBR maps; exact material provenance and source hashes are retained under assets-src/blender/night-intersection/materials. primary-visible marks the intended QR2 role only: rendered desktop/mobile review is still required before QR2 can close.",
+    },
+  },
+  {
     id: "polyhaven-street-lamp-02-1k",
     label: "Street Lamp 02 (Poly Haven 1K)",
     format: "gltf",
