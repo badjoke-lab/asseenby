@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import type { SpatialSceneId } from "./catalog";
+import { SpatialChunkRuntime } from "./chunkRuntime";
 import { mountNightIntersectionScene, NIGHT_INTERSECTION_NAVIGATION } from "./nightIntersectionScene";
+import { NIGHT_INTERSECTION_CHUNKS } from "./nightIntersectionWorld";
 
 export type SpatialGroundNavigation = {
   kind: "ground";
@@ -17,6 +19,7 @@ export type SpatialSceneRuntime = {
   objectCount: number;
   lightCount: number;
   navigation: SpatialGroundNavigation | null;
+  updateObserverPosition: (position: THREE.Vector3) => void;
   dispose: () => void;
 };
 
@@ -27,13 +30,20 @@ export function createSpatialSceneRuntime(
 ): SpatialSceneRuntime {
   if (sceneId === "night-intersection") {
     const mounted = mountNightIntersectionScene(scene, renderScene);
+    const chunkRuntime = new SpatialChunkRuntime(scene, NIGHT_INTERSECTION_CHUNKS, renderScene);
     return {
       id: sceneId,
       supportsTranslation: true,
       objectCount: mounted.objectCount,
       lightCount: mounted.lightCount,
       navigation: NIGHT_INTERSECTION_NAVIGATION,
-      dispose: mounted.dispose,
+      updateObserverPosition: (position) => {
+        void chunkRuntime.update(position);
+      },
+      dispose: () => {
+        chunkRuntime.dispose();
+        mounted.dispose();
+      },
     };
   }
 
@@ -72,6 +82,7 @@ export function createSpatialSceneRuntime(
     objectCount: 0,
     lightCount: 0,
     navigation: null,
+    updateObserverPosition: () => {},
     dispose: () => {
       disposed = true;
       if (activeTexture && scene.background === activeTexture) scene.background = null;
