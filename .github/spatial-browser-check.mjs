@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { chromium } from "playwright";
 
 const outDir = "browser-check";
+await fs.rm(outDir, { recursive: true, force: true });
 await fs.mkdir(outDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -26,13 +27,15 @@ async function assertNoHorizontalOverflow(page, label) {
 
 async function assertMode(page, name) {
   const button = page.getByRole("button", { name, exact: true });
+  await button.waitFor({ state: "visible", timeout: 15000 });
   await button.click();
   const pressed = await button.getAttribute("aria-pressed");
   if (pressed !== "true") failures.push(`${name}: aria-pressed did not become true`);
-  await page.waitForTimeout(140);
+  await page.waitForTimeout(180);
 }
 
 async function dragCanvas(page, canvas, dx, dy) {
+  await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   if (!box) return false;
   const startX = box.x + box.width * 0.52;
@@ -41,7 +44,7 @@ async function dragCanvas(page, canvas, dx, dy) {
   await page.mouse.down();
   await page.mouse.move(startX + dx, startY + dy, { steps: 8 });
   await page.mouse.up();
-  await page.waitForTimeout(140);
+  await page.waitForTimeout(180);
   return true;
 }
 
@@ -55,8 +58,15 @@ async function waitForAuthoredChunk(page, expectedCount, expectedChunkId = null)
       return expectedChunkId ? loaded.includes(expectedChunkId) : loaded.length === 0;
     },
     { expectedCount, expectedChunkId },
-    { timeout: 15000 },
+    { timeout: 20000 },
   );
+}
+
+async function selectScene(page, sceneId, expectedCount, expectedChunkId = null) {
+  const select = page.locator("#spatial-scene-select");
+  await select.selectOption(sceneId);
+  await page.locator(`section.spatial-card[data-scene-id="${sceneId}"]`).waitFor({ state: "visible", timeout: 15000 });
+  await waitForAuthoredChunk(page, expectedCount, expectedChunkId);
 }
 
 async function checkImageExperience(page, label) {
@@ -81,20 +91,14 @@ const desktopCanvas = desktop.locator("canvas.spatial-canvas");
 await desktopCanvas.waitFor({ state: "visible" });
 await assertNoHorizontalOverflow(desktop, "spatial-desktop");
 
-// QR1 authored-world proof: C0 must mount the locally hosted PBR asset,
-// unload cleanly when leaving Night Intersection, and remount on return.
+// Authored-world lifecycle proof. Keep Vision on Normal during the scene switch so
+// the lifecycle check cannot be coupled to Photo Reference-only Dog-like state.
 await waitForAuthoredChunk(desktop, 1, "c0");
-const sceneSelect = desktop.locator("#spatial-scene-select");
-await sceneSelect.selectOption("photo-reference");
-await waitForAuthoredChunk(desktop, 0, null);
-// Dog-like remains a Photo Reference Vision proxy until the Dog observer phase.
-await assertMode(desktop, "Dog-like");
-await desktop.screenshot({ path: `${outDir}/desktop-photo-dog-like.png`, fullPage: true });
-await sceneSelect.selectOption("night-intersection");
-await waitForAuthoredChunk(desktop, 1, "c0");
+await selectScene(desktop, "photo-reference", 0, null);
+await selectScene(desktop, "night-intersection", 1, "c0");
 await assertMode(desktop, "Normal");
 
-// Forward view: hold camera fixed and compare each Human geometry Vision against Normal.
+// Forward view: same camera, multiple Human geometry Vision modes.
 await desktop.screenshot({ path: `${outDir}/desktop-normal-forward.png`, fullPage: true });
 await assertMode(desktop, "Night / Low Light");
 await desktop.screenshot({ path: `${outDir}/desktop-night-forward.png`, fullPage: true });
@@ -106,7 +110,6 @@ await assertMode(desktop, "Cataract-like");
 await desktop.screenshot({ path: `${outDir}/desktop-cataract-forward.png`, fullPage: true });
 await assertMode(desktop, "Normal");
 
-// Tunnel Vision remains live and view-relative while the camera direction changes.
 await assertMode(desktop, "Tunnel Vision");
 await desktop.screenshot({ path: `${outDir}/desktop-tunnel-forward.png`, fullPage: true });
 if (!(await dragCanvas(desktop, desktopCanvas, 250, -45))) {
@@ -115,7 +118,6 @@ if (!(await dragCanvas(desktop, desktopCanvas, 250, -45))) {
   await desktop.screenshot({ path: `${outDir}/desktop-tunnel-turned.png`, fullPage: true });
 }
 
-// Turned view: preserve the exact new camera direction across Normal, Central Loss and Cataract-like.
 await assertMode(desktop, "Normal");
 await desktop.screenshot({ path: `${outDir}/desktop-normal-turned.png`, fullPage: true });
 await assertMode(desktop, "Night / Low Light");
@@ -127,14 +129,17 @@ await assertMode(desktop, "Normal");
 await assertMode(desktop, "Cataract-like");
 await desktop.screenshot({ path: `${outDir}/desktop-cataract-turned.png`, fullPage: true });
 
-// Scene-quality check: sweep through the original direction to the opposite side.
-// Both horizontal directions must contain meaningful street/facade information rather than an empty dark void.
 await assertMode(desktop, "Normal");
 if (!(await dragCanvas(desktop, desktopCanvas, -500, 45))) {
   failures.push("spatial-desktop-opposite: canvas has no bounding box");
 } else {
   await desktop.screenshot({ path: `${outDir}/desktop-normal-opposite.png`, fullPage: true });
 }
+
+// Photo Reference Dog-like is checked independently after geometry screenshots.
+await selectScene(desktop, "photo-reference", 0, null);
+await assertMode(desktop, "Dog-like");
+await desktop.screenshot({ path: `${outDir}/desktop-photo-dog-like.png`, fullPage: true });
 
 const mobileContext = await browser.newContext({
   viewport: { width: 390, height: 844 },
@@ -160,7 +165,6 @@ await mobile.screenshot({ path: `${outDir}/mobile-normal-forward.png`, fullPage:
 await assertMode(mobile, "Central Loss");
 await mobile.screenshot({ path: `${outDir}/mobile-central-forward.png`, fullPage: true });
 
-// Exercise real touch input while Central Loss is active, then verify the affected region on the turned view.
 const mobileBox = await mobileCanvas.boundingBox();
 if (!mobileBox) {
   failures.push("spatial-mobile: canvas has no bounding box");
@@ -177,7 +181,7 @@ if (!mobileBox) {
     touchPoints: [{ x: startX + 72, y: startY - 20, radiusX: 2, radiusY: 2, force: 1, id: 1 }],
   });
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  await mobile.waitForTimeout(150);
+  await mobile.waitForTimeout(180);
 }
 await mobile.screenshot({ path: `${outDir}/mobile-central-turned.png`, fullPage: true });
 
