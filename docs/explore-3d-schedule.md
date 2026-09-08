@@ -10,7 +10,7 @@ The current procedural scene proves Three.js depth/parallax, Human movement and 
 1. complete QR1–QR7 in `docs/explore-3d-quality-recovery.md`;
 2. only then resume E5 Dog observer and the later observer sequence.
 
-Current product direction is defined by `docs/explore-3d-spec.md`, with the active recovery gate in `docs/explore-3d-quality-recovery.md`.
+Current product direction is defined by `docs/explore-3d-spec.md`, with the active recovery gate in `docs/explore-3d-quality-recovery.md`. Final-quality world authoring/export is governed by `docs/blender-asset-pipeline.md`.
 
 ## Execution rule
 Before every Explore 3D implementation step, re-read:
@@ -19,9 +19,10 @@ Before every Explore 3D implementation step, re-read:
 3. `docs/explore-3d-spec.md`;
 4. this schedule;
 5. `docs/explore-3d-quality-recovery.md` while recovery remains active;
-6. `docs/methodology.md` and `docs/limitations.md`;
-7. relevant evidence files;
-8. the historical `docs/spatial-pilot-spec.md` / `docs/spatial-pilot-schedule.md` only as prior-decision context.
+6. `docs/blender-asset-pipeline.md` for any asset/world/export work;
+7. `docs/methodology.md` and `docs/limitations.md`;
+8. relevant evidence files;
+9. the historical `docs/spatial-pilot-spec.md` / `docs/spatial-pilot-schedule.md` only as prior-decision context.
 
 If historical pilot text conflicts with the current Explore 3D spec, follow `docs/explore-3d-spec.md`.
 
@@ -131,16 +132,33 @@ Those checks validate the Vision implementation over the current rendered frame.
 # Blocking recovery before E5
 
 ## QR1 — Runtime and asset contract
-Status: **NEXT**
+Status: **IN PROGRESS — Blender pipeline established; first real PBR asset still required**
 
-Implement the asset-first scene path defined in `docs/explore-3d-quality-recovery.md`:
-- glTF/GLB asset loading;
-- asset/texture lifecycle and disposal;
-- PBR material preservation;
+The runtime foundation now exists:
+- glTF/GLB loading;
+- asset/texture lifecycle and disposal path;
 - scene/chunk manifest types;
 - chunk load state;
-- third-party asset/license provenance manifest;
-- compatibility with current Scene / Observer / Vision state contracts.
+- third-party asset/license provenance manifest type;
+- compatibility with current Scene / Observer / Vision state contracts;
+- streamed Night Intersection world envelope/chunk scaffold.
+
+The authored production path is now fixed:
+- Blender is the canonical DCC authoring/assembly tool for new primary-visible world content;
+- `docs/blender-asset-pipeline.md` defines units, collection roles, PBR/material, provenance and export rules;
+- `assets-src/blender/night-intersection/` is the source workspace;
+- `public/assets/3d/night-intersection/` is the optimized runtime asset path;
+- `scripts/blender/export_night_intersection.py` is the initial canonical export automation entry point;
+- the first authored target is central 64 m chunk `C0`.
+
+Do **not** add new primary-visible detail to the procedural `nightIntersectionScene.ts` to bypass this path.
+
+Still required for QR1 acceptance:
+- create/import at least one real authored PBR asset through the canonical source path or an already-compliant direct GLB path;
+- record exact provenance/license/local runtime path in `src/spatial/assetManifest.ts`;
+- attach the asset to `C0` in `src/spatial/nightIntersectionWorld.ts`;
+- prove mount/unmount through the production Scene/chunk runtime with no duplicate leaked objects;
+- build and Compare image regression green.
 
 Acceptance:
 - at least one real authored PBR asset loads through the production Scene runtime;
@@ -148,10 +166,12 @@ Acceptance:
 - the asset manifest has explicit source/license metadata;
 - build and Compare image regression remain green.
 
-## QR2 — Visible Night Intersection rebuild
-Status: **queued**
+The Blender docs/directories/export script alone do not close QR1.
 
-Replace the close-range primitive/procedural look with authored detailed assets and higher-fidelity materials.
+## QR2 — Visible Night Intersection rebuild
+Status: **queued after QR1**
+
+Rebuild the close-range primitive/procedural look as an authored Blender/GLB core, beginning with `C0`.
 
 Acceptance:
 - representative desktop and mobile screenshots no longer read as placeholder/debug/cheap low-poly work;
@@ -306,7 +326,9 @@ Do not present it as the full Explore 3D experience.
 
 ## Permanent rules
 - Scene density, material/detail quality and explanatory value are blocking product concerns.
+- Blender is the canonical authoring/assembly layer for new primary-visible Explore 3D world content; Three.js remains the runtime.
 - Do not treat a primitive/procedural scene as accepted merely because Three.js, movement, shaders and smoke checks work.
+- Do not extend the old procedural scene with new primary-visible art to evade the authored asset path.
 - The old 150 m scene size is not an architectural ceiling; larger district-scale space must use chunking/LOD/streaming rather than all-resident geometry.
 - Observer and Vision remain independent concepts.
 - Bird movement uses the air/vertical space; species vision is a separate evidence problem.

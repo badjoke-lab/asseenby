@@ -18,12 +18,15 @@ For **any Explore 3D / Three.js / spatial / observer / scene / movement work**, 
 8. `docs/explore-3d-spec.md` — **current canonical 3D product specification**
 9. `docs/explore-3d-schedule.md` — **current canonical 3D execution order and status**
 10. `docs/explore-3d-quality-recovery.md` — **active blocking scene/world quality recovery before E5+**
-11. `docs/spatial-pilot-spec.md` — historical pilot/evidence/design record
-12. `docs/spatial-pilot-schedule.md` — historical pilot execution record
+11. `docs/blender-asset-pipeline.md` — **canonical final-quality 3D world authoring/export contract**
+12. `docs/spatial-pilot-spec.md` — historical pilot/evidence/design record
+13. `docs/spatial-pilot-schedule.md` — historical pilot execution record
 
 If the historical spatial-pilot documents conflict with `docs/explore-3d-spec.md` on current product shape, movement, observer behavior, scene architecture, 360°-photo role, or implementation direction, **`docs/explore-3d-spec.md` controls**.
 
 If older E2–E4 completion wording conflicts with `docs/explore-3d-quality-recovery.md` on whether the current Night Intersection presentation is accepted as final product quality, **the quality-recovery gate controls**.
+
+For final-quality visible Explore 3D world authoring/export, `docs/blender-asset-pipeline.md` controls the Blender -> GLB -> manifest -> chunk-runtime production path. Do not replace that path with ad-hoc primary-visible Three.js primitive generation.
 
 If code and documentation disagree, do not silently invent a new direction. Preserve the documented product boundary or update the relevant current spec/schedule in the same change.
 
@@ -61,13 +64,20 @@ Do not rely on chat history alone for accepted product behavior. Durable decisio
 - E5 Dog observer and later observer phases are blocked until `docs/explore-3d-quality-recovery.md` reaches QR7 product-quality closeout.
 
 ## Asset / world rules
+- Blender is the canonical DCC authoring/assembly tool for new primary-visible Explore 3D world content. Three.js remains the runtime, not the final-quality world-authoring surface.
+- Follow `docs/blender-asset-pipeline.md` for Blender units, chunk collection roles, naming, PBR material expectations, export paths and procedural-scene retirement.
+- Author/rework Night Intersection source content under `assets-src/blender/night-intersection/` and export optimized runtime assets under `public/assets/3d/night-intersection/`.
+- The first authored rebuild target is the central 64 m chunk `C0`; do not try to populate the full ~500 m district before C0 passes close-range rendered review.
+- Do not add new primary-visible detail to the old procedural `nightIntersectionScene.ts` as a substitute for the Blender-authored path. Keep that implementation only as temporary technical fallback/reference and for roles where procedural geometry is explicitly allowed.
 - Record third-party 3D asset provenance and redistribution rights in an asset/license manifest.
 - Prefer CC0; use CC-BY only with tracked attribution; do not ship assets with unclear rights.
 - Use glTF/GLB and PBR materials for authored primary visible assets where practical.
+- A third-party GLB that already satisfies the contract may be consumed directly without a Blender edit, but it still requires provenance/license registration and must obey the same chunk/LOD/collision rules.
 - Use chunk streaming, LOD, culling, reuse/instancing and compressed textures so larger scenes remain static-hosting/browser compatible.
 - Keep collision/navigation representation separable from final visual geometry.
 - Do not permanently model world collision as a fixed hand-entered rectangle list tied to one prototype intersection.
 - The architecture must support authored exterior/interior continuity and Cat/Bird climb/perch/landing metadata without replacing the scene runtime again.
+- Do not label a loader/bootstrap asset `primary-visible` merely to satisfy QR1/QR2; quality roles must describe actual use.
 
 ## Image / perception invariants
 - The existing `src/transformEngine.ts` remains the image renderer for `Compare image`.
@@ -80,6 +90,8 @@ Do not rely on chat history alone for accepted product behavior. Durable decisio
 - During QR1–QR7, do not preserve the old scene implementation merely to minimize diff size when doing so conflicts with the accepted asset/world architecture.
 - Keep the current React + TypeScript structure unless a documented requirement needs restructuring.
 - Three.js remains isolated from the 2D Canvas transform engine, but Explore 3D may be refactored internally into Scene, Observer/controller and Vision layers as required by the canonical spec.
+- Use `scripts/blender/export_night_intersection.py` as the initial canonical Blender export automation entry point; expand it rather than creating unrelated one-off chunk exporters.
+- Do not mark QR1 complete because the Blender directories/export script exist. QR1 still requires a real authored PBR asset, manifest/provenance entry, production runtime load/unload proof and regressions.
 - Avoid unrelated refactors while a scheduled step is being validated.
 - Keep desktop and mobile behavior usable.
 - Run `npm run build` before declaring an implementation step complete. The existing GitHub workflow runs the same typecheck + Vite build on pull requests and main.
@@ -93,6 +105,7 @@ At the start of every Explore 3D step, re-read at minimum:
 - `docs/explore-3d-spec.md`;
 - `docs/explore-3d-schedule.md`;
 - `docs/explore-3d-quality-recovery.md` while the recovery remains active;
+- `docs/blender-asset-pipeline.md` for any asset/world/export work;
 - relevant methodology/limitations/evidence sections.
 
 Read the old spatial-pilot spec/schedule when prior decisions matter, but do not let historical pilot restrictions override the current Explore 3D spec.
@@ -103,6 +116,7 @@ When a step is completed, blocked, rejected, or materially changed:
 - update the active schedule in the same branch/PR;
 - update `docs/explore-3d-spec.md` if current 3D product behavior, observer behavior, scene architecture, movement, source-data boundary or acceptance criteria changed;
 - update `docs/explore-3d-quality-recovery.md` for QR1–QR7 state/acceptance changes while that gate is active;
+- update `docs/blender-asset-pipeline.md` if the canonical authored-world production/export contract changes;
 - update `docs/methodology.md` / `docs/limitations.md` if the scientific or claim boundary changed;
 - update `docs/roadmap.md` if product priority/order changed materially.
 

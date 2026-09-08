@@ -212,8 +212,16 @@ function SpatialRenderer({
 
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
-      const renderScene = () => composer?.render();
       const canvas = renderer.domElement;
+      const syncStreamingDiagnostics = () => {
+        const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+        canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+        canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+      };
+      const renderScene = () => {
+        composer?.render();
+        syncStreamingDiagnostics();
+      };
       visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);
 
       const applyScene = (nextSceneId: SpatialSceneId) => {
@@ -225,7 +233,7 @@ function SpatialRenderer({
         canvas.dataset.sceneSupportsTranslation = String(activeSceneRuntime.supportsTranslation);
         canvas.dataset.sceneObjectCount = String(activeSceneRuntime.objectCount);
         canvas.dataset.sceneLightCount = String(activeSceneRuntime.lightCount);
-        canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "150x150x60" : "photographic-reference";
+        canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "500x500x80-streamed-envelope" : "photographic-reference";
         renderScene();
       };
 
@@ -238,6 +246,7 @@ function SpatialRenderer({
           renderScene,
           navigation: activeSceneRuntime?.navigation ?? null,
           onViewpointChange: setViewpoint,
+          onPositionChange: (position) => activeSceneRuntime?.updateObserverPosition(position),
         });
         activeObserverRuntime.setGuidedViewpoint(viewpoint === "free" ? "baseline" : viewpoint);
         renderScene();

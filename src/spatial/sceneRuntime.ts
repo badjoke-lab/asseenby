@@ -13,6 +13,11 @@ export type SpatialGroundNavigation = {
   canOccupy: (x: number, z: number, radius?: number) => boolean;
 };
 
+export type SpatialStreamingDiagnostics = {
+  loadedChunkIds: string[];
+  authoredAssetRootCount: number;
+};
+
 export type SpatialSceneRuntime = {
   id: SpatialSceneId;
   supportsTranslation: boolean;
@@ -20,7 +25,16 @@ export type SpatialSceneRuntime = {
   lightCount: number;
   navigation: SpatialGroundNavigation | null;
   updateObserverPosition: (position: THREE.Vector3) => void;
+  getStreamingDiagnostics: () => SpatialStreamingDiagnostics;
   dispose: () => void;
+};
+
+const countAuthoredAssetRoots = (scene: THREE.Scene) => {
+  let count = 0;
+  scene.traverse((object) => {
+    if (typeof object.userData.spatialAssetId === "string") count += 1;
+  });
+  return count;
 };
 
 export function createSpatialSceneRuntime(
@@ -40,6 +54,10 @@ export function createSpatialSceneRuntime(
       updateObserverPosition: (position) => {
         void chunkRuntime.update(position);
       },
+      getStreamingDiagnostics: () => ({
+        loadedChunkIds: chunkRuntime.getLoadedChunkIds(),
+        authoredAssetRootCount: countAuthoredAssetRoots(scene),
+      }),
       dispose: () => {
         chunkRuntime.dispose();
         mounted.dispose();
@@ -83,6 +101,10 @@ export function createSpatialSceneRuntime(
     lightCount: 0,
     navigation: null,
     updateObserverPosition: () => {},
+    getStreamingDiagnostics: () => ({
+      loadedChunkIds: [],
+      authoredAssetRootCount: countAuthoredAssetRoots(scene),
+    }),
     dispose: () => {
       disposed = true;
       if (activeTexture && scene.background === activeTexture) scene.background = null;

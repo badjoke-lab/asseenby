@@ -42,7 +42,29 @@ export type SpatialAssetDefinition = {
  * - Final QR2 close-range assets must use `primary-visible` where appropriate
  *   and pass rendered review; the role itself is not an automatic approval.
  */
-export const SPATIAL_ASSET_MANIFEST: readonly SpatialAssetDefinition[] = [];
+export const SPATIAL_ASSET_MANIFEST: readonly SpatialAssetDefinition[] = [
+  {
+    id: "polyhaven-street-lamp-02-1k",
+    label: "Street Lamp 02 (Poly Haven 1K)",
+    format: "gltf",
+    localUrl: "/assets/3d/night-intersection/c0/street-lamp-02/street_lamp_02_1k.gltf",
+    qualityRole: "secondary-visible",
+    provenance: {
+      creator: "Josh Dean / Poly Haven",
+      sourceUrl: "https://polyhaven.com/a/street_lamp_02",
+      sourceAssetId: "street_lamp_02",
+      sourceVersion: "1K glTF runtime variant",
+      license: {
+        spdx: "CC0-1.0",
+        name: "CC0 1.0 Universal",
+        attributionRequired: false,
+        redistributionAllowed: true,
+      },
+      notes:
+        "Authored PBR glTF exported by Khronos glTF Blender I/O. The checked-in runtime bundle includes base color, normal and ARM textures. Fetched glTF SHA-256: 3a8a42486c5dc4538a8b44aeeef502c64a1c9d0d42fa5610e37886c355337ff8. SOURCE.txt records the exact CDN URLs. This first asset proves the authored asset/runtime path; by itself it does not close the QR2 scene-quality gate.",
+    },
+  },
+];
 
 const assetById = new Map(SPATIAL_ASSET_MANIFEST.map((asset) => [asset.id, asset]));
 
