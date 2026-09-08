@@ -1,0 +1,75 @@
+name: Patch authored runtime diagnostics
+
+on:
+  push:
+    branches:
+      - feat/blender-world-authoring-pipeline-20260908
+    paths:
+      - .github/workflows/patch-authored-runtime-diagnostics.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/blender-world-authoring-pipeline-20260908
+          fetch-depth: 0
+
+      - name: Patch SpatialPage diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/SpatialPage.tsx")
+          text = path.read_text()
+
+          old = '''      composer = new EffectComposer(renderer);
+                composer.addPass(new RenderPass(scene, camera));
+                const renderScene = () => composer?.render();
+                const canvas = renderer.domElement;
+                visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);'''.replace("        ", "")
+          new = '''      composer = new EffectComposer(renderer);
+                composer.addPass(new RenderPass(scene, camera));
+                const canvas = renderer.domElement;
+                const syncStreamingDiagnostics = () => {
+                  const diagnostics = activeSceneRuntime?.getStreamingDiagnostics();
+                  canvas.dataset.sceneLoadedChunks = diagnostics?.loadedChunkIds.join(",") ?? "";
+                  canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
+                };
+                const renderScene = () => {
+                  composer?.render();
+                  syncStreamingDiagnostics();
+                };
+                visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);'''.replace("        ", "")
+
+          if old not in text:
+              raise SystemExit("renderScene anchor not found")
+          text = text.replace(old, new, 1)
+
+          old_volume = 'canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "150x150x60" : "photographic-reference";'
+          new_volume = 'canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "500x500x80-streamed-envelope" : "photographic-reference";'
+          if old_volume not in text:
+              raise SystemExit("sceneVolume anchor not found")
+          text = text.replace(old_volume, new_volume, 1)
+
+          path.write_text(text)
+          PY
+
+          git diff --check
+          git diff -- src/SpatialPage.tsx
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/SpatialPage.tsx
+          git commit -m "Expose authored chunk lifecycle on spatial canvas"
+          git push origin HEAD:feat/blender-world-authoring-pipeline-20260908
