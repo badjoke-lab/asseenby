@@ -10,9 +10,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: blender-c0-visible-core
+  cancel-in-progress: true
+
 jobs:
   build-c0:
     runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - name: Check out QR2 branch
         uses: actions/checkout@v4
@@ -23,7 +28,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
           blender --version
 
       - name: Normalize Blender-version compatibility
@@ -101,4 +106,6 @@ jobs:
             assets-src/blender/night-intersection/c0 \
             public/assets/3d/night-intersection/c0/core
           git commit -m "Add Blender-authored C0 visible core"
+          git fetch origin feat/blender-c0-visible-core-20260908
+          git rebase origin/feat/blender-c0-visible-core-20260908
           git push origin HEAD:feat/blender-c0-visible-core-20260908
