@@ -14,7 +14,8 @@ on:
       - scripts/blender/reconstruct_hansaplatz_c0.py
       - scripts/blender/export_night_intersection.py
       - scripts/polyhaven/fetch_model_bundle.py
-      - assets-src/blender/night-intersection/materials/SOURCES.md
+      - scripts/polyhaven/fetch_texture_bundle.py
+      - assets-src/blender/night-intersection/materials/**
       - assets-src/blender/night-intersection/third-party/SOURCES.md
 
 permissions:
@@ -71,7 +72,7 @@ jobs:
           PY
           git diff --check
 
-      - name: Fetch CC0 1K PBR source maps
+      - name: Fetch legacy C0 CC0 1K PBR source maps
         shell: bash
         run: |
           set -euo pipefail
@@ -98,6 +99,29 @@ jobs:
           fetch_map brick_wall_001 rough rough
 
           sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
+
+      - name: Fetch Hansaplatz reference-matched CC0 PBR textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="assets-src/blender/night-intersection/materials/hansaplatz"
+          rm -rf "$dest"
+          mkdir -p "$dest"
+          python3 scripts/polyhaven/fetch_texture_bundle.py \
+            --asset rounded_square_tiled_wall \
+            --resolution 1k \
+            --out "$dest"
+          python3 scripts/polyhaven/fetch_texture_bundle.py \
+            --asset concrete_pavement \
+            --resolution 1k \
+            --out "$dest"
+          sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
+          test -s "$dest/rounded_square_tiled_wall_diff_1k.jpg"
+          test -s "$dest/rounded_square_tiled_wall_nor_gl_1k.jpg"
+          test -s "$dest/rounded_square_tiled_wall_rough_1k.jpg"
+          test -s "$dest/concrete_pavement_diff_1k.jpg"
+          test -s "$dest/concrete_pavement_nor_gl_1k.jpg"
+          test -s "$dest/concrete_pavement_rough_1k.jpg"
 
       - name: Fetch authored CC0 model bundles
         shell: bash
@@ -161,7 +185,8 @@ jobs:
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python scripts/blender/reconstruct_hansaplatz_c0.py -- \
-            --collection C0
+            --collection C0 \
+            --material-dir assets-src/blender/night-intersection/materials/hansaplatz
 
       - name: Export canonical C0 GLB
         shell: bash
@@ -194,6 +219,7 @@ jobs:
             scripts/blender/refine_night_intersection_c0.py \
             scripts/blender/reconstruct_hansaplatz_c0.py \
             scripts/polyhaven/fetch_model_bundle.py \
+            scripts/polyhaven/fetch_texture_bundle.py \
             assets-src/blender/night-intersection/reference \
             assets-src/blender/night-intersection/materials \
             assets-src/blender/night-intersection/third-party \
