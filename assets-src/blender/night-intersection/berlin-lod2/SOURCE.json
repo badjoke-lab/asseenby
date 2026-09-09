@@ -1,0 +1,49 @@
+{
+  "source": "https://gdi.berlin.de/data/a_lod2/atom/0.atom",
+  "provider": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
+  "dataset": "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)",
+  "license": "dl-de-zero-2.0",
+  "reference_location": "Hansaplatz, Berlin, Germany",
+  "selection_mode": "epsg25833-kilometre-tile-filename",
+  "query": {
+    "lat": 52.5178,
+    "lon": 13.34216,
+    "radius_m": 200.0,
+    "source_epsg": 25833,
+    "easting": 387510.2478906405,
+    "northing": 5819923.538712847,
+    "required_tiles": [
+      [
+        387,
+        5819
+      ],
+      [
+        387,
+        5820
+      ]
+    ]
+  },
+  "downloads": [
+    {
+      "tile": [
+        387,
+        5819
+      ],
+      "url": "https://gdi.berlin.de/data/a_lod2/atom/LoD2_387_5819.zip",
+      "archive": "lod2-387-5819.zip"
+    },
+    {
+      "tile": [
+        387,
+        5820
+      ],
+      "url": "https://gdi.berlin.de/data/a_lod2/atom/LoD2_387_5820.zip",
+      "archive": "lod2-387-5820.zip"
+    }
+  ],
+  "extracted": [
+    "tile-387-5819-LoD2_33_387_5819_1_BE.xml",
+    "tile-387-5820-LoD2_33_387_5820_1_BE.xml"
+  ],
+  "unparsed_zip_link_count": 0
+}
