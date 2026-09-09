@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Install archive tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends p7zip-full
       - name: Download official Hamburg LoD3 Area5
         run: |
           set -euo pipefail
@@ -26,11 +30,17 @@ jobs:
             -o /tmp/lod3-area5.zip
           test -s /tmp/lod3-area5.zip
           du -h /tmp/lod3-area5.zip
+          rm -rf /tmp/lod3-area5
+          mkdir -p /tmp/lod3-area5
+          7z x -y -o/tmp/lod3-area5 /tmp/lod3-area5.zip >/tmp/area5-7z.log
+          find /tmp/lod3-area5 -type f | head -20
       - name: Find Hansaplatz tiles and nearest buildings
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import math, zipfile, xml.etree.ElementTree as ET
+          import math
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
           TARGET_E=567045.146949287
           TARGET_N=5934427.863514651
           GML_ID='{http://www.opengis.net/gml}id'
@@ -77,36 +87,37 @@ jobs:
               xs=[p[0] for p in pts]; ys=[p[1] for p in pts]
               return min(xs),min(ys),max(xs),max(ys)
 
-          with zipfile.ZipFile('/tmp/lod3-area5.zip') as z:
-              names=sorted(n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml')))
-              sheets=[]
-              roots={}
-              for name in names:
-                  root=ET.fromstring(z.read(name)); roots[name]=root
-                  box=env(root)
-                  if box: sheets.append((dist(box),name,box))
-              sheets.sort()
-              print('GML_COUNT',len(names))
-              print('NEAREST_15_TILE_ENVELOPES')
-              for row in sheets[:15]: print(f'{row[0]:.3f}m\t{row[1]}\tbbox={row[2]}')
-              candidates=[row for row in sheets if row[0] <= 300.0]
-              print('CANDIDATE_TILES_WITHIN_300M',len(candidates))
-              buildings=[]
-              for _,name,_ in candidates:
-                  root=roots[name]
-                  for idx,b in enumerate(root.iter()):
-                      if local(b.tag) not in {'Building','BuildingPart'}: continue
-                      pts=building_points(b)
-                      if not pts: continue
-                      box=pbox(pts); d=dist(box)
-                      bid=b.attrib.get(GML_ID) or f'{name}#{idx}'
-                      buildings.append((d,name,bid,box,len(pts)))
-              buildings.sort()
-              print('NEAREST_30_BUILDINGS')
-              for row in buildings[:30]: print(f'{row[0]:.3f}m\t{row[1]}\t{row[2]}\tbbox={row[3]}\tpoints={row[4]}')
-              print('COUNT_BUILDINGS_WITHIN_170M',sum(1 for r in buildings if r[0]<=170.0))
-              if buildings:
-                  print('NEAREST_BUILDING_DISTANCE_M',f'{buildings[0][0]:.3f}')
-                  print('NEAREST_BUILDING_SHEET',buildings[0][1])
-                  print('NEAREST_BUILDING_ID',buildings[0][2])
+          names=sorted(p for p in Path('/tmp/lod3-area5').rglob('*') if p.is_file() and p.suffix.lower() in {'.gml','.xml','.citygml'})
+          sheets=[]
+          candidates=[]
+          for path in names:
+              root=ET.parse(path).getroot()
+              box=env(root)
+              if not box: continue
+              d=dist(box)
+              sheets.append((d,path,box))
+              if d<=300.0: candidates.append((d,path,box,root))
+          sheets.sort(key=lambda r:r[0])
+          print('GML_COUNT',len(names))
+          print('NEAREST_15_TILE_ENVELOPES')
+          for row in sheets[:15]: print(f'{row[0]:.3f}m\t{row[1].relative_to(Path("/tmp/lod3-area5"))}\tbbox={row[2]}')
+          print('CANDIDATE_TILES_WITHIN_300M',len(candidates))
+          buildings=[]
+          for _,path,_,root in candidates:
+              rel=str(path.relative_to(Path('/tmp/lod3-area5')))
+              for idx,b in enumerate(root.iter()):
+                  if local(b.tag) not in {'Building','BuildingPart'}: continue
+                  pts=building_points(b)
+                  if not pts: continue
+                  box=pbox(pts); d=dist(box)
+                  bid=b.attrib.get(GML_ID) or f'{rel}#{idx}'
+                  buildings.append((d,rel,bid,box,len(pts)))
+          buildings.sort(key=lambda r:r[0])
+          print('NEAREST_30_BUILDINGS')
+          for row in buildings[:30]: print(f'{row[0]:.3f}m\t{row[1]}\t{row[2]}\tbbox={row[3]}\tpoints={row[4]}')
+          print('COUNT_BUILDINGS_WITHIN_170M',sum(1 for r in buildings if r[0]<=170.0))
+          if buildings:
+              print('NEAREST_BUILDING_DISTANCE_M',f'{buildings[0][0]:.3f}')
+              print('NEAREST_BUILDING_SHEET',buildings[0][1])
+              print('NEAREST_BUILDING_ID',buildings[0][2])
           PY
