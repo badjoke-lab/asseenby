@@ -104,9 +104,22 @@ async function setScene(page, sceneId) {
   return waitForState(page, `(s) => s.scene === "photo-reference" && s.roots === "0"`, 20000);
 }
 
-async function dragDesktop(page, dx, dy) {
+async function placeCanvasInViewport(page) {
+  const canvas = page.locator("canvas.spatial-canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(120);
   const state = await readCanvas(page);
-  if (!state || state.width <= 0 || state.height <= 0) throw new Error("desktop canvas has no usable box");
+  if (!state || state.width <= 0 || state.height <= 0) throw new Error("canvas has no usable box");
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("viewport unavailable");
+  if (state.x + state.width < 0 || state.y + state.height < 0 || state.x > viewport.width || state.y > viewport.height) {
+    throw new Error(`canvas remains outside viewport at ${state.x},${state.y} ${state.width}x${state.height}`);
+  }
+  return state;
+}
+
+async function dragDesktop(page, dx, dy) {
+  const state = await placeCanvasInViewport(page);
   const sx = state.x + state.width * 0.52;
   const sy = state.y + state.height * 0.52;
   await page.mouse.move(sx, sy);
@@ -118,8 +131,7 @@ async function dragDesktop(page, dx, dy) {
 }
 
 async function touchTurn(page) {
-  const state = await readCanvas(page);
-  if (!state || state.width <= 0 || state.height <= 0) throw new Error("mobile canvas has no usable box");
+  const state = await placeCanvasInViewport(page);
   const session = await page.context().newCDPSession(page);
   const sx = state.x + state.width * 0.52;
   const sy = state.y + state.height * 0.52;
@@ -183,6 +195,7 @@ await run("desktop", desktop, async () => {
   await desktop.screenshot({ path: `${OUT}/desktop-normal-opposite.png`, fullPage: true });
 
   const beforeMove = opposite?.position;
+  await placeCanvasInViewport(desktop);
   await desktop.evaluate(() => document.querySelector("canvas.spatial-canvas")?.focus());
   await desktop.keyboard.down("w");
   await desktop.waitForTimeout(700);
