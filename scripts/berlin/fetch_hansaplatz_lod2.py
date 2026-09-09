@@ -1,30 +1,33 @@
 #!/usr/bin/env python3
-"""Fetch the official Berlin LoD2 tile(s) covering Hansaplatz.
+"""Fetch official Berlin LoD2 tiles covering Hansaplatz.
 
 Source: Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin
 ATOM feed: https://gdi.berlin.de/data/a_lod2/atom/0.atom
 License: Datenlizenz Deutschland – Zero – Version 2.0 (dl-de-zero-2.0)
 
-The script selects only entries whose advertised spatial footprint intersects a
-small Hansaplatz bounding box. Berlin's ATOM has changed serialization over time,
-so both GeoRSS Simple and GeoRSS-GML are accepted. If a future feed exposes no
-spatial metadata, a very small feed (<= --max-downloads) may be consumed in full;
-a larger unlocated feed fails closed and prints its ZIP URLs for diagnosis.
+Berlin's current ATOM feed exposes one entry containing hundreds of ZIP links.
+Each ZIP is a 1 km EPSG:25833 tile named ``LoD2_<easting-km>_<northing-km>.zip``.
+This script transforms Hansaplatz from WGS84 into EPSG:25833 and downloads only
+the one-kilometre tiles intersecting the requested local radius.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
+import re
 import shutil
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 
-ATOM_NS = "http://www.w3.org/2005/Atom"
+from pyproj import Transformer
+
 DEFAULT_FEED = "https://gdi.berlin.de/data/a_lod2/atom/0.atom"
+TILE_PATTERN = re.compile(r"LoD2_(\d+)_(\d+)\.zip$", re.IGNORECASE)
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,7 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--feed", default=DEFAULT_FEED)
     parser.add_argument("--lat", type=float, default=52.5178)
     parser.add_argument("--lon", type=float, default=13.34216)
-    parser.add_argument("--radius-deg", type=float, default=0.0030)
+    parser.add_argument("--radius-m", type=float, default=200.0)
+    parser.add_argument("--source-epsg", type=int, default=25833)
     parser.add_argument("--out", required=True)
     parser.add_argument("--max-downloads", type=int, default=6)
     return parser.parse_args()
@@ -48,93 +52,9 @@ def local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def floats(text: str | None) -> list[float]:
-    if not text:
-        return []
-    return [float(value) for value in text.replace(",", " ").split()]
-
-
-def find_descendants(element: ET.Element, name: str):
-    for child in element.iter():
-        if local_name(child.tag) == name:
-            yield child
-
-
-def normalize_pairs(values: list[float]) -> list[tuple[float, float]]:
-    """Return WGS84 (lat, lon) pairs from a 2D GeoRSS/GML coordinate list."""
-    if len(values) < 2 or len(values) % 2:
-        return []
-    raw = list(zip(values[0::2], values[1::2]))
-    # Standard GeoRSS/GML WGS84 axis order is latitude, longitude. Some services
-    # nevertheless emit x/y. Detect only when the latitude interpretation is
-    # impossible, otherwise retain standards-compliant order.
-    if all(abs(first) <= 90 and abs(second) <= 180 for first, second in raw):
-        return [(first, second) for first, second in raw]
-    if all(abs(second) <= 90 and abs(first) <= 180 for first, second in raw):
-        return [(second, first) for first, second in raw]
-    return []
-
-
-def bbox_from_pairs(pairs: list[tuple[float, float]]) -> tuple[float, float, float, float] | None:
-    if not pairs:
-        return None
-    lats = [pair[0] for pair in pairs]
-    lons = [pair[1] for pair in pairs]
-    return min(lats), min(lons), max(lats), max(lons)
-
-
-def entry_bbox(entry: ET.Element) -> tuple[float, float, float, float] | None:
-    # GeoRSS Simple: <box>lat lon lat lon</box>
-    for box in find_descendants(entry, "box"):
-        values = floats(box.text)
-        result = bbox_from_pairs(normalize_pairs(values[:4]))
-        if result is not None:
-            return result
-
-    # GeoRSS Simple polygon or GeoRSS-GML Polygon/LinearRing posList.
-    for polygon in find_descendants(entry, "polygon"):
-        values = floats(polygon.text)
-        result = bbox_from_pairs(normalize_pairs(values))
-        if result is not None:
-            return result
-    for poslist in find_descendants(entry, "posList"):
-        values = floats(poslist.text)
-        dimension = int(poslist.attrib.get("srsDimension", "2"))
-        if dimension == 2:
-            result = bbox_from_pairs(normalize_pairs(values))
-            if result is not None:
-                return result
-
-    # GML Envelope commonly appears below <georss:where>.
-    for envelope in find_descendants(entry, "Envelope"):
-        lower = next(find_descendants(envelope, "lowerCorner"), None)
-        upper = next(find_descendants(envelope, "upperCorner"), None)
-        if lower is not None and upper is not None:
-            pairs = normalize_pairs(floats(lower.text)[:2] + floats(upper.text)[:2])
-            result = bbox_from_pairs(pairs)
-            if result is not None:
-                return result
-
-    # Point metadata is enough for tile selection when no polygon/envelope exists.
-    for point in find_descendants(entry, "Point"):
-        pos = next(find_descendants(point, "pos"), None)
-        if pos is not None:
-            pairs = normalize_pairs(floats(pos.text)[:2])
-            result = bbox_from_pairs(pairs)
-            if result is not None:
-                return result
-    return None
-
-
-def intersects(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> bool:
-    amin_lat, amin_lon, amax_lat, amax_lon = a
-    bmin_lat, bmin_lon, bmax_lat, bmax_lon = b
-    return not (amax_lat < bmin_lat or amin_lat > bmax_lat or amax_lon < bmin_lon or amin_lon > bmax_lon)
-
-
-def zip_links(entry: ET.Element) -> list[str]:
-    links = []
-    for element in entry.iter():
+def zip_links(root: ET.Element) -> list[str]:
+    links: list[str] = []
+    for element in root.iter():
         if local_name(element.tag) != "link":
             continue
         href = element.attrib.get("href", "")
@@ -143,11 +63,20 @@ def zip_links(entry: ET.Element) -> list[str]:
     return links
 
 
-def entry_title(entry: ET.Element) -> str:
-    for child in entry:
-        if local_name(child.tag) == "title" and child.text:
-            return child.text.strip()
-    return "untitled"
+def tile_id_from_url(url: str) -> tuple[int, int] | None:
+    name = Path(urllib.parse.urlparse(url).path).name
+    match = TILE_PATTERN.fullmatch(name)
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def required_tiles(easting: float, northing: float, radius_m: float) -> set[tuple[int, int]]:
+    min_e = math.floor((easting - radius_m) / 1000.0)
+    max_e = math.floor((easting + radius_m) / 1000.0)
+    min_n = math.floor((northing - radius_m) / 1000.0)
+    max_n = math.floor((northing + radius_m) / 1000.0)
+    return {(e, n) for e in range(min_e, max_e + 1) for n in range(min_n, max_n + 1)}
 
 
 def main() -> None:
@@ -158,60 +87,36 @@ def main() -> None:
     fetch(args.feed, atom_path)
 
     root = ET.parse(atom_path).getroot()
-    query = (
-        args.lat - args.radius_deg,
-        args.lon - args.radius_deg,
-        args.lat + args.radius_deg,
-        args.lon + args.radius_deg,
-    )
+    transformer = Transformer.from_crs("EPSG:4326", f"EPSG:{args.source_epsg}", always_xy=True)
+    easting, northing = transformer.transform(args.lon, args.lat)
+    wanted_tiles = required_tiles(easting, northing, args.radius_m)
 
-    entries = [element for element in root.iter() if local_name(element.tag) == "entry"]
-    matches: list[dict[str, object]] = []
-    diagnostics: list[dict[str, object]] = []
-    all_downloads: list[dict[str, object]] = []
-    located_entries = 0
-    for entry in entries:
-        title = entry_title(entry)
-        bbox = entry_bbox(entry)
-        links = zip_links(entry)
-        if bbox is not None:
-            located_entries += 1
-        if links:
-            diagnostics.append({"title": title, "bbox": bbox, "zip_links": links})
-        for href in links:
-            record = {"title": title, "bbox": bbox, "url": href}
-            all_downloads.append(record)
-            if bbox is not None and intersects(bbox, query):
-                matches.append(record)
+    available: dict[tuple[int, int], str] = {}
+    unparsed_links: list[str] = []
+    for url in zip_links(root):
+        tile_id = tile_id_from_url(url)
+        if tile_id is None:
+            unparsed_links.append(url)
+            continue
+        available[tile_id] = url
 
-    selection_mode = "spatial-footprint"
-    if not matches and located_entries == 0 and 0 < len(all_downloads) <= args.max_downloads:
-        # Safe bounded fallback for a feed that contains only a few complete-area
-        # archives and no per-entry spatial metadata.
-        matches = all_downloads
-        selection_mode = "bounded-complete-feed-fallback"
-
-    if not matches:
-        diagnostic = {
-            "query_bbox": query,
-            "entry_count": len(entries),
-            "entries_with_spatial_bbox": located_entries,
-            "zip_link_count": len(all_downloads),
-            "sample_entries": diagnostics[:30],
-        }
-        print(json.dumps(diagnostic, indent=2))
+    missing = sorted(tile for tile in wanted_tiles if tile not in available)
+    if missing:
         raise RuntimeError(
-            "No safely selectable Berlin LoD2 download intersects Hansaplatz; "
-            "see ATOM diagnostics above"
+            "Berlin LoD2 ATOM does not expose required Hansaplatz tile(s): "
+            f"{missing}; center EPSG:{args.source_epsg}=({easting:.3f}, {northing:.3f})"
         )
-    if len(matches) > args.max_downloads:
-        raise RuntimeError(f"Hansaplatz query selected {len(matches)} ZIPs; expected <= {args.max_downloads}")
+
+    selected = [(tile, available[tile]) for tile in sorted(wanted_tiles)]
+    if len(selected) > args.max_downloads:
+        raise RuntimeError(f"Hansaplatz query selected {len(selected)} ZIPs; expected <= {args.max_downloads}")
 
     extracted: list[str] = []
-    for index, match in enumerate(matches):
-        url = str(match["url"])
-        zip_path = out / f"lod2-{index:02d}.zip"
+    downloads: list[dict[str, object]] = []
+    for index, (tile, url) in enumerate(selected):
+        zip_path = out / f"lod2-{tile[0]}-{tile[1]}.zip"
         fetch(url, zip_path)
+        downloads.append({"tile": [tile[0], tile[1]], "url": url, "archive": zip_path.name})
         with zipfile.ZipFile(zip_path) as archive:
             for member in archive.infolist():
                 if member.is_dir():
@@ -219,7 +124,7 @@ def main() -> None:
                 suffix = Path(member.filename).suffix.lower()
                 if suffix not in {".xml", ".gml"}:
                     continue
-                safe_name = f"tile-{index:02d}-{Path(member.filename).name}"
+                safe_name = f"tile-{tile[0]}-{tile[1]}-{Path(member.filename).name}"
                 target = out / safe_name
                 with archive.open(member) as src, target.open("wb") as dst:
                     shutil.copyfileobj(src, dst)
@@ -230,15 +135,26 @@ def main() -> None:
 
     manifest = {
         "source": args.feed,
+        "provider": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
+        "dataset": "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)",
         "license": "dl-de-zero-2.0",
         "reference_location": "Hansaplatz, Berlin, Germany",
-        "selection_mode": selection_mode,
-        "query": {"lat": args.lat, "lon": args.lon, "radius_deg": args.radius_deg, "bbox": query},
-        "downloads": matches,
+        "selection_mode": "epsg25833-kilometre-tile-filename",
+        "query": {
+            "lat": args.lat,
+            "lon": args.lon,
+            "radius_m": args.radius_m,
+            "source_epsg": args.source_epsg,
+            "easting": easting,
+            "northing": northing,
+            "required_tiles": [list(tile) for tile in sorted(wanted_tiles)],
+        },
+        "downloads": downloads,
         "extracted": extracted,
+        "unparsed_zip_link_count": len(unparsed_links),
     }
-    (out / "SOURCE.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print(json.dumps(manifest, indent=2))
+    (out / "SOURCE.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(json.dumps(manifest, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
