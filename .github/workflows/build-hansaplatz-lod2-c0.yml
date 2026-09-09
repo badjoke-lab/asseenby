@@ -1,4 +1,5 @@
 name: Build Hansaplatz C0 from Berlin LoD2
+# Feature-branch visual rebuilds are intentional: source changes must produce reviewable GLB proof before merge.
 
 on:
   push:
