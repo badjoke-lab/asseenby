@@ -1,5 +1,6 @@
 name: Probe Hansaplatz Hamburg LoD3 Area5 v3
 
+# Retry after concurrent branch updates; this probe must reach coordinate inspection.
 on:
   push:
     branches:
