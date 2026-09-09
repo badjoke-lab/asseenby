@@ -129,12 +129,12 @@ def projected_panorama_material(path: Path) -> bpy.types.Material:
     if specular is not None:
         specular.default_value = 0.32
 
-    emission = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")
-    if emission is not None:
-        links.new(texture.outputs["Color"], emission)
+    # The panorama supplies albedo/detail only. Do not self-illuminate the
+    # facade: authored moon/practical lights and shadowing must determine depth.
     emission_strength = bsdf.inputs.get("Emission Strength")
     if emission_strength is not None:
-        emission_strength.default_value = 0.18
+        emission_strength.default_value = 0.0
+    material["projection_emissive"] = False
 
     material["source_provider"] = "Poly Haven"
     material["source_asset"] = "Hansaplatz"
@@ -309,6 +309,7 @@ def main() -> None:
     root["official_lod2_mesh_topology"] = "triangulated-before-gltf"
     root["facade_detail_basis"] = "CC0 Hansaplatz equirectangular projection" if panorama else "generic PBR"
     root["facade_projection_yaw_deg"] = args.panorama_yaw_deg
+    root["facade_projection_emissive"] = False
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(
