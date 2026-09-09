@@ -1,8 +1,11 @@
 """Replace guessed Hansaplatz building masses with official Berlin LoD2 geometry.
 
-Runs after reconstruct_hansaplatz_c0.py. The plaza paving, canopies, subway entry
-and authored street props remain, while all hand-guessed building/pavilion masses
-are deleted and replaced with the local OBJ generated from Berlin's official LoD2.
+Runs after reconstruct_hansaplatz_c0.py. Only the reference-matched scanned plaza
+paving is retained from the provisional foreground pass. Approximate canopy, kiosk,
+subway, planter, generic-intersection props and QR2 blockout detail are removed
+before official Berlin LoD2 geometry is imported. This enforces a hard quality
+floor: unknown foreground geometry stays absent until a reference-matched authored
+asset replaces it, rather than shipping a visibly wrong placeholder.
 
 The intermediate OBJ is intentionally written in browser/runtime XYZ coordinates
 (X east, Y up, -Z north). The normalized Blender source stores runtime XYZ as
@@ -52,17 +55,33 @@ def find_visual(root: bpy.types.Collection) -> bpy.types.Collection:
 
 
 def remove_guessed_buildings() -> int:
-    prefixes = (
-        "hansaplatz_north_retail",
-        "hansaplatz_east_retail",
-        "hansaplatz_south_retail",
-        "hansaplatz_west_retail",
-        "hansaplatz_grips_theatre",
-        "hansaplatz_north_perimeter",
-        "hansaplatz_northwest_perimeter",
+    # Keep only the scanned Hansaplatz paving from the provisional reconstruction.
+    # Everything else listed here was authored for the earlier invented intersection
+    # or is an approximate reference blockout that visibly conflicts with the real
+    # panorama. Missing real geometry is preferable to shipping false geometry.
+    generic_prefixes = (
+        "c0_authored_",
+        "c0_bench_",
+        "c0_tree_",
+        "c0_bollard_",
+        "c0_utility_",
+        "c0_trash_",
+        "c0_bike_",
+        "c0_signal_",
+        "c0_delivery_",
+        "c0_store_",
+        "c0_qr2_",
         "lod2_",
     )
-    doomed = [obj for obj in list(bpy.data.objects) if obj.name.startswith(prefixes)]
+    doomed = [
+        obj
+        for obj in list(bpy.data.objects)
+        if obj.name.startswith(generic_prefixes)
+        or (
+            obj.name.startswith("hansaplatz_")
+            and not obj.name.startswith("hansaplatz_paving_slab_")
+        )
+    ]
     for obj in doomed:
         bpy.data.objects.remove(obj, do_unlink=True)
     return len(doomed)
@@ -110,12 +129,12 @@ def projected_panorama_material(path: Path) -> bpy.types.Material:
     if specular is not None:
         specular.default_value = 0.32
 
-    emission = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")
-    if emission is not None:
-        links.new(texture.outputs["Color"], emission)
+    # The panorama supplies albedo/detail only. Do not self-illuminate the
+    # facade: authored moon/practical lights and shadowing must determine depth.
     emission_strength = bsdf.inputs.get("Emission Strength")
     if emission_strength is not None:
-        emission_strength.default_value = 0.18
+        emission_strength.default_value = 0.0
+    material["projection_emissive"] = False
 
     material["source_provider"] = "Poly Haven"
     material["source_asset"] = "Hansaplatz"
@@ -290,6 +309,7 @@ def main() -> None:
     root["official_lod2_mesh_topology"] = "triangulated-before-gltf"
     root["facade_detail_basis"] = "CC0 Hansaplatz equirectangular projection" if panorama else "generic PBR"
     root["facade_projection_yaw_deg"] = args.panorama_yaw_deg
+    root["facade_projection_emissive"] = False
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(
