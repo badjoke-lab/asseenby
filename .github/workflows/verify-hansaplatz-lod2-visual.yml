@@ -1,5 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof trigger after three-view 64-face C0 regeneration.
+# Visual proof trigger after forward-guaranteed 64-face C0 regeneration.
 
 on:
   push:
