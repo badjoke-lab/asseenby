@@ -70,8 +70,9 @@ jobs:
             sleep 1
           done
           curl --fail http://127.0.0.1:4173/ > /dev/null
+          # This comprehensive audit now owns desktop drag, W translation,
+          # lifecycle remount, mobile touch-turn and all visual captures.
           node .github/spatial-browser-check.mjs
-          node .github/spatial-turn-check.mjs
 
       - name: Upload browser screenshots
         if: always()
