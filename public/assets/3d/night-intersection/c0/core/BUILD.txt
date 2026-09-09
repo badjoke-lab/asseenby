@@ -1,5 +1,6 @@
-AsSeenBy Night Intersection C0 generated runtime asset
-Source merge: 9df6ef6e4014368cc787e532d0da9bd594890a9d (PR #53)
-Generated asset commit: 235dad97fcb700a2913092f74ee3a9594c4b8d44
-Runtime GLB SHA-256: 8d6f567be0de2873073ffa6671ec8d2d4da503a1e440bf6317fabee5fb943976
-Purpose: bind browser/production verification to the generated GLB, because the workflow-token asset commit does not trigger follow-up GitHub Actions workflows.
+Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
+Reference location: Hansaplatz, Berlin, Germany
+Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
+License: dl-de-zero-2.0
+Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+Runtime: Blender-authored C0 exported to GLB for Three.js

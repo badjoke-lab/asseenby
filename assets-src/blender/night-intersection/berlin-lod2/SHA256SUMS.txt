@@ -1,0 +1,1 @@
+96acb54ac44a47de79caa9a617bdbca28c1b09357fac3565b2e24ba7249a2be1  assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj

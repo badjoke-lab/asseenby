@@ -1,0 +1,125 @@
+name: Build Hansaplatz C0 from Berlin LoD2
+
+on:
+  push:
+    branches:
+      - feat/c0-real-geometry-rebuild-20260909
+    paths:
+      - scripts/berlin/**
+      - scripts/blender/apply_berlin_lod2_hansaplatz.py
+      - .github/workflows/build-hansaplatz-lod2-c0.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hansaplatz-lod2-c0
+  cancel-in-progress: true
+
+jobs:
+  build-lod2-c0:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out geometry rebuild branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/c0-real-geometry-rebuild-20260909
+          fetch-depth: 0
+
+      - name: Install Blender and geospatial tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-pyproj
+          blender --version
+          python3 - <<'PY'
+          import pyproj
+          print('pyproj', pyproj.__version__)
+          PY
+
+      - name: Fetch official Berlin LoD2 tiles around Hansaplatz
+        run: |
+          set -euo pipefail
+          rm -rf .tmp/berlin-lod2
+          mkdir -p .tmp/berlin-lod2
+          python3 scripts/berlin/fetch_hansaplatz_lod2.py \
+            --lat 52.5178 \
+            --lon 13.34216 \
+            --radius-m 200 \
+            --source-epsg 25833 \
+            --out .tmp/berlin-lod2
+          cat .tmp/berlin-lod2/SOURCE.json
+          du -sh .tmp/berlin-lod2
+
+      - name: Convert official CityGML to local Hansaplatz OBJ
+        run: |
+          set -euo pipefail
+          python3 scripts/berlin/citygml_hansaplatz_to_obj.py \
+            --input-dir .tmp/berlin-lod2 \
+            --lat 52.5178 \
+            --lon 13.34216 \
+            --radius-m 135 \
+            --source-epsg 25833 \
+            --out .tmp/berlin-lod2/hansaplatz-lod2.obj
+          test -s .tmp/berlin-lod2/hansaplatz-lod2.obj
+          grep -c '^o lod2_' .tmp/berlin-lod2/hansaplatz-lod2.obj
+          du -h .tmp/berlin-lod2/hansaplatz-lod2.obj
+
+      - name: Preserve reproducible LoD2 subset and provenance
+        run: |
+          set -euo pipefail
+          dest=assets-src/blender/night-intersection/berlin-lod2
+          rm -rf "$dest"
+          mkdir -p "$dest"
+          cp .tmp/berlin-lod2/SOURCE.json "$dest/SOURCE.json"
+          cp .tmp/berlin-lod2/hansaplatz-lod2.obj "$dest/hansaplatz-lod2.obj"
+          sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
+
+      - name: Apply official LoD2 geometry to Blender source
+        run: |
+          set -euo pipefail
+          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          test -s "$blend"
+          blender --background "$blend" \
+            --python scripts/blender/apply_berlin_lod2_hansaplatz.py -- \
+            --collection C0 \
+            --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+
+      - name: Export updated C0 GLB
+        run: |
+          set -euo pipefail
+          out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/export_night_intersection.py -- \
+            --collection C0 \
+            --out "$out"
+          test -s "$out"
+          sha256sum "$out" > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          cat > public/assets/3d/night-intersection/c0/core/BUILD.txt <<'EOF'
+          Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
+          Reference location: Hansaplatz, Berlin, Germany
+          Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
+          License: dl-de-zero-2.0
+          Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+          Runtime: Blender-authored C0 exported to GLB for Three.js
+          EOF
+          du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
+
+      - name: Commit generated real-geometry C0
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            scripts/berlin \
+            scripts/blender/apply_berlin_lod2_hansaplatz.py \
+            assets-src/blender/night-intersection/berlin-lod2 \
+            assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            public/assets/3d/night-intersection/c0/core
+          if git diff --cached --quiet; then
+            echo 'No generated LoD2 C0 changes'
+            exit 0
+          fi
+          git commit -m 'Replace guessed C0 buildings with Berlin LoD2 geometry'
+          git push origin HEAD:feat/c0-real-geometry-rebuild-20260909
