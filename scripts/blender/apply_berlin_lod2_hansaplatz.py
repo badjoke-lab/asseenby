@@ -5,15 +5,22 @@ and authored street props remain, while all hand-guessed building/pavilion masse
 are deleted and replaced with the local OBJ generated from Berlin's official LoD2.
 
 The intermediate OBJ is intentionally written in browser/runtime XYZ coordinates
-(X east, Y up, -Z north). The normalized Blender source still stores runtime XYZ
-as Blender (X, -Z, Y), so every imported vertex is converted through
+(X east, Y up, -Z north). The normalized Blender source stores runtime XYZ as
+Blender (X, -Z, Y), so imported vertices are converted through
 ``runtime_to_blender`` before mesh creation.
+
+For the primary wall surfaces we also project the checked-in CC0 Hansaplatz
+360-degree panorama from the canonical 1.6 m Human reference point. This keeps the
+official cadastral geometry as the shape source of truth while recovering real
+facade color, windows, signage and night-light detail instead of painting every
+LoD2 wall with a generic material.
 """
 
 from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+import math
 from pathlib import Path
 import sys
 
@@ -27,6 +34,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--collection", default="C0")
     parser.add_argument("--obj", required=True)
+    parser.add_argument("--panorama", default="")
+    parser.add_argument("--panorama-yaw-deg", type=float, default=0.0)
     return parser.parse_args(argv)
 
 
@@ -51,6 +60,7 @@ def remove_guessed_buildings() -> int:
         "hansaplatz_grips_theatre",
         "hansaplatz_north_perimeter",
         "hansaplatz_northwest_perimeter",
+        "lod2_",
     )
     doomed = [obj for obj in list(bpy.data.objects) if obj.name.startswith(prefixes)]
     for obj in doomed:
@@ -67,6 +77,51 @@ def fallback_material(name: str, color: tuple[float, float, float, float], rough
     bsdf = material.node_tree.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = color
     bsdf.inputs["Roughness"].default_value = roughness
+    return material
+
+
+def projected_panorama_material(path: Path) -> bpy.types.Material:
+    if not path.exists():
+        raise RuntimeError(f"Hansaplatz panorama not found: {path}")
+    existing = bpy.data.materials.get("hansaplatz_panorama_projected_facade")
+    if existing is not None:
+        return existing
+
+    material = bpy.data.materials.new("hansaplatz_panorama_projected_facade")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.name = "hansaplatz_cc0_panorama_projection"
+    texture.label = "Hansaplatz CC0 panorama projection"
+    texture.image = bpy.data.images.load(str(path.resolve()), check_existing=True)
+    texture.image.colorspace_settings.name = "sRGB"
+    texture.extension = "REPEAT"
+    texture.interpolation = "Linear"
+    links.new(texture.outputs["Color"], bsdf.inputs["Base Color"])
+
+    bsdf.inputs["Roughness"].default_value = 0.62
+    metallic = bsdf.inputs.get("Metallic")
+    if metallic is not None:
+        metallic.default_value = 0.0
+    specular = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
+    if specular is not None:
+        specular.default_value = 0.32
+
+    emission = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")
+    if emission is not None:
+        links.new(texture.outputs["Color"], emission)
+    emission_strength = bsdf.inputs.get("Emission Strength")
+    if emission_strength is not None:
+        emission_strength.default_value = 0.18
+
+    material["source_provider"] = "Poly Haven"
+    material["source_asset"] = "Hansaplatz"
+    material["source_license"] = "CC0-1.0"
+    material["projection_origin_runtime_xyz"] = "0,1.6,0"
+    material["projection_type"] = "equirectangular-per-loop"
     return material
 
 
@@ -111,20 +166,61 @@ def triangulate_mesh(mesh: bpy.types.Mesh) -> None:
         bm.free()
 
 
-def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
+def panorama_uv(
+    point: tuple[float, float, float],
+    yaw_radians: float,
+    origin: tuple[float, float, float] = (0.0, 1.6, 0.0),
+) -> tuple[float, float]:
+    x = point[0] - origin[0]
+    y = point[1] - origin[1]
+    z = point[2] - origin[2]
+    radius = math.sqrt(x * x + y * y + z * z)
+    if radius < 1e-6:
+        return (0.5, 0.5)
+    angle = math.atan2(z, x) + yaw_radians
+    u = (angle / (2.0 * math.pi) + 0.5) % 1.0
+    v = 0.5 + math.asin(max(-1.0, min(1.0, y / radius))) / math.pi
+    return (u, max(0.0, min(1.0, v)))
+
+
+def apply_panorama_uv(mesh: bpy.types.Mesh, runtime_vertices: list[tuple[float, float, float]], yaw_radians: float) -> None:
+    uv_layer = mesh.uv_layers.get("UVMap") or mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        samples: list[tuple[int, float, float]] = []
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            u, v = panorama_uv(runtime_vertices[vertex_index], yaw_radians)
+            samples.append((loop_index, u, v))
+        if samples:
+            us = [sample[1] for sample in samples]
+            crosses_seam = max(us) - min(us) > 0.5
+            for loop_index, u, v in samples:
+                if crosses_seam and u < 0.5:
+                    u += 1.0
+                uv_layer.data[loop_index].uv = (u, v)
+
+
+def create_semantic_objects(
+    path: Path,
+    visual: bpy.types.Collection,
+    panorama: Path | None,
+    panorama_yaw_deg: float,
+) -> int:
     vertices, objects = load_obj(path)
     if not vertices or not objects:
         raise RuntimeError(f"LoD2 OBJ has no usable geometry: {path}")
 
-    wall = bpy.data.materials.get("hansaplatz_small_white_ceramic_pbr") or fallback_material(
+    generic_wall = bpy.data.materials.get("hansaplatz_small_white_ceramic_pbr") or fallback_material(
         "berlin_lod2_wall_reference", (0.56, 0.54, 0.50, 1.0), 0.76
     )
+    projected_wall = projected_panorama_material(panorama) if panorama else generic_wall
     roof = bpy.data.materials.get("hansaplatz_roof_dark") or fallback_material(
         "berlin_lod2_roof_reference", (0.10, 0.11, 0.12, 1.0), 0.68
     )
     ground = bpy.data.materials.get("hansaplatz_facade_stone") or fallback_material(
         "berlin_lod2_ground_reference", (0.30, 0.29, 0.27, 1.0), 0.82
     )
+    yaw_radians = math.radians(panorama_yaw_deg)
 
     created = 0
     min_runtime = [float("inf"), float("inf"), float("inf")]
@@ -146,17 +242,23 @@ def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
         triangulate_mesh(mesh)
         if any(len(poly.vertices) != 3 for poly in mesh.polygons):
             raise RuntimeError(f"LoD2 mesh remained non-triangular after cleanup: {name}")
+
+        semantic = "roof" if name.endswith("_roof") else "ground" if name.endswith("_ground") else "wall"
+        if semantic == "wall" and panorama is not None:
+            apply_panorama_uv(mesh, runtime_vertices, yaw_radians)
+
         obj = bpy.data.objects.new(name, mesh)
         visual.objects.link(obj)
-        semantic = "roof" if name.endswith("_roof") else "ground" if name.endswith("_ground") else "wall"
-        obj.data.materials.append({"wall": wall, "roof": roof, "ground": ground}[semantic])
+        obj.data.materials.append({"wall": projected_wall, "roof": roof, "ground": ground}[semantic])
         obj["source_provider"] = "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin"
         obj["source_dataset"] = "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)"
         obj["source_license"] = "dl-de-zero-2.0"
         obj["source_semantic"] = semantic
+        if semantic == "wall" and panorama is not None:
+            obj["facade_reference"] = "Poly Haven Hansaplatz panorama, CC0-1.0"
+            obj["facade_projection_yaw_deg"] = panorama_yaw_deg
         created += 1
 
-    # Guard against another axis/scale regression before the GLB is exported.
     width = max_runtime[0] - min_runtime[0]
     height = max_runtime[1] - min_runtime[1]
     depth = max_runtime[2] - min_runtime[2]
@@ -175,8 +277,9 @@ def main() -> None:
     if root is None:
         raise RuntimeError(f"Missing collection: {args.collection}")
     visual = find_visual(root)
+    panorama = Path(args.panorama) if args.panorama else None
     removed = remove_guessed_buildings()
-    created = create_semantic_objects(Path(args.obj), visual)
+    created = create_semantic_objects(Path(args.obj), visual, panorama, args.panorama_yaw_deg)
 
     root["official_lod2_source"] = "https://gdi.berlin.de/data/a_lod2/atom/0.atom"
     root["official_lod2_license"] = "dl-de-zero-2.0"
@@ -185,9 +288,14 @@ def main() -> None:
     root["official_lod2_created_semantic_objects"] = created
     root["macro_geometry_basis"] = "Berlin official cadastral LoD2"
     root["official_lod2_mesh_topology"] = "triangulated-before-gltf"
+    root["facade_detail_basis"] = "CC0 Hansaplatz equirectangular projection" if panorama else "generic PBR"
+    root["facade_projection_yaw_deg"] = args.panorama_yaw_deg
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
-    print(f"Berlin LoD2 Hansaplatz applied: removed guessed={removed}, created semantic objects={created}")
+    print(
+        "Berlin LoD2 Hansaplatz applied: "
+        f"removed guessed={removed}, created semantic objects={created}, panorama={panorama or 'disabled'}"
+    )
 
 
 if __name__ == "__main__":
