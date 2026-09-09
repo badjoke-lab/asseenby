@@ -34,27 +34,31 @@ def camera_priority_segment(points):
     if actual_distance < 0.001:
         seg["actual_distance"] = actual_distance
         seg["view_angle_deg"] = 0.0
+        seg["priority_score"] = 0.0
         return seg
 
-    # Runtime initial human observer looks down -Z at yaw=0. Give the walls that
+    # Runtime initial human observer looks down -Z at yaw=0. Give walls that
     # actually occupy that forward view precedence over merely-nearest side/rear walls.
     forward_alignment = max(-1.0, min(1.0, -float(midz) / actual_distance))
     view_angle_deg = math.degrees(math.acos(forward_alignment))
     projected_area = (float(seg["length"]) * float(seg["height"])) / max(actual_distance * actual_distance, 25.0)
 
-    # Keep real metric distance as the base. Penalize off-axis walls strongly after
-    # 22 degrees and reward large on-screen facade planes. Rear-hemisphere walls are
-    # effectively removed from the close-facade budget.
     angle_penalty = max(0.0, view_angle_deg - 22.0) * 1.55
     area_bonus = min(24.0, projected_area * 62.0)
     rear_penalty = 140.0 if float(midz) >= 0.0 else 0.0
-    priority_distance = max(0.0, actual_distance + angle_penalty + rear_penalty - area_bonus)
+    raw_priority = max(0.0, actual_distance + angle_penalty + rear_penalty - area_bonus)
 
     seg["actual_distance"] = actual_distance
     seg["view_angle_deg"] = view_angle_deg
     seg["projected_area_proxy"] = projected_area
-    # The base authoring pass sorts on `distance`; replace only that ranking value.
-    seg["distance"] = priority_distance
+    seg["priority_score"] = raw_priority
+
+    # The base pass unfortunately uses `distance` for both radius admission and sorting.
+    # Preserve all walls whose *real* distance already passed the intended 95 m domain by
+    # compressing ranking into that domain instead of allowing ranking penalties to exceed
+    # the radius. Front/on-screen walls still sort first; side/rear walls remain fallbacks
+    # that can fill the 40-face budget rather than disappearing from the candidate set.
+    seg["distance"] = min(94.90, raw_priority)
     return seg
 
 
@@ -63,7 +67,7 @@ base.main()
 
 root = bpy.data.collections.get("C0")
 if root is not None:
-    root["hamburg_facade_selection_basis"] = "initial-camera-visible wall priority: yaw 0 / forward -Z"
-    root["hamburg_facade_selection_priority_version"] = 2
+    root["hamburg_facade_selection_basis"] = "initial-camera-visible wall priority: yaw 0 / forward -Z; 95m candidate domain retained"
+    root["hamburg_facade_selection_priority_version"] = 3
     root["hamburg_facade_selection_panorama_projection"] = False
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
