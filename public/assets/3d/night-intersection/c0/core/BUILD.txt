@@ -1,15 +1,12 @@
-Geometry basis: Hamburg official 3D-Gebäudemodell LoD2-DE Hamburg 2026
-Reference location: Hansaplatz, Hamburg-St. Georg, Germany
+Canonical location: Hansaplatz, Hamburg-St. Georg, Germany
 Reference coordinates: 53.554451, 10.012056
-Official source: https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip
-Geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
-Geometry license: dl-de-by-2.0
-Geometry attribution: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
-Derived subset: assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
-Derived subset scope: 170 m radius, 113 buildings, EPSG:25832 source frame
-Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
-Facade source: https://polyhaven.com/a/hansaplatz
-Facade source license: CC0-1.0
-Projection origin: Human reference eye at runtime XYZ 0,1.6,0
-Plaza paving: temporary continuous coplanar Blender mesh; replace with reference-derived Hamburg ground geometry next
+Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
+Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
+Macro geometry license: dl-de-by-2.0
+LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
+Close facade: Blender-authored structural depth over the nearest official LoD2 walls
+Close facade elements: storefront glazing, mullions, upper glazing, sills, heads, floor bands and cornices
+Photographic reference: Poly Haven hansaplatz, CC0-1.0
+Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
+Current close-facade status: structural depth pass; facade-by-facade photo registration remains open
 Runtime: Blender-authored C0 exported to GLB for Three.js
