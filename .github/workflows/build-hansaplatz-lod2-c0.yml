@@ -3,7 +3,7 @@ name: Build Hansaplatz C0 from Berlin LoD2
 on:
   push:
     branches:
-      - feat/c0-real-geometry-rebuild-20260909
+      - 'feat/c0-*'
     paths:
       - scripts/berlin/**
       - scripts/blender/apply_berlin_lod2_hansaplatz.py
@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: hansaplatz-lod2-c0
+  group: hansaplatz-lod2-c0-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - name: Check out geometry rebuild branch
+      - name: Check out current quality branch
         uses: actions/checkout@v4
         with:
-          ref: feat/c0-real-geometry-rebuild-20260909
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Install Blender and geospatial tooling
@@ -76,15 +76,19 @@ jobs:
           cp .tmp/berlin-lod2/hansaplatz-lod2.obj "$dest/hansaplatz-lod2.obj"
           sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
 
-      - name: Apply official LoD2 geometry to Blender source
+      - name: Apply official geometry and photographic facade projection
         run: |
           set -euo pipefail
           blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          panorama=public/assets/panoramas/hansaplatz.jpg
           test -s "$blend"
+          test -s "$panorama"
           blender --background "$blend" \
             --python scripts/blender/apply_berlin_lod2_hansaplatz.py -- \
             --collection C0 \
-            --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+            --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj \
+            --panorama "$panorama" \
+            --panorama-yaw-deg 0
 
       - name: Export updated C0 GLB
         run: |
@@ -100,13 +104,16 @@ jobs:
           Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
           Reference location: Hansaplatz, Berlin, Germany
           Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
-          License: dl-de-zero-2.0
+          Geometry license: dl-de-zero-2.0
           Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+          Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
+          Facade source license: CC0-1.0
+          Projection origin: Human reference eye at runtime XYZ 0,1.6,0
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
 
-      - name: Commit generated real-geometry C0
+      - name: Commit generated quality increment
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -118,8 +125,8 @@ jobs:
             assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             public/assets/3d/night-intersection/c0/core
           if git diff --cached --quiet; then
-            echo 'No generated LoD2 C0 changes'
+            echo 'No generated Hansaplatz C0 changes'
             exit 0
           fi
-          git commit -m 'Replace guessed C0 buildings with Berlin LoD2 geometry'
-          git push origin HEAD:feat/c0-real-geometry-rebuild-20260909
+          git commit -m 'Project real Hansaplatz detail onto official LoD2 facades'
+          git push origin HEAD:"${GITHUB_REF_NAME}"
