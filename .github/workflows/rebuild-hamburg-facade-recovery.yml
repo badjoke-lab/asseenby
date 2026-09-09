@@ -123,6 +123,10 @@ jobs:
             exit 0
           fi
           git commit -m 'Rebuild Hamburg C0 with authored facade depth'
+          echo 'Transient files before cleanup:'
+          git status --short || true
+          git reset --hard HEAD
+          git clean -fd
           git fetch origin "${GITHUB_REF_NAME}"
           git rebase "origin/${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
