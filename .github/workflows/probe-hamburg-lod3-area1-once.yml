@@ -1,0 +1,103 @@
+name: Extract Hamburg LoD3 Hansaplatz subset once
+
+on:
+  push:
+    branches:
+      - feat/hamburg-hansaplatz-lod3-20260909
+    paths:
+      - .github/workflows/probe-hamburg-lod3-area1-once.yml
+      - scripts/hamburg/extract_hansaplatz_lod3_subset.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: probe-hamburg-lod3-area1-once
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/hamburg-hansaplatz-lod3-20260909
+          fetch-depth: 0
+
+      - name: Install source tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pyproj
+
+      - name: Download official Hamburg LoD3 Area1 archive
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 \
+            --output /tmp/hamburg-lod3-area1.zip \
+            https://archiv.transparenz.hamburg.de/hmbtgarchive/HMDK/lod3-hh_area1_2023_12_14_180710_snap_1.zip
+          test -s /tmp/hamburg-lod3-area1.zip
+          du -h /tmp/hamburg-lod3-area1.zip
+          python3 - <<'PY'
+          import zipfile
+          path = '/tmp/hamburg-lod3-area1.zip'
+          with zipfile.ZipFile(path) as zf:
+              bad = zf.testzip()
+              if bad:
+                  raise SystemExit(f'corrupt archive entry: {bad}')
+              print(f'archive entries: {len(zf.infolist())}')
+          PY
+
+      - name: Extract envelope-confirmed Hansaplatz source subset
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hansaplatz-lod3-subset
+          python3 scripts/hamburg/extract_hansaplatz_lod3_subset.py \
+            --archive /tmp/hamburg-lod3-area1.zip \
+            --out /tmp/hansaplatz-lod3-subset \
+            --lat 53.554451 \
+            --lon 10.012056 \
+            --source-url https://archiv.transparenz.hamburg.de/hmbtgarchive/HMDK/lod3-hh_area1_2023_12_14_180710_snap_1.zip \
+            --dataset-url https://suche.transparenz.hamburg.de/dataset/3d-gebaeudemodell-lod3-0-hh-hamburg11
+          test -s /tmp/hansaplatz-lod3-subset/MANIFEST.json
+          test -s /tmp/hansaplatz-lod3-subset/REPORT.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('/tmp/hansaplatz-lod3-subset/MANIFEST.json').read_text())
+          selected = manifest['selected_gml']
+          if not selected:
+              raise SystemExit('no CityGML selection')
+          if any(item.get('fallback_filename_only') for item in selected):
+              raise SystemExit('selection is filename-only fallback; refusing spatial acceptance')
+          print(f"envelope-confirmed CityGML entries: {len(selected)}")
+          print(f"extracted files: {len(manifest['extracted_files'])}")
+          print(f"unresolved image refs: {len(manifest['unresolved_image_references'])}")
+          PY
+          du -sh /tmp/hansaplatz-lod3-subset
+
+      - name: Upload exact official source subset
+        uses: actions/upload-artifact@v4
+        with:
+          name: hamburg-hansaplatz-lod3-source-subset
+          path: /tmp/hansaplatz-lod3-subset/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record source selection and remove bootstrap
+        run: |
+          set -euo pipefail
+          mkdir -p scripts/hamburg/evidence
+          cp /tmp/hansaplatz-lod3-subset/MANIFEST.json scripts/hamburg/evidence/HANSAPLATZ_LOD3_SOURCE_MANIFEST.json
+          cp /tmp/hansaplatz-lod3-subset/REPORT.md scripts/hamburg/evidence/HANSAPLATZ_LOD3_SOURCE_REPORT.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            scripts/hamburg/extract_hansaplatz_lod3_subset.py \
+            scripts/hamburg/evidence/HANSAPLATZ_LOD3_SOURCE_MANIFEST.json \
+            scripts/hamburg/evidence/HANSAPLATZ_LOD3_SOURCE_REPORT.md
+          git rm .github/workflows/probe-hamburg-lod3-area1-once.yml
+          git commit -m 'Record exact Hamburg LoD3 Hansaplatz source subset'
+          git fetch origin feat/hamburg-hansaplatz-lod3-20260909
+          git rebase origin/feat/hamburg-hansaplatz-lod3-20260909
+          git push origin HEAD:feat/hamburg-hansaplatz-lod3-20260909
