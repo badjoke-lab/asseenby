@@ -1,0 +1,54 @@
+name: Apply physically lit Hansaplatz facade projection once
+
+on:
+  push:
+    branches:
+      - feat/c0-remove-placeholder-foreground-20260909
+    paths:
+      - .github/workflows/apply-c0-projection-lighting-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/c0-remove-placeholder-foreground-20260909
+          fetch-depth: 0
+
+      - name: Remove photographic self-emission from LoD2 facades
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/blender/apply_berlin_lod2_hansaplatz.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    emission = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")\n    if emission is not None:\n        links.new(texture.outputs["Color"], emission)\n    emission_strength = bsdf.inputs.get("Emission Strength")\n    if emission_strength is not None:\n        emission_strength.default_value = 0.18\n\n'''
+          if old not in text:
+              raise SystemExit('expected facade emission block not found')
+          text = text.replace(old, '''    # The panorama supplies albedo/detail only. Do not self-illuminate the\n    # facade: authored moon/practical lights and shadowing must determine depth.\n    emission_strength = bsdf.inputs.get("Emission Strength")\n    if emission_strength is not None:\n        emission_strength.default_value = 0.0\n    material["projection_emissive"] = False\n\n''')
+          text = text.replace(
+              '    root["facade_projection_yaw_deg"] = args.panorama_yaw_deg\n',
+              '    root["facade_projection_yaw_deg"] = args.panorama_yaw_deg\n    root["facade_projection_emissive"] = False\n',
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Commit quality increment and remove bootstrap workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/blender/apply_berlin_lod2_hansaplatz.py
+          git rm .github/workflows/apply-c0-projection-lighting-once.yml
+          git commit -m "Light projected Hansaplatz facades physically"
+          git fetch origin feat/c0-remove-placeholder-foreground-20260909
+          git rebase origin/feat/c0-remove-placeholder-foreground-20260909
+          git push origin HEAD:feat/c0-remove-placeholder-foreground-20260909
