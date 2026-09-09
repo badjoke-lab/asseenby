@@ -8,7 +8,8 @@ on:
       - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/workflows/build-hansaplatz-lod3-c0.yml
       - scripts/hamburg/resolve_lod3_area1_url.py
-      - scripts/hamburg/citygml_hansaplatz_lod3_from_zip.py
+      - scripts/hamburg/extract_hansaplatz_lod3_subset.py
+      - scripts/hamburg/citygml_hansaplatz_to_obj.py
       - scripts/blender/apply_hamburg_lod3_hansaplatz.py
       - scripts/blender/export_night_intersection.py
       - assets-src/blender/night-intersection/c0/**
@@ -78,49 +79,105 @@ jobs:
           if not zipfile.is_zipfile(path):
               raise SystemExit(f'official LoD3 source did not resolve to a ZIP archive: {path.stat().st_size} bytes')
           with zipfile.ZipFile(path) as z:
-              members = [n for n in z.namelist() if n.lower().endswith(('.gml', '.xml'))]
+              members = [n for n in z.namelist() if n.lower().endswith(('.gml', '.xml', '.citygml'))]
               if not members:
                   raise SystemExit('official LoD3 ZIP contains no CityGML/XML members')
               print('CityGML/XML members:', len(members))
           PY
           du -h .tmp/hamburg-lod3/area1.zip
 
-      - name: Extract Hansaplatz LoD3 subset
+      - name: Select coordinate-confirmed Hansaplatz LoD3 sheet
         run: |
           set -euo pipefail
-          rm -rf assets-src/blender/night-intersection/hamburg-lod3
-          mkdir -p assets-src/blender/night-intersection/hamburg-lod3
-          python3 scripts/hamburg/citygml_hansaplatz_lod3_from_zip.py \
-            --zip .tmp/hamburg-lod3/area1.zip \
+          rm -rf .tmp/hamburg-lod3/subset assets-src/blender/night-intersection/hamburg-lod3
+          python3 scripts/hamburg/extract_hansaplatz_lod3_subset.py \
+            --archive .tmp/hamburg-lod3/area1.zip \
+            --out .tmp/hamburg-lod3/subset \
+            --lat 53.554451 \
+            --lon 10.012056 \
             --source-url '${{ steps.source.outputs.url }}' \
+            --dataset-url 'https://suche.transparenz.hamburg.de/dataset/3d-gebaeudemodell-lod3-0-hh-hamburg-untexturiert6'
+          test -s .tmp/hamburg-lod3/subset/MANIFEST.json
+          test -s .tmp/hamburg-lod3/subset/REPORT.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('.tmp/hamburg-lod3/subset/MANIFEST.json').read_text())
+          selected = manifest['selected_gml']
+          if not selected:
+              raise SystemExit('no coordinate-confirmed LoD3 sheet selected')
+          for record in selected:
+              if record.get('fallback_filename_only'):
+                  raise SystemExit(f'filename-only LoD3 selection is not production-safe: {record}')
+              if record.get('selection_method') not in {'gml-envelope', 'geometry-coordinate-extents'}:
+                  raise SystemExit(f'unapproved LoD3 selection evidence: {record}')
+          print('coordinate-confirmed sheets:', [record['name'] for record in selected])
+          print('target:', manifest['target'])
+          PY
+
+      - name: Convert coordinate-normalized LoD3 CityGML to local OBJ
+        run: |
+          set -euo pipefail
+          mkdir -p assets-src/blender/night-intersection/hamburg-lod3
+          python3 scripts/hamburg/citygml_hansaplatz_to_obj.py \
+            --input-dir .tmp/hamburg-lod3/subset/source \
             --lat 53.554451 \
             --lon 10.012056 \
             --radius-m 170 \
             --source-epsg 25832 \
             --out assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj \
-            --source-json assets-src/blender/night-intersection/hamburg-lod3/SOURCE.json
+            | tee .tmp/hamburg-lod3/CONVERT.txt
           test -s assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj
-          test -s assets-src/blender/night-intersection/hamburg-lod3/SOURCE.json
+          grep -q '^# Source axis orders normalized:' assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj
+          grep -q '^o lod3_' assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj
+          cp .tmp/hamburg-lod3/subset/MANIFEST.json assets-src/blender/night-intersection/hamburg-lod3/SUBSET_MANIFEST.json
+          cp .tmp/hamburg-lod3/subset/REPORT.md assets-src/blender/night-intersection/hamburg-lod3/SUBSET_REPORT.md
           python3 - <<'PY'
           import json
           from pathlib import Path
-          source = json.loads(Path('assets-src/blender/night-intersection/hamburg-lod3/SOURCE.json').read_text())
-          assert source['reference']['location'] == 'Hansaplatz, Hamburg-St. Georg, Germany'
-          assert source['selection']['source_epsg'] == 25832
-          assert source['output']['building_count'] > 0
-          assert source['output']['semantic_object_count'] > 0
-          assert source['quality_boundary']['final_facade_material'] is False
-          print(json.dumps(source, indent=2, ensure_ascii=False))
+          manifest = json.loads(Path('.tmp/hamburg-lod3/subset/MANIFEST.json').read_text())
+          obj = Path('assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj')
+          lines = obj.read_text().splitlines()
+          objects = [line for line in lines if line.startswith('o lod3_')]
+          axis = next(line for line in lines if line.startswith('# Source axis orders normalized:'))
+          source = {
+              'provider': 'Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)',
+              'dataset': '3D-Gebäudemodell LoD3.0-HH Hamburg untexturiert, Area1, 2025',
+              'source_url': '${{ steps.source.outputs.url }}',
+              'metadata_url': 'https://suche.transparenz.hamburg.de/dataset/3d-gebaeudemodell-lod3-0-hh-hamburg-untexturiert6',
+              'license': 'dl-de-by-2.0',
+              'attribution': 'Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)',
+              'reference': {
+                  'asset': 'Poly Haven hansaplatz',
+                  'lat': 53.554451,
+                  'lon': 10.012056,
+                  'location': 'Hansaplatz, Hamburg-St. Georg, Germany',
+              },
+              'selection': {
+                  'radius_m': 170,
+                  'source_epsg': 25832,
+                  'selected_gml': manifest['selected_gml'],
+                  'axis_normalization_evidence': axis.removeprefix('# ').strip(),
+              },
+              'output': {'semantic_object_count': len(objects)},
+              'quality_boundary': {
+                  'macro_geometry': 'official LoD3.0-HH shell',
+                  'facade_openings_complete': False,
+                  'final_facade_material': False,
+                  'panorama_role': 'reference evidence and far environment; not raw final wall projection',
+              },
+          }
+          Path('assets-src/blender/night-intersection/hamburg-lod3/SOURCE.json').write_text(json.dumps(source, ensure_ascii=False, indent=2) + '\n')
+          print(json.dumps(source, ensure_ascii=False, indent=2))
           PY
           sha256sum assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj \
             > assets-src/blender/night-intersection/hamburg-lod3/SHA256SUMS.txt
           cat > assets-src/blender/night-intersection/hamburg-lod3/README.md <<'EOF'
           # Hamburg Hansaplatz LoD3.0-HH subset
 
-          Official macro shell extracted around the Poly Haven Hansaplatz GPS reference.
-          This dataset is not accepted as complete close-range facade geometry.
-          Windows, doors, storefront recesses, signs and other near-field structure remain
-          subject to Blender-authored reconstruction against the photographic reference.
+          Official macro shell selected by coordinate evidence around the Poly Haven Hansaplatz GPS reference.
+          EPSG:25832 east/north and north/east serialization are normalized before conversion.
+          This subset is not accepted as complete close-range facade geometry.
           Raw panorama projection is not the final wall material path.
           EOF
           cat assets-src/blender/night-intersection/hamburg-lod3/SHA256SUMS.txt
@@ -157,9 +214,9 @@ jobs:
           Geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
           Geometry license: dl-de-by-2.0
           Derived subset: assets-src/blender/night-intersection/hamburg-lod3/hansaplatz-lod3.obj
-          Derived subset scope: 170 m radius, EPSG:25832 source frame
+          Derived subset scope: 170 m radius, coordinate-confirmed CityGML sheet, EPSG:25832 axis-normalized
           Facade reference: Poly Haven Hansaplatz panorama / rectilinear reference plates, CC0-1.0
-          Facade status: authored close-range facade overlay still required
+          Facade status: official textured LoD3 subset and authored close-range facade layer are next quality passes
           Raw equirectangular wall projection: disabled
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
@@ -185,5 +242,5 @@ jobs:
             echo 'No generated Hamburg LoD3 C0 changes'
             exit 0
           fi
-          git commit -m 'Rebuild C0 from Hamburg LoD3 macro geometry'
+          git commit -m 'Rebuild C0 from coordinate-confirmed Hamburg LoD3 geometry'
           git push origin HEAD:${{ github.ref_name }}
