@@ -38,7 +38,7 @@ jobs:
           print('pyproj', pyproj.__version__)
           PY
 
-      - name: Fetch official Berlin LoD2 tile around Hansaplatz
+      - name: Fetch official Berlin LoD2 tiles around Hansaplatz
         run: |
           set -euo pipefail
           rm -rf .tmp/berlin-lod2
@@ -46,7 +46,8 @@ jobs:
           python3 scripts/berlin/fetch_hansaplatz_lod2.py \
             --lat 52.5178 \
             --lon 13.34216 \
-            --radius-deg 0.0030 \
+            --radius-m 200 \
+            --source-epsg 25833 \
             --out .tmp/berlin-lod2
           cat .tmp/berlin-lod2/SOURCE.json
           du -sh .tmp/berlin-lod2
