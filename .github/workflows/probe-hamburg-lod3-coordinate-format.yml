@@ -1,0 +1,74 @@
+name: Probe Hamburg LoD3 coordinate format
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/workflows/probe-hamburg-lod3-coordinate-format.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official untextured Area1
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 \
+            --user-agent 'AsSeenBy-LoD3-coordinate-probe/1.0' \
+            'https://daten-hamburg.de/opendata/3d_stadtmodell_lod3/LoD3-HH_Area1_noTexture_2025_03_13.zip' \
+            -o /tmp/lod3.zip
+          python3 - <<'PY'
+          import zipfile
+          z=zipfile.ZipFile('/tmp/lod3.zip')
+          names=[n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml'))]
+          print('GML_COUNT',len(names))
+          print('FIRST_NAMES',names[:8])
+          PY
+      - name: Probe XML coordinate encoding
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, zipfile, xml.etree.ElementTree as ET
+          z=zipfile.ZipFile('/tmp/lod3.zip')
+          names=[n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml'))]
+          wanted=[]
+          for candidate in ('Area 1 neu/6431.gml','Area 1 neu/6531.gml','Area 1 neu/6628.gml'):
+              if candidate in names: wanted.append(candidate)
+          wanted += [n for n in names[:3] if n not in wanted]
+          for name in wanted[:6]:
+              raw=z.read(name)
+              print('\n===',name,'bytes',len(raw),'===')
+              print('BOM/HEAD',repr(raw[:160]))
+              text=raw[:200000].decode('utf-8','replace')
+              print('SRS_NAMES',sorted(set(re.findall(r'srsName=[\"\']([^\"\']+)',text)))[:12])
+              print('TAG_COUNTS', {tag:len(re.findall(fr'<(?:\\w+:)?{tag}\\b',text,re.I)) for tag in ['pos','posList','coordinates','coord','X','Y','lowerCorner','upperCorner','LinearRing','Polygon']})
+              for pattern_name, pattern in [
+                  ('lowerCorner',r'<(?:\\w+:)?lowerCorner\\b[^>]*>(.*?)</(?:\\w+:)?lowerCorner>'),
+                  ('upperCorner',r'<(?:\\w+:)?upperCorner\\b[^>]*>(.*?)</(?:\\w+:)?upperCorner>'),
+                  ('posList',r'<(?:\\w+:)?posList\\b[^>]*>(.*?)</(?:\\w+:)?posList>'),
+                  ('pos',r'<(?:\\w+:)?pos\\b[^>]*>(.*?)</(?:\\w+:)?pos>'),
+                  ('coordinates',r'<(?:\\w+:)?coordinates\\b[^>]*>(.*?)</(?:\\w+:)?coordinates>'),
+              ]:
+                  m=re.search(pattern,text,re.I|re.S)
+                  if m:
+                      sample=' '.join(m.group(1).split())[:500]
+                      print(pattern_name,'SAMPLE',sample)
+              try:
+                  root=ET.fromstring(raw)
+                  leaf=[]
+                  for el in root.iter():
+                      local=el.tag.rsplit('}',1)[-1]
+                      if local.lower() in {'pos','poslist','coordinates','coord','x','y','lowercorner','uppercorner'} and el.text and el.text.strip():
+                          leaf.append((local,' '.join(el.text.split())[:240],dict(el.attrib)))
+                          if len(leaf)>=12: break
+                  print('ET_COORD_LEAVES',leaf)
+              except Exception as exc:
+                  print('ET_PARSE_ERROR',type(exc).__name__,str(exc))
+          PY
