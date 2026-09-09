@@ -52,6 +52,15 @@ async function waitForC0(page, timeout = 120_000) {
   return readCanvas(page);
 }
 
+async function frameCanvas(page) {
+  const canvas = page.locator("canvas.spatial-canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(180);
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("canvas has no bounding box after scrollIntoViewIfNeeded");
+  return { canvas, box };
+}
+
 async function captureViewport(page, path) {
   const session = await page.context().newCDPSession(page);
   try {
@@ -69,24 +78,25 @@ async function captureViewport(page, path) {
 const desktop = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 collectErrors(desktop, "desktop");
 await desktop.goto(`${BASE}/?view=spatial&hamburg_visual=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-let initial = await waitForC0(desktop);
+await waitForC0(desktop);
+let { canvas: desktopCanvas, box: desktopBox } = await frameCanvas(desktop);
+let initial = await readCanvas(desktop);
 await captureViewport(desktop, `${OUT}/desktop-forward.png`);
 
 let turned = null;
 let moved = null;
-if (initial?.rect?.width > 0 && initial?.rect?.height > 0) {
-  const box = initial.rect;
-  const sx = box.x + box.width * 0.50;
-  const sy = box.y + box.height * 0.50;
+if (desktopBox.width > 0 && desktopBox.height > 0) {
+  const sx = desktopBox.x + desktopBox.width * 0.50;
+  const sy = desktopBox.y + Math.min(desktopBox.height * 0.50, 320);
   await desktop.mouse.move(sx, sy);
   await desktop.mouse.down();
-  await desktop.mouse.move(sx + Math.min(240, box.width * 0.24), sy - 30, { steps: 10 });
+  await desktop.mouse.move(sx + Math.min(240, desktopBox.width * 0.24), sy - 30, { steps: 10 });
   await desktop.mouse.up();
   await desktop.waitForTimeout(500);
   turned = await readCanvas(desktop);
   await captureViewport(desktop, `${OUT}/desktop-turned.png`);
 
-  await desktop.evaluate(() => document.querySelector("canvas.spatial-canvas")?.focus());
+  await desktopCanvas.focus();
   await desktop.keyboard.down("w");
   await desktop.waitForTimeout(650);
   await desktop.keyboard.up("w");
@@ -104,18 +114,25 @@ const mobileContext = await browser.newContext({
 const mobile = await mobileContext.newPage();
 collectErrors(mobile, "mobile");
 await mobile.goto(`${BASE}/?view=spatial&hamburg_mobile=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-const mobileState = await waitForC0(mobile);
+await waitForC0(mobile);
+await frameCanvas(mobile);
+const mobileState = await readCanvas(mobile);
 await captureViewport(mobile, `${OUT}/mobile-forward.png`);
 
+const yawDelta = initial?.yaw != null && turned?.yaw != null
+  ? Math.abs(Number(turned.yaw) - Number(initial.yaw))
+  : 0;
 const result = {
   ok: errors.length === 0
     && initial?.roots === "1"
     && initial?.chunks?.split(",").includes("c0")
     && initial?.movement === "bounded-ground"
-    && turned?.yaw !== initial?.yaw
+    && Number.isFinite(yawDelta)
+    && yawDelta >= 0.25
     && moved?.position !== turned?.position
     && mobileState?.roots === "1",
   errors,
+  yawDelta,
   initial,
   turned,
   moved,
