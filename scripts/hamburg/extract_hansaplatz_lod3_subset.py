@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Extract the coordinate-confirmed Hamburg LoD3 sheet for Hansaplatz.
+"""Extract coordinate-confirmed Hamburg LoD3 sheets intersecting Hansaplatz.
 
 Hamburg Area1 uses compact sheet ids rather than UTM filenames. CityGML can also
 serialize EPSG:25832 in either east/north or CRS axis order north/east. This tool
 normalizes both forms to (easting, northing), derives each sheet's geometry bounds,
-and extracts only sheets containing the published Poly Haven Hansaplatz GPS point.
-Filename-only candidates are diagnostic and are rejected by downstream builds.
+and extracts every sheet whose bounding box intersects the requested radius around
+the published Poly Haven Hansaplatz GPS point. The capture point lies in a narrow
+gap between official sheet envelopes, so requiring a sheet to contain the exact
+point is incorrect. Filename-only candidates remain diagnostic and are rejected by
+downstream production builds.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from collections import Counter
 import hashlib
 import html
 import json
+import math
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -41,6 +45,7 @@ def args() -> argparse.Namespace:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--lat", type=float, default=53.554451)
     parser.add_argument("--lon", type=float, default=10.012056)
+    parser.add_argument("--radius-m", type=float, default=170.0)
     parser.add_argument("--source-url", required=True)
     parser.add_argument("--dataset-url", required=True)
     return parser.parse_args()
@@ -167,14 +172,19 @@ def spatial_bounds(zf: zipfile.ZipFile, name: str) -> dict[str, object] | None:
     return None
 
 
-def contains(record: dict[str, object], east: float, north: float, margin: float = 1.0) -> bool:
+def bbox_distance_m(record: dict[str, object], east: float, north: float) -> float:
     lower = record["lower_corner"]
     upper = record["upper_corner"]
     assert isinstance(lower, list) and isinstance(upper, list)
-    return (
-        min(lower[0], upper[0]) - margin <= east <= max(lower[0], upper[0]) + margin
-        and min(lower[1], upper[1]) - margin <= north <= max(lower[1], upper[1]) + margin
-    )
+    min_east, max_east = sorted((float(lower[0]), float(upper[0])))
+    min_north, max_north = sorted((float(lower[1]), float(upper[1])))
+    dx = 0.0 if min_east <= east <= max_east else min(abs(east - min_east), abs(east - max_east))
+    dy = 0.0 if min_north <= north <= max_north else min(abs(north - min_north), abs(north - max_north))
+    return math.hypot(dx, dy)
+
+
+def intersects_radius(record: dict[str, object], east: float, north: float, radius_m: float) -> bool:
+    return bbox_distance_m(record, east, north) <= radius_m
 
 
 def score_name(name: str, east: float, north: float) -> int:
@@ -211,6 +221,8 @@ def extract(zf: zipfile.ZipFile, name: str, root: Path) -> Path:
 
 def main() -> int:
     cfg = args()
+    if cfg.radius_m <= 0:
+        raise SystemExit("--radius-m must be positive")
     if not cfg.archive.is_file():
         raise SystemExit(f"archive not found: {cfg.archive}")
     east, north = Transformer.from_crs(4326, 25832, always_xy=True).transform(cfg.lon, cfg.lat)
@@ -235,19 +247,30 @@ def main() -> int:
             spatial = spatial_bounds(zf, name)
             if spatial is None:
                 continue
-            record = {"name": name, "filename_score": score_name(name, east, north), **spatial}
+            distance = bbox_distance_m(spatial, east, north)
+            record = {
+                "name": name,
+                "filename_score": score_name(name, east, north),
+                "distance_to_target_m": round(distance, 6),
+                **spatial,
+            }
             evidence.append(record)
-            if contains(record, east, north):
+            if intersects_radius(record, east, north, cfg.radius_m):
                 selected.append(record)
-                if len(selected) >= MAX_SELECTION:
-                    break
+
+        selected.sort(key=lambda item: (float(item["distance_to_target_m"]), str(item["name"])))
+        if len(selected) > MAX_SELECTION:
+            raise RuntimeError(
+                f"LoD3 radius intersects {len(selected)} sheets, exceeding safety limit {MAX_SELECTION}: "
+                + ", ".join(str(item["name"]) for item in selected)
+            )
 
         if not selected:
-            diagnostics = sorted(gml_names, key=lambda name: (-score_name(name, east, north), name))[:12]
-            selected = [
-                {"name": name, "filename_score": score_name(name, east, north), "fallback_filename_only": True}
-                for name in diagnostics
-            ]
+            diagnostics = sorted(
+                evidence,
+                key=lambda item: (float(item["distance_to_target_m"]), str(item["name"])),
+            )[:12]
+            selected = [dict(record, fallback_nearest_only=True) for record in diagnostics]
 
         unresolved: list[dict[str, str]] = []
         for record in selected:
@@ -280,7 +303,15 @@ def main() -> int:
             "archive_sha256": sha256(cfg.archive),
             "license": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
             "attribution": "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung",
-            "target": {"name": "Poly Haven Hansaplatz capture point", "latitude": cfg.lat, "longitude": cfg.lon, "epsg": 25832, "easting": east, "northing": north},
+            "target": {
+                "name": "Poly Haven Hansaplatz capture point",
+                "latitude": cfg.lat,
+                "longitude": cfg.lon,
+                "epsg": 25832,
+                "easting": east,
+                "northing": north,
+                "selection_radius_m": cfg.radius_m,
+            },
             "archive_entry_count": len(archive_names),
             "gml_entry_count": len(gml_names),
             "image_entry_count": len(image_names),
@@ -295,18 +326,19 @@ def main() -> int:
             "",
             f"Target WGS84: {cfg.lat:.6f}, {cfg.lon:.6f}",
             f"Target EPSG:25832: E={east:.3f} N={north:.3f}",
+            f"Selection radius: {cfg.radius_m:.1f} m",
             f"GML/XML entries inspected: {len(evidence)}/{len(gml_names)}",
             f"Image entries: {len(image_names)}",
             "",
-            "Selected CityGML:",
+            "Selected CityGML sheets intersecting target radius:",
             *[f"- {json.dumps(record)}" for record in selected],
             "",
             f"Extracted files: {len(files)}",
             f"Extracted bytes: {sum(int(item['bytes']) for item in files)}",
             f"Unresolved image refs: {len(unresolved)}",
             "",
-            "Production acceptance requires selection_method=gml-envelope or geometry-coordinate-extents.",
-            "Filename-only fallback is diagnostic only.",
+            "Production acceptance requires selection_method=gml-envelope or geometry-coordinate-extents and distance_to_target_m <= selection_radius_m.",
+            "Nearest-only fallback is diagnostic only.",
         ]
         (cfg.out / "REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
 
