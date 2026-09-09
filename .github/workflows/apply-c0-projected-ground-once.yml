@@ -1,0 +1,88 @@
+name: Apply panorama-projected Hansaplatz ground once
+
+on:
+  push:
+    branches:
+      - feat/c0-project-reference-ground-20260909
+    paths:
+      - .github/workflows/apply-c0-projected-ground-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/c0-project-reference-ground-20260909
+          fetch-depth: 0
+
+      - name: Replace blank foreground with reference-projected ground
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/blender/apply_berlin_lod2_hansaplatz.py')
+          text = path.read_text(encoding='utf-8')
+
+          old_cleanup = '''    # Keep only the scanned Hansaplatz paving from the provisional reconstruction.\n    # Everything else listed here was authored for the earlier invented intersection\n    # or is an approximate reference blockout that visibly conflicts with the real\n    # panorama. Missing real geometry is preferable to shipping false geometry.\n'''
+          new_cleanup = '''    # Remove every provisional Hansaplatz foreground object before rebuilding from\n    # official LoD2 plus reference-projected ground. The previous scanned paving was\n    # materially plausible but visually wrong because it ignored the reference camera\n    # projection and occupied most of the viewport as a flat grey surface.\n'''
+          if old_cleanup not in text:
+              raise SystemExit('cleanup comment marker not found')
+          text = text.replace(old_cleanup, new_cleanup, 1)
+
+          old_filter = '''        if obj.name.startswith(generic_prefixes)\n        or (\n            obj.name.startswith("hansaplatz_")\n            and not obj.name.startswith("hansaplatz_paving_slab_")\n        )\n'''
+          new_filter = '''        if obj.name.startswith(generic_prefixes)\n        or obj.name.startswith("hansaplatz_")\n'''
+          if old_filter not in text:
+              raise SystemExit('cleanup filter marker not found')
+          text = text.replace(old_filter, new_filter, 1)
+
+          material_marker = '''    material["projection_type"] = "equirectangular-per-loop"\n    return material\n\n\ndef load_obj(path: Path):\n'''
+          material_insert = '''    material["projection_type"] = "equirectangular-per-loop"\n    return material\n\n\ndef projected_panorama_ground_material(path: Path) -> bpy.types.Material:\n    if not path.exists():\n        raise RuntimeError(f"Hansaplatz panorama not found: {path}")\n    existing = bpy.data.materials.get("hansaplatz_panorama_projected_ground")\n    if existing is not None:\n        return existing\n\n    material = bpy.data.materials.new("hansaplatz_panorama_projected_ground")\n    material.use_nodes = True\n    nodes = material.node_tree.nodes\n    links = material.node_tree.links\n    bsdf = nodes.get("Principled BSDF")\n\n    texture = nodes.new("ShaderNodeTexImage")\n    texture.name = "hansaplatz_cc0_panorama_ground_projection"\n    texture.label = "Hansaplatz CC0 panorama ground projection"\n    texture.image = bpy.data.images.load(str(path.resolve()), check_existing=True)\n    texture.image.colorspace_settings.name = "sRGB"\n    texture.extension = "REPEAT"\n    texture.interpolation = "Linear"\n    links.new(texture.outputs["Color"], bsdf.inputs["Base Color"])\n\n    # Preserve the photographed albedo while letting authored lighting, shadows and\n    # reflections provide depth. The panorama is not emitted as a self-lit floor.\n    bsdf.inputs["Roughness"].default_value = 0.86\n    metallic = bsdf.inputs.get("Metallic")\n    if metallic is not None:\n        metallic.default_value = 0.0\n    specular = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")\n    if specular is not None:\n        specular.default_value = 0.20\n    emission_strength = bsdf.inputs.get("Emission Strength")\n    if emission_strength is not None:\n        emission_strength.default_value = 0.0\n\n    material["source_provider"] = "Poly Haven"\n    material["source_asset"] = "Hansaplatz"\n    material["source_license"] = "CC0-1.0"\n    material["projection_origin_runtime_xyz"] = "0,1.6,0"\n    material["projection_type"] = "equirectangular-ground-grid"\n    material["projection_emissive"] = False\n    return material\n\n\ndef load_obj(path: Path):\n'''
+          if material_marker not in text:
+              raise SystemExit('material insertion marker not found')
+          text = text.replace(material_marker, material_insert, 1)
+
+          ground_marker = '''def create_semantic_objects(\n    path: Path,\n    visual: bpy.types.Collection,\n'''
+          ground_insert = '''def create_projected_ground(\n    visual: bpy.types.Collection,\n    panorama: Path,\n    panorama_yaw_deg: float,\n    *,\n    half_extent_x: float = 46.0,\n    min_z: float = -70.0,\n    max_z: float = 28.0,\n    step: float = 1.4,\n) -> int:\n    # A tessellated ground is required for projective texture interpolation. A single\n    # quad would interpolate equirectangular UVs linearly and visibly warp the near\n    # foreground. This density remains cheap (~10k triangles) while matching the\n    # reference image closely at the canonical Human viewpoint.\n    old = bpy.data.objects.get("hansaplatz_reference_projected_ground")\n    if old is not None:\n        bpy.data.objects.remove(old, do_unlink=True)\n\n    xs: list[float] = []\n    x = -half_extent_x\n    while x < half_extent_x - 1e-6:\n        xs.append(x)\n        x += step\n    xs.append(half_extent_x)\n\n    zs: list[float] = []\n    z = min_z\n    while z < max_z - 1e-6:\n        zs.append(z)\n        z += step\n    zs.append(max_z)\n\n    runtime_vertices = [(xv, 0.035, zv) for zv in zs for xv in xs]\n    width = len(xs)\n    faces: list[list[int]] = []\n    for iz in range(len(zs) - 1):\n        for ix in range(len(xs) - 1):\n            a = iz * width + ix\n            b = a + 1\n            c = a + width + 1\n            d = a + width\n            faces.append([a, b, c])\n            faces.append([a, c, d])\n\n    mesh = bpy.data.meshes.new("hansaplatz_reference_projected_ground_mesh")\n    mesh.from_pydata([runtime_to_blender(point) for point in runtime_vertices], [], faces)\n    mesh.validate(verbose=False)\n    mesh.update(calc_edges=True)\n    apply_panorama_uv(mesh, runtime_vertices, math.radians(panorama_yaw_deg))\n\n    obj = bpy.data.objects.new("hansaplatz_reference_projected_ground", mesh)\n    visual.objects.link(obj)\n    obj.data.materials.append(projected_panorama_ground_material(panorama))\n    obj["source_provider"] = "Poly Haven"\n    obj["source_asset"] = "Hansaplatz"\n    obj["source_license"] = "CC0-1.0"\n    obj["projection_origin_runtime_xyz"] = "0,1.6,0"\n    obj["projection_yaw_deg"] = panorama_yaw_deg\n    obj["grid_step_m"] = step\n    obj["quality_role"] = "primary-visible-reference-ground"\n    return len(faces)\n\n\ndef create_semantic_objects(\n    path: Path,\n    visual: bpy.types.Collection,\n'''
+          if ground_marker not in text:
+              raise SystemExit('ground insertion marker not found')
+          text = text.replace(ground_marker, ground_insert, 1)
+
+          old_main = '''    removed = remove_guessed_buildings()\n    created = create_semantic_objects(Path(args.obj), visual, panorama, args.panorama_yaw_deg)\n\n'''
+          new_main = '''    removed = remove_guessed_buildings()\n    created = create_semantic_objects(Path(args.obj), visual, panorama, args.panorama_yaw_deg)\n    ground_triangles = (\n        create_projected_ground(visual, panorama, args.panorama_yaw_deg)\n        if panorama is not None\n        else 0\n    )\n\n'''
+          if old_main not in text:
+              raise SystemExit('main marker not found')
+          text = text.replace(old_main, new_main, 1)
+
+          old_meta = '''    root["facade_projection_emissive"] = False\n\n'''
+          new_meta = '''    root["facade_projection_emissive"] = False\n    root["ground_detail_basis"] = "CC0 Hansaplatz equirectangular ground projection" if panorama else "generic PBR"\n    root["ground_projection_triangles"] = ground_triangles\n    root["ground_projection_emissive"] = False\n\n'''
+          if old_meta not in text:
+              raise SystemExit('metadata marker not found')
+          text = text.replace(old_meta, new_meta, 1)
+
+          old_print = '''        f"removed guessed={removed}, created semantic objects={created}, panorama={panorama or 'disabled'}"\n'''
+          new_print = '''        f"removed guessed={removed}, created semantic objects={created}, "\n        f"ground triangles={ground_triangles}, panorama={panorama or 'disabled'}"\n'''
+          if old_print not in text:
+              raise SystemExit('print marker not found')
+          text = text.replace(old_print, new_print, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile scripts/blender/apply_berlin_lod2_hansaplatz.py
+          git diff --check
+
+      - name: Commit quality increment and remove bootstrap workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/apply-c0-projected-ground-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Project Hansaplatz reference onto C0 foreground"
+          git push origin HEAD:feat/c0-project-reference-ground-20260909
