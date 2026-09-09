@@ -3,7 +3,10 @@
 
 The source CRS is EPSG:25832. CityGML may serialize that CRS as east/north or
 north/east, so every geometry coordinate is normalized by metric range before
-selection and conversion. Output uses AsSeenBy runtime XYZ: X=east, Y=up, -Z=north.
+selection and conversion. Buildings are selected when their geometry bounds
+intersect the requested radius; using only the building centroid is incorrect
+for a plaza-edge scene such as Hansaplatz. Output uses AsSeenBy runtime XYZ:
+X=east, Y=up, -Z=north.
 """
 
 from __future__ import annotations
@@ -139,11 +142,30 @@ def semantic_surfaces(building: ET.Element):
                     yield "wall", points
 
 
-def centroid(surfaces) -> tuple[float, float] | None:
+def geometry_bounds(surfaces) -> tuple[float, float, float, float] | None:
     points = [point for _, polygon in surfaces for point in polygon]
     if not points:
         return None
-    return sum(point[0] for point in points) / len(points), sum(point[1] for point in points) / len(points)
+    eastings = [point[0] for point in points]
+    northings = [point[1] for point in points]
+    return min(eastings), min(northings), max(eastings), max(northings)
+
+
+def bounds_distance_sq(bounds: tuple[float, float, float, float], east: float, north: float) -> float:
+    min_east, min_north, max_east, max_north = bounds
+    if east < min_east:
+        dx = min_east - east
+    elif east > max_east:
+        dx = east - max_east
+    else:
+        dx = 0.0
+    if north < min_north:
+        dy = min_north - north
+    elif north > max_north:
+        dy = north - max_north
+    else:
+        dy = 0.0
+    return dx * dx + dy * dy
 
 
 def main() -> None:
@@ -157,6 +179,8 @@ def main() -> None:
     heights: list[float] = []
     seen: set[str] = set()
     axis_orders: Counter[str] = Counter()
+    radius_sq = cfg.radius_m ** 2
+    nearest: list[tuple[float, str]] = []
 
     for path in files:
         root = ET.parse(path).getroot()
@@ -165,10 +189,12 @@ def main() -> None:
             if building_id in seen:
                 continue
             surfaces = list(semantic_surfaces(building))
-            center = centroid(surfaces)
-            if center is None:
+            bounds = geometry_bounds(surfaces)
+            if bounds is None:
                 continue
-            if (center[0] - origin_east) ** 2 + (center[1] - origin_north) ** 2 > cfg.radius_m ** 2:
+            distance_sq = bounds_distance_sq(bounds, origin_east, origin_north)
+            nearest.append((distance_sq ** 0.5, building_id))
+            if distance_sq > radius_sq:
                 continue
             seen.add(building_id)
             selected.append((safe_name(building_id), surfaces))
@@ -178,7 +204,11 @@ def main() -> None:
                     axis_orders[order] += 1
 
     if not selected:
-        raise RuntimeError(f"No Hamburg LoD3 buildings within {cfg.radius_m:.1f}m of {cfg.lat},{cfg.lon}")
+        nearest.sort(key=lambda item: item[0])
+        nearest_text = ", ".join(f"{safe_name(building_id)}={distance:.1f}m" for distance, building_id in nearest[:8]) or "none"
+        raise RuntimeError(
+            f"No Hamburg LoD3 building geometry intersects {cfg.radius_m:.1f}m of {cfg.lat},{cfg.lon}; nearest bounds: {nearest_text}"
+        )
 
     base_height = min(heights)
     vertices: list[tuple[float, float, float]] = []
@@ -202,6 +232,7 @@ def main() -> None:
         handle.write("# Attribution: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung\n")
         handle.write(f"# Origin WGS84: {cfg.lat}, {cfg.lon}\n")
         handle.write(f"# Origin EPSG:{cfg.source_epsg}: {origin_east:.3f}, {origin_north:.3f}\n")
+        handle.write(f"# Selection: building geometry bbox intersects {cfg.radius_m:.1f}m radius\n")
         handle.write(f"# Base height: {base_height:.3f}\n")
         handle.write(f"# Source axis orders normalized: {dict(axis_orders)}\n")
         for x, y, z in vertices:
