@@ -55,10 +55,10 @@ def find_visual(root: bpy.types.Collection) -> bpy.types.Collection:
 
 
 def remove_guessed_buildings() -> int:
-    # Keep only the scanned Hansaplatz paving from the provisional reconstruction.
-    # Everything else listed here was authored for the earlier invented intersection
-    # or is an approximate reference blockout that visibly conflicts with the real
-    # panorama. Missing real geometry is preferable to shipping false geometry.
+    # Remove every provisional Hansaplatz foreground object before rebuilding from
+    # official LoD2 plus reference-projected ground. The previous scanned paving was
+    # materially plausible but visually wrong because it ignored the reference camera
+    # projection and occupied most of the viewport as a flat grey surface.
     generic_prefixes = (
         "c0_authored_",
         "c0_bench_",
@@ -77,10 +77,7 @@ def remove_guessed_buildings() -> int:
         obj
         for obj in list(bpy.data.objects)
         if obj.name.startswith(generic_prefixes)
-        or (
-            obj.name.startswith("hansaplatz_")
-            and not obj.name.startswith("hansaplatz_paving_slab_")
-        )
+        or obj.name.startswith("hansaplatz_")
     ]
     for obj in doomed:
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -141,6 +138,50 @@ def projected_panorama_material(path: Path) -> bpy.types.Material:
     material["source_license"] = "CC0-1.0"
     material["projection_origin_runtime_xyz"] = "0,1.6,0"
     material["projection_type"] = "equirectangular-per-loop"
+    return material
+
+
+def projected_panorama_ground_material(path: Path) -> bpy.types.Material:
+    if not path.exists():
+        raise RuntimeError(f"Hansaplatz panorama not found: {path}")
+    existing = bpy.data.materials.get("hansaplatz_panorama_projected_ground")
+    if existing is not None:
+        return existing
+
+    material = bpy.data.materials.new("hansaplatz_panorama_projected_ground")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.name = "hansaplatz_cc0_panorama_ground_projection"
+    texture.label = "Hansaplatz CC0 panorama ground projection"
+    texture.image = bpy.data.images.load(str(path.resolve()), check_existing=True)
+    texture.image.colorspace_settings.name = "sRGB"
+    texture.extension = "REPEAT"
+    texture.interpolation = "Linear"
+    links.new(texture.outputs["Color"], bsdf.inputs["Base Color"])
+
+    # Preserve the photographed albedo while letting authored lighting, shadows and
+    # reflections provide depth. The panorama is not emitted as a self-lit floor.
+    bsdf.inputs["Roughness"].default_value = 0.86
+    metallic = bsdf.inputs.get("Metallic")
+    if metallic is not None:
+        metallic.default_value = 0.0
+    specular = bsdf.inputs.get("Specular IOR Level") or bsdf.inputs.get("Specular")
+    if specular is not None:
+        specular.default_value = 0.20
+    emission_strength = bsdf.inputs.get("Emission Strength")
+    if emission_strength is not None:
+        emission_strength.default_value = 0.0
+
+    material["source_provider"] = "Poly Haven"
+    material["source_asset"] = "Hansaplatz"
+    material["source_license"] = "CC0-1.0"
+    material["projection_origin_runtime_xyz"] = "0,1.6,0"
+    material["projection_type"] = "equirectangular-ground-grid"
+    material["projection_emissive"] = False
     return material
 
 
@@ -217,6 +258,69 @@ def apply_panorama_uv(mesh: bpy.types.Mesh, runtime_vertices: list[tuple[float, 
                 if crosses_seam and u < 0.5:
                     u += 1.0
                 uv_layer.data[loop_index].uv = (u, v)
+
+
+def create_projected_ground(
+    visual: bpy.types.Collection,
+    panorama: Path,
+    panorama_yaw_deg: float,
+    *,
+    half_extent_x: float = 46.0,
+    min_z: float = -70.0,
+    max_z: float = 28.0,
+    step: float = 1.4,
+) -> int:
+    # A tessellated ground is required for projective texture interpolation. A single
+    # quad would interpolate equirectangular UVs linearly and visibly warp the near
+    # foreground. This density remains cheap (~10k triangles) while matching the
+    # reference image closely at the canonical Human viewpoint.
+    old = bpy.data.objects.get("hansaplatz_reference_projected_ground")
+    if old is not None:
+        bpy.data.objects.remove(old, do_unlink=True)
+
+    xs: list[float] = []
+    x = -half_extent_x
+    while x < half_extent_x - 1e-6:
+        xs.append(x)
+        x += step
+    xs.append(half_extent_x)
+
+    zs: list[float] = []
+    z = min_z
+    while z < max_z - 1e-6:
+        zs.append(z)
+        z += step
+    zs.append(max_z)
+
+    runtime_vertices = [(xv, 0.035, zv) for zv in zs for xv in xs]
+    width = len(xs)
+    faces: list[list[int]] = []
+    for iz in range(len(zs) - 1):
+        for ix in range(len(xs) - 1):
+            a = iz * width + ix
+            b = a + 1
+            c = a + width + 1
+            d = a + width
+            faces.append([a, b, c])
+            faces.append([a, c, d])
+
+    mesh = bpy.data.meshes.new("hansaplatz_reference_projected_ground_mesh")
+    mesh.from_pydata([runtime_to_blender(point) for point in runtime_vertices], [], faces)
+    mesh.validate(verbose=False)
+    mesh.update(calc_edges=True)
+    apply_panorama_uv(mesh, runtime_vertices, math.radians(panorama_yaw_deg))
+
+    obj = bpy.data.objects.new("hansaplatz_reference_projected_ground", mesh)
+    visual.objects.link(obj)
+    obj.data.materials.append(projected_panorama_ground_material(panorama))
+    obj["source_provider"] = "Poly Haven"
+    obj["source_asset"] = "Hansaplatz"
+    obj["source_license"] = "CC0-1.0"
+    obj["projection_origin_runtime_xyz"] = "0,1.6,0"
+    obj["projection_yaw_deg"] = panorama_yaw_deg
+    obj["grid_step_m"] = step
+    obj["quality_role"] = "primary-visible-reference-ground"
+    return len(faces)
 
 
 def create_semantic_objects(
@@ -299,6 +403,11 @@ def main() -> None:
     panorama = Path(args.panorama) if args.panorama else None
     removed = remove_guessed_buildings()
     created = create_semantic_objects(Path(args.obj), visual, panorama, args.panorama_yaw_deg)
+    ground_triangles = (
+        create_projected_ground(visual, panorama, args.panorama_yaw_deg)
+        if panorama is not None
+        else 0
+    )
 
     root["official_lod2_source"] = "https://gdi.berlin.de/data/a_lod2/atom/0.atom"
     root["official_lod2_license"] = "dl-de-zero-2.0"
@@ -310,11 +419,15 @@ def main() -> None:
     root["facade_detail_basis"] = "CC0 Hansaplatz equirectangular projection" if panorama else "generic PBR"
     root["facade_projection_yaw_deg"] = args.panorama_yaw_deg
     root["facade_projection_emissive"] = False
+    root["ground_detail_basis"] = "CC0 Hansaplatz equirectangular ground projection" if panorama else "generic PBR"
+    root["ground_projection_triangles"] = ground_triangles
+    root["ground_projection_emissive"] = False
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(
         "Berlin LoD2 Hansaplatz applied: "
-        f"removed guessed={removed}, created semantic objects={created}, panorama={panorama or 'disabled'}"
+        f"removed guessed={removed}, created semantic objects={created}, "
+        f"ground triangles={ground_triangles}, panorama={panorama or 'disabled'}"
     )
 
 

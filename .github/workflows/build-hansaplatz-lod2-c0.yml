@@ -8,7 +8,7 @@ on:
     paths:
       - scripts/berlin/**
       - scripts/blender/apply_berlin_lod2_hansaplatz.py
-      - scripts/blender/replace_hansaplatz_paving_field.py
+      - scripts/blender/remove_berlin_lod2_ground_surfaces.py
       - .github/workflows/build-hansaplatz-lod2-c0.yml
   workflow_dispatch:
 
@@ -78,47 +78,49 @@ jobs:
           cp .tmp/berlin-lod2/hansaplatz-lod2.obj "$dest/hansaplatz-lod2.obj"
           sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
 
-      - name: Apply official geometry and photographic facade projection
+      - name: Apply official geometry and photographic facade/ground projection
         run: |
           set -euo pipefail
           blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
           panorama=public/assets/panoramas/hansaplatz.jpg
           test -s "$blend"
           test -s "$panorama"
-          blender --background "$blend" \
+          blender --background "$blend" --python-exit-code 1 \
             --python scripts/blender/apply_berlin_lod2_hansaplatz.py -- \
             --collection C0 \
             --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj \
             --panorama "$panorama" \
             --panorama-yaw-deg 0
 
-      - name: Replace raised paving tiles with continuous plaza surface
+      - name: Remove LoD2 building-bottom GroundSurface occluders
         run: |
           set -euo pipefail
           blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
-          blender --background "$blend" \
-            --python scripts/blender/replace_hansaplatz_paving_field.py
+          blender --background "$blend" --python-exit-code 1 \
+            --python scripts/blender/remove_berlin_lod2_ground_surfaces.py
 
       - name: Export updated C0 GLB
         run: |
           set -euo pipefail
           out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
-          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 \
             --python scripts/blender/export_night_intersection.py -- \
             --collection C0 \
             --out "$out"
           test -s "$out"
           sha256sum "$out" > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           cat > public/assets/3d/night-intersection/c0/core/BUILD.txt <<'EOF'
-          Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
+          Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2), walls and roofs only for visible building geometry
           Reference location: Hansaplatz, Berlin, Germany
           Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
           Geometry license: dl-de-zero-2.0
           Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
           Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
-          Facade source license: CC0-1.0
+          Ground detail basis: tessellated Poly Haven Hansaplatz equirectangular panorama projection
+          Facade/ground source license: CC0-1.0
           Projection origin: Human reference eye at runtime XYZ 0,1.6,0
-          Plaza paving: one continuous coplanar Blender mesh using checked-in Poly Haven concrete_pavement PBR, CC0-1.0
+          LoD2 GroundSurface rendering: disabled; building-bottom semantics are removed before export
+          Projection materials are non-emissive; authored runtime lighting/shadows provide depth
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
@@ -131,7 +133,7 @@ jobs:
           git add \
             scripts/berlin \
             scripts/blender/apply_berlin_lod2_hansaplatz.py \
-            scripts/blender/replace_hansaplatz_paving_field.py \
+            scripts/blender/remove_berlin_lod2_ground_surfaces.py \
             assets-src/blender/night-intersection/berlin-lod2 \
             assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             public/assets/3d/night-intersection/c0/core
@@ -139,10 +141,7 @@ jobs:
             echo 'No generated Hansaplatz C0 changes'
             exit 0
           fi
-          git commit -m 'Replace raised Hansaplatz paving with continuous surface'
-          # Blender can touch already-tracked companion/source files outside the
-          # explicit generated set. Fold only tracked changes into this commit;
-          # never add the downloaded .tmp archives.
+          git commit -m 'Project Hansaplatz ground without LoD2 floor occluders'
           git add -u
           if ! git diff --cached --quiet; then
             git commit --amend --no-edit

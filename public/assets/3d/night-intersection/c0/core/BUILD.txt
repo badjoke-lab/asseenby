@@ -1,10 +1,12 @@
-Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
+Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2), walls and roofs only for visible building geometry
 Reference location: Hansaplatz, Berlin, Germany
 Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
 Geometry license: dl-de-zero-2.0
 Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
 Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
-Facade source license: CC0-1.0
+Ground detail basis: tessellated Poly Haven Hansaplatz equirectangular panorama projection
+Facade/ground source license: CC0-1.0
 Projection origin: Human reference eye at runtime XYZ 0,1.6,0
-Plaza paving: one continuous coplanar Blender mesh using checked-in Poly Haven concrete_pavement PBR, CC0-1.0
+LoD2 GroundSurface rendering: disabled; building-bottom semantics are removed before export
+Projection materials are non-emissive; authored runtime lighting/shadows provide depth
 Runtime: Blender-authored C0 exported to GLB for Three.js

@@ -3,7 +3,7 @@ name: Verify Hansaplatz LoD2 visual
 on:
   push:
     branches:
-      - feat/c0-real-geometry-rebuild-20260909
+      - feat/c0-project-reference-ground-20260909
     paths:
       - public/assets/3d/night-intersection/c0/core/**
       - assets-src/blender/night-intersection/berlin-lod2/**
