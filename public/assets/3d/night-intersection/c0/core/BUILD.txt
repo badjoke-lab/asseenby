@@ -6,5 +6,6 @@ Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod
 Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
 Facade source license: CC0-1.0
 Projection origin: Human reference eye at runtime XYZ 0,1.6,0
+LoD2 GroundSurface rendering: disabled; building-bottom semantics are not used as plaza geometry
 Plaza paving: one continuous coplanar Blender mesh using checked-in Poly Haven concrete_pavement PBR, CC0-1.0
 Runtime: Blender-authored C0 exported to GLB for Three.js
