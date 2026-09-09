@@ -69,7 +69,7 @@ const loadHansaplatzTexture = (
       scene.backgroundIntensity = options.useAsEnvironment ? 0.86 : 1;
       if (options.useAsEnvironment) {
         scene.environment = texture;
-        scene.environmentIntensity = 0.52;
+        scene.environmentIntensity = 0.42;
       }
       renderScene();
     },
