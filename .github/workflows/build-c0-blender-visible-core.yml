@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'feat/c0-*'
     paths:
       - .github/workflows/build-c0-blender-visible-core.yml
       - scripts/reference/extract_hansaplatz_reference_views.py
@@ -12,17 +13,20 @@ on:
       - scripts/blender/augment_night_intersection_c0.py
       - scripts/blender/refine_night_intersection_c0.py
       - scripts/blender/reconstruct_hansaplatz_c0.py
+      - scripts/blender/apply_berlin_lod2_hansaplatz.py
+      - scripts/blender/finalize_hansaplatz_reference.py
       - scripts/blender/export_night_intersection.py
       - scripts/polyhaven/fetch_model_bundle.py
       - scripts/polyhaven/fetch_texture_bundle.py
       - assets-src/blender/night-intersection/materials/**
+      - assets-src/blender/night-intersection/berlin-lod2/**
       - assets-src/blender/night-intersection/third-party/SOURCES.md
 
 permissions:
   contents: write
 
 concurrency:
-  group: blender-c0-visible-core-main
+  group: blender-c0-visible-core-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,10 +34,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
-      - name: Check out main
+      - name: Check out current revision
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Install Blender and reference tooling
@@ -115,6 +118,10 @@ jobs:
             --asset concrete_pavement \
             --resolution 1k \
             --out "$dest"
+          python3 scripts/polyhaven/fetch_texture_bundle.py \
+            --asset rectangular_paving \
+            --resolution 1k \
+            --out "$dest"
           sha256sum "$dest"/*.jpg | sort > "$dest/SHA256SUMS.txt"
           test -s "$dest/rounded_square_tiled_wall_diff_1k.jpg"
           test -s "$dest/rounded_square_tiled_wall_nor_gl_1k.jpg"
@@ -122,6 +129,9 @@ jobs:
           test -s "$dest/concrete_pavement_diff_1k.jpg"
           test -s "$dest/concrete_pavement_nor_gl_1k.jpg"
           test -s "$dest/concrete_pavement_rough_1k.jpg"
+          test -s "$dest/rectangular_paving_diff_1k.jpg"
+          test -s "$dest/rectangular_paving_nor_gl_1k.jpg"
+          test -s "$dest/rectangular_paving_rough_1k.jpg"
 
       - name: Fetch authored CC0 model bundles
         shell: bash
@@ -179,12 +189,34 @@ jobs:
             --python scripts/blender/refine_night_intersection_c0.py -- \
             --collection C0
 
-      - name: Replace invented macro-layout with Hansaplatz reconstruction
+      - name: Build Hansaplatz reference foreground
         shell: bash
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python scripts/blender/reconstruct_hansaplatz_c0.py -- \
+            --collection C0 \
+            --material-dir assets-src/blender/night-intersection/materials/hansaplatz
+
+      - name: Apply official Berlin LoD2 geometry and photographic facades
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+          test -s public/assets/panoramas/hansaplatz.jpg
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/apply_berlin_lod2_hansaplatz.py -- \
+            --collection C0 \
+            --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj \
+            --panorama public/assets/panoramas/hansaplatz.jpg \
+            --panorama-yaw-deg 0
+
+      - name: Finalize reference-ground foreground
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python scripts/blender/finalize_hansaplatz_reference.py -- \
             --collection C0 \
             --material-dir assets-src/blender/night-intersection/materials/hansaplatz
 
@@ -205,7 +237,7 @@ jobs:
           test "$(stat -c%s assets-src/blender/night-intersection/c0/night-intersection-c0.blend)" -lt 95000000
           test "$(stat -c%s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb)" -lt 95000000
 
-      - name: Commit generated reference and authored runtime assets to main
+      - name: Commit generated reference and authored runtime assets
         shell: bash
         run: |
           set -euo pipefail
@@ -218,10 +250,13 @@ jobs:
             scripts/blender/augment_night_intersection_c0.py \
             scripts/blender/refine_night_intersection_c0.py \
             scripts/blender/reconstruct_hansaplatz_c0.py \
+            scripts/blender/apply_berlin_lod2_hansaplatz.py \
+            scripts/blender/finalize_hansaplatz_reference.py \
             scripts/polyhaven/fetch_model_bundle.py \
             scripts/polyhaven/fetch_texture_bundle.py \
             assets-src/blender/night-intersection/reference \
             assets-src/blender/night-intersection/materials \
+            assets-src/blender/night-intersection/berlin-lod2 \
             assets-src/blender/night-intersection/third-party \
             assets-src/blender/night-intersection/c0 \
             public/assets/3d/night-intersection/c0/core
@@ -229,7 +264,7 @@ jobs:
             echo "No generated C0 changes to commit"
             exit 0
           fi
-          git commit -m "Regenerate reference-driven Hansaplatz C0"
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+          git commit -m "Regenerate official-reference Hansaplatz C0"
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
