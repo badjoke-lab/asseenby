@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
-"""Extract the Hamburg LoD3 source subset containing the Hansaplatz capture point.
+"""Extract the coordinate-confirmed Hamburg LoD3 sheet for Hansaplatz.
 
-Hamburg's LoD3 Area archives use compact sheet ids (for example 6431.gml), not
-UTM tile names, and the current files do not expose a root gml:Envelope. Selection
-therefore has two independently inspectable spatial paths:
-
-1. use gml:lowerCorner / gml:upperCorner when present;
-2. otherwise derive each CityGML file's XY bounds from gml:posList / gml:pos
-   coordinates and require the target EPSG:25832 point to fall inside those bounds.
-
-Only a coordinate-confirmed CityGML file and its referenced textures are extracted.
-A filename-only fallback is retained solely as diagnostic evidence and must never be
-accepted by the downstream Blender build.
+Hamburg Area1 uses compact sheet ids rather than UTM filenames. CityGML can also
+serialize EPSG:25832 in either east/north or CRS axis order north/east. This tool
+normalizes both forms to (easting, northing), derives each sheet's geometry bounds,
+and extracts only sheets containing the published Poly Haven Hansaplatz GPS point.
+Filename-only candidates are diagnostic and are rejected by downstream builds.
 """
 
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import html
 import json
@@ -29,33 +24,18 @@ from pyproj import Transformer
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 GML_SUFFIXES = {".gml", ".xml", ".citygml"}
-MAX_GML_SELECTION = 12
 MAX_XML_BYTES = 256 * 1024 * 1024
+MAX_SELECTION = 12
 
-LOWER_RE = re.compile(
-    rb"<(?:[A-Za-z0-9_.-]+:)?lowerCorner\b[^>]*>\s*([^<]+?)\s*</(?:[A-Za-z0-9_.-]+:)?lowerCorner>",
-    re.I | re.S,
-)
-UPPER_RE = re.compile(
-    rb"<(?:[A-Za-z0-9_.-]+:)?upperCorner\b[^>]*>\s*([^<]+?)\s*</(?:[A-Za-z0-9_.-]+:)?upperCorner>",
-    re.I | re.S,
-)
-POSLIST_RE = re.compile(
-    rb"<(?:[A-Za-z0-9_.-]+:)?posList\b([^>]*)>(.*?)</(?:[A-Za-z0-9_.-]+:)?posList>",
-    re.I | re.S,
-)
-POS_RE = re.compile(
-    rb"<(?:[A-Za-z0-9_.-]+:)?pos\b([^>]*)>(.*?)</(?:[A-Za-z0-9_.-]+:)?pos>",
-    re.I | re.S,
-)
+LOWER_RE = re.compile(rb"<(?:[\w.-]+:)?lowerCorner\b[^>]*>\s*([^<]+?)\s*</(?:[\w.-]+:)?lowerCorner>", re.I | re.S)
+UPPER_RE = re.compile(rb"<(?:[\w.-]+:)?upperCorner\b[^>]*>\s*([^<]+?)\s*</(?:[\w.-]+:)?upperCorner>", re.I | re.S)
+POSLIST_RE = re.compile(rb"<(?:[\w.-]+:)?posList\b([^>]*)>(.*?)</(?:[\w.-]+:)?posList>", re.I | re.S)
+POS_RE = re.compile(rb"<(?:[\w.-]+:)?pos\b([^>]*)>(.*?)</(?:[\w.-]+:)?pos>", re.I | re.S)
 DIM_RE = re.compile(rb"(?:srsDimension|dimension)\s*=\s*['\"](\d+)['\"]", re.I)
-IMAGE_REF_RE = re.compile(
-    r"(?:[A-Za-z0-9_.%+@~-]+/)*[A-Za-z0-9_.%+@~-]+\.(?:jpe?g|png|tiff?)",
-    re.I,
-)
+IMAGE_REF_RE = re.compile(r"(?:[A-Za-z0-9_.%+@~-]+/)*[A-Za-z0-9_.%+@~-]+\.(?:jpe?g|png|tiff?)", re.I)
 
 
-def parse_args() -> argparse.Namespace:
+def args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--archive", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
@@ -66,50 +46,41 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def sha256_file(path: Path) -> str:
+def sha256(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
-def normalize_archive_name(name: str) -> str:
+def norm_name(name: str) -> str:
     return str(PurePosixPath(name.replace("\\", "/")))
 
 
-def parse_numbers(raw: bytes) -> list[float]:
+def numbers(raw: bytes) -> list[float]:
     try:
-        return [float(part) for part in raw.decode("utf-8", "ignore").replace(",", " ").split()]
+        return [float(value) for value in raw.decode("utf-8", "ignore").replace(",", " ").split()]
     except ValueError:
         return []
 
 
-def parse_corner(raw: bytes) -> tuple[float, ...] | None:
-    values = parse_numbers(raw)
-    return tuple(values) if len(values) >= 2 else None
+def normalize_en(first: float, second: float) -> tuple[float, float, str] | None:
+    east = lambda value: 100_000.0 <= value <= 900_000.0
+    north = lambda value: 5_000_000.0 <= value <= 7_000_000.0
+    if east(first) and north(second):
+        return first, second, "east-north"
+    if north(first) and east(second):
+        return second, first, "north-east"
+    return None
 
 
-def update_bounds(bounds: list[float], x: float, y: float) -> None:
-    # Hamburg EPSG:25832 coordinates should be approximately E=5e5, N=5.9e6.
-    # This guard excludes texture coordinates and other local numeric tuples that
-    # can occur in appearance elements.
-    if not (100_000.0 <= x <= 900_000.0 and 5_000_000.0 <= y <= 7_000_000.0):
-        return
-    bounds[0] = min(bounds[0], x)
-    bounds[1] = min(bounds[1], y)
-    bounds[2] = max(bounds[2], x)
-    bounds[3] = max(bounds[3], y)
-
-
-def infer_dimension(attrs: bytes, count: int) -> int:
+def dimension(attrs: bytes, count: int) -> int:
     match = DIM_RE.search(attrs)
     if match:
-        dimension = int(match.group(1))
-        if dimension in (2, 3, 4) and count % dimension == 0:
-            return dimension
-    # CityGML building geometry in this dataset is 3D. Prefer triples whenever
-    # possible; fall back to 2D only when triples are impossible.
+        value = int(match.group(1))
+        if value in (2, 3, 4) and count % value == 0:
+            return value
     if count >= 3 and count % 3 == 0:
         return 3
     if count >= 2 and count % 2 == 0:
@@ -117,274 +88,229 @@ def infer_dimension(attrs: bytes, count: int) -> int:
     return 3
 
 
-def derive_coordinate_bounds(data: bytes) -> tuple[tuple[float, float], tuple[float, float], int] | None:
+def derive_bounds(data: bytes) -> tuple[list[float], list[float], int, dict[str, int]] | None:
     bounds = [float("inf"), float("inf"), float("-inf"), float("-inf")]
-    tuple_count = 0
+    accepted = 0
+    orders: Counter[str] = Counter()
+
+    def consume(first: float, second: float) -> None:
+        nonlocal accepted
+        normalized = normalize_en(first, second)
+        if normalized is None:
+            return
+        east, north, order = normalized
+        bounds[0] = min(bounds[0], east)
+        bounds[1] = min(bounds[1], north)
+        bounds[2] = max(bounds[2], east)
+        bounds[3] = max(bounds[3], north)
+        accepted += 1
+        orders[order] += 1
 
     for match in POSLIST_RE.finditer(data):
-        values = parse_numbers(match.group(2))
-        if len(values) < 2:
-            continue
-        dimension = infer_dimension(match.group(1), len(values))
-        for index in range(0, len(values) - 1, dimension):
-            if index + 1 >= len(values):
-                break
-            update_bounds(bounds, values[index], values[index + 1])
-            tuple_count += 1
+        values = numbers(match.group(2))
+        dim = dimension(match.group(1), len(values))
+        for index in range(0, len(values) - 1, dim):
+            consume(values[index], values[index + 1])
 
     for match in POS_RE.finditer(data):
-        values = parse_numbers(match.group(2))
+        values = numbers(match.group(2))
         if len(values) >= 2:
-            update_bounds(bounds, values[0], values[1])
-            tuple_count += 1
+            consume(values[0], values[1])
 
-    if bounds[0] == float("inf"):
+    if accepted == 0:
         return None
-    return (bounds[0], bounds[1]), (bounds[2], bounds[3]), tuple_count
+    return [bounds[0], bounds[1]], [bounds[2], bounds[3]], accepted, dict(orders)
 
 
-def read_spatial_bounds(
-    zf: zipfile.ZipFile, name: str
-) -> tuple[tuple[float, ...], tuple[float, ...], str, int] | None:
-    try:
-        info = zf.getinfo(name)
-        if info.file_size > MAX_XML_BYTES:
-            raise RuntimeError(f"CityGML file exceeds safety limit ({info.file_size} bytes): {name}")
-        data = zf.read(name)
-    except (KeyError, OSError, zipfile.BadZipFile) as exc:
-        raise RuntimeError(f"cannot read CityGML entry {name}: {exc}") from exc
-
+def envelope_bounds(data: bytes) -> tuple[list[float], list[float], str] | None:
     lower_match = LOWER_RE.search(data)
     upper_match = UPPER_RE.search(data)
-    if lower_match and upper_match:
-        lower = parse_corner(lower_match.group(1))
-        upper = parse_corner(upper_match.group(1))
-        if lower and upper:
-            return lower, upper, "gml-envelope", 0
+    if not lower_match or not upper_match:
+        return None
+    lower_values = numbers(lower_match.group(1))
+    upper_values = numbers(upper_match.group(1))
+    if len(lower_values) < 2 or len(upper_values) < 2:
+        return None
+    lower = normalize_en(lower_values[0], lower_values[1])
+    upper = normalize_en(upper_values[0], upper_values[1])
+    if not lower or not upper:
+        return None
+    order = lower[2] if lower[2] == upper[2] else f"{lower[2]}/{upper[2]}"
+    return [lower[0], lower[1]], [upper[0], upper[1]], order
 
-    derived = derive_coordinate_bounds(data)
+
+def spatial_bounds(zf: zipfile.ZipFile, name: str) -> dict[str, object] | None:
+    info = zf.getinfo(name)
+    if info.file_size > MAX_XML_BYTES:
+        raise RuntimeError(f"CityGML exceeds safety limit: {name} ({info.file_size} bytes)")
+    data = zf.read(name)
+    envelope = envelope_bounds(data)
+    if envelope:
+        lower, upper, order = envelope
+        return {
+            "selection_method": "gml-envelope",
+            "lower_corner": lower,
+            "upper_corner": upper,
+            "axis_order": order,
+            "coordinate_tuple_count": 0,
+        }
+    derived = derive_bounds(data)
     if derived:
-        lower, upper, tuple_count = derived
-        return lower, upper, "geometry-coordinate-extents", tuple_count
+        lower, upper, count, orders = derived
+        return {
+            "selection_method": "geometry-coordinate-extents",
+            "lower_corner": lower,
+            "upper_corner": upper,
+            "axis_orders": orders,
+            "coordinate_tuple_count": count,
+        }
     return None
 
 
-def contains_xy(
-    lower: tuple[float, ...],
-    upper: tuple[float, ...],
-    x: float,
-    y: float,
-    margin: float = 1.0,
-) -> bool:
-    min_x, max_x = sorted((lower[0], upper[0]))
-    min_y, max_y = sorted((lower[1], upper[1]))
-    return (min_x - margin) <= x <= (max_x + margin) and (min_y - margin) <= y <= (max_y + margin)
+def contains(record: dict[str, object], east: float, north: float, margin: float = 1.0) -> bool:
+    lower = record["lower_corner"]
+    upper = record["upper_corner"]
+    assert isinstance(lower, list) and isinstance(upper, list)
+    return (
+        min(lower[0], upper[0]) - margin <= east <= max(lower[0], upper[0]) + margin
+        and min(lower[1], upper[1]) - margin <= north <= max(lower[1], upper[1]) + margin
+    )
 
 
-def filename_score(name: str, tile_e: int, tile_n: int, x: float, y: float) -> int:
+def score_name(name: str, east: float, north: float) -> int:
     lower = name.lower()
-    score = 0
-    for token, points in (
-        (str(tile_e), 6),
-        (str(tile_n), 8),
-        (str(int(x)), 3),
-        (str(int(y)), 3),
-    ):
+    score = 1 if lower.endswith(".gml") else 0
+    for token, points in ((str(int(east)), 5), (str(int(north)), 5), (str(int(east) // 1000), 2), (str(int(north) // 1000), 2)):
         if token in lower:
             score += points
-    if "lod3" in lower:
-        score += 2
-    if lower.endswith(".gml"):
-        score += 1
     return score
 
 
-def resolve_image_reference(
-    ref: str,
-    gml_name: str,
-    archive_names: set[str],
-    basename_index: dict[str, list[str]],
-) -> str | None:
-    decoded = html.unescape(ref).replace("%20", " ")
-    decoded = decoded.split("?", 1)[0].split("#", 1)[0].lstrip("./")
-    candidates = [
-        normalize_archive_name(decoded),
-        normalize_archive_name(str(PurePosixPath(gml_name).parent / decoded)),
-    ]
-    for candidate in candidates:
-        if candidate in archive_names:
+def resolve_image(ref: str, gml_name: str, names: set[str], basenames: dict[str, list[str]]) -> str | None:
+    decoded = html.unescape(ref).replace("%20", " ").split("?", 1)[0].split("#", 1)[0].lstrip("./")
+    for candidate in (
+        norm_name(decoded),
+        norm_name(str(PurePosixPath(gml_name).parent / decoded)),
+    ):
+        if candidate in names:
             return candidate
-    matches = basename_index.get(PurePosixPath(decoded).name.lower(), [])
+    matches = basenames.get(PurePosixPath(decoded).name.lower(), [])
     return matches[0] if len(matches) == 1 else None
 
 
-def extract_entry(zf: zipfile.ZipFile, name: str, out_root: Path) -> Path:
-    safe_name = normalize_archive_name(name).lstrip("/")
-    if safe_name.startswith("../") or "/../" in safe_name:
+def extract(zf: zipfile.ZipFile, name: str, root: Path) -> Path:
+    safe = norm_name(name).lstrip("/")
+    if safe.startswith("../") or "/../" in safe:
         raise RuntimeError(f"unsafe archive path: {name}")
-    destination = out_root / safe_name
+    destination = root / safe
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with zf.open(name, "r") as src, destination.open("wb") as dst:
-        shutil.copyfileobj(src, dst, 1024 * 1024)
+    with zf.open(name) as source, destination.open("wb") as target:
+        shutil.copyfileobj(source, target, 1024 * 1024)
     return destination
 
 
 def main() -> int:
-    args = parse_args()
-    if not args.archive.is_file():
-        raise SystemExit(f"archive not found: {args.archive}")
+    cfg = args()
+    if not cfg.archive.is_file():
+        raise SystemExit(f"archive not found: {cfg.archive}")
+    east, north = Transformer.from_crs(4326, 25832, always_xy=True).transform(cfg.lon, cfg.lat)
 
-    target_x, target_y = Transformer.from_crs(4326, 25832, always_xy=True).transform(args.lon, args.lat)
-    tile_e = int(target_x) // 1000
-    tile_n = int(target_y) // 1000
+    if cfg.out.exists():
+        shutil.rmtree(cfg.out)
+    source_root = cfg.out / "source"
+    source_root.mkdir(parents=True, exist_ok=True)
 
-    if args.out.exists():
-        shutil.rmtree(args.out)
-    args.out.mkdir(parents=True, exist_ok=True)
-    extracted_root = args.out / "source"
-    extracted_root.mkdir(parents=True, exist_ok=True)
-
-    with zipfile.ZipFile(args.archive, "r") as zf:
-        infos = [info for info in zf.infolist() if not info.is_dir()]
-        names = [normalize_archive_name(info.filename) for info in infos]
-        archive_names = set(names)
-        gml_names = [name for name in names if PurePosixPath(name).suffix.lower() in GML_SUFFIXES]
-        image_names = [name for name in names if PurePosixPath(name).suffix.lower() in IMAGE_SUFFIXES]
-
-        basename_index: dict[str, list[str]] = {}
-        for name in image_names:
-            basename_index.setdefault(PurePosixPath(name).name.lower(), []).append(name)
-
-        ranked = sorted(
-            ((filename_score(name, tile_e, tile_n, target_x, target_y), name) for name in gml_names),
-            key=lambda item: (-item[0], item[1]),
-        )
+    with zipfile.ZipFile(cfg.archive) as zf:
+        archive_names = [norm_name(info.filename) for info in zf.infolist() if not info.is_dir()]
+        names = set(archive_names)
+        gml_names = [name for name in archive_names if PurePosixPath(name).suffix.lower() in GML_SUFFIXES]
+        image_names = [name for name in archive_names if PurePosixPath(name).suffix.lower() in IMAGE_SUFFIXES]
+        basenames: dict[str, list[str]] = {}
+        for image in image_names:
+            basenames.setdefault(PurePosixPath(image).name.lower(), []).append(image)
 
         selected: list[dict[str, object]] = []
-        inspected = 0
-        bounds_evidence: list[dict[str, object]] = []
-        # There are only about 80 GML sheets in Area1. Scan all of them and derive
-        # spatial extents from actual building coordinates rather than guessing from
-        # the sheet id.
-        for score, name in ranked:
-            inspected += 1
-            spatial = read_spatial_bounds(zf, name)
-            if not spatial:
+        evidence: list[dict[str, object]] = []
+        for name in sorted(gml_names):
+            spatial = spatial_bounds(zf, name)
+            if spatial is None:
                 continue
-            lower, upper, method, tuple_count = spatial
-            evidence = {
-                "name": name,
-                "score": score,
-                "selection_method": method,
-                "lower_corner": list(lower),
-                "upper_corner": list(upper),
-                "coordinate_tuple_count": tuple_count,
-            }
-            if len(bounds_evidence) < 200:
-                bounds_evidence.append(evidence)
-            if contains_xy(lower, upper, target_x, target_y):
-                selected.append(evidence)
-                if len(selected) >= MAX_GML_SELECTION:
+            record = {"name": name, "filename_score": score_name(name, east, north), **spatial}
+            evidence.append(record)
+            if contains(record, east, north):
+                selected.append(record)
+                if len(selected) >= MAX_SELECTION:
                     break
 
         if not selected:
-            fallback = [(score, name) for score, name in ranked if score > 0][:12]
-            for score, name in fallback:
-                selected.append({"name": name, "score": score, "fallback_filename_only": True})
-            if not selected:
-                raise RuntimeError(f"no spatial or filename candidate found among {len(gml_names)} GML entries")
+            diagnostics = sorted(gml_names, key=lambda name: (-score_name(name, east, north), name))[:12]
+            selected = [
+                {"name": name, "filename_score": score_name(name, east, north), "fallback_filename_only": True}
+                for name in diagnostics
+            ]
 
-        extracted_files: list[dict[str, object]] = []
-        unresolved_refs: list[dict[str, str]] = []
-        selected_gml_names = [str(item["name"]) for item in selected]
-
-        for gml_name in selected_gml_names:
-            gml_path = extract_entry(zf, gml_name, extracted_root)
+        unresolved: list[dict[str, str]] = []
+        for record in selected:
+            gml_name = str(record["name"])
+            gml_path = extract(zf, gml_name, source_root)
             text = gml_path.read_text("utf-8", errors="ignore")
-            refs = sorted(set(IMAGE_REF_RE.findall(text)))
-            resolved_images: set[str] = set()
-            for ref in refs:
-                resolved = resolve_image_reference(ref, gml_name, archive_names, basename_index)
-                if resolved:
-                    resolved_images.add(resolved)
+            resolved: set[str] = set()
+            for ref in sorted(set(IMAGE_REF_RE.findall(text))):
+                image = resolve_image(ref, gml_name, names, basenames)
+                if image:
+                    resolved.add(image)
                 else:
-                    unresolved_refs.append({"gml": gml_name, "reference": ref})
-
-            if not resolved_images and image_names:
+                    unresolved.append({"gml": gml_name, "reference": ref})
+            if not resolved and image_names:
                 parent = str(PurePosixPath(gml_name).parent)
-                same_dir = [name for name in image_names if str(PurePosixPath(name).parent) == parent]
-                resolved_images.update(same_dir[:1000])
+                resolved.update(name for name in image_names if str(PurePosixPath(name).parent) == parent)
+            for image in sorted(resolved):
+                if not (source_root / image).exists():
+                    extract(zf, image, source_root)
 
-            for image_name in sorted(resolved_images):
-                destination = extracted_root / image_name
-                if not destination.exists():
-                    extract_entry(zf, image_name, extracted_root)
-
-        for path in sorted(p for p in extracted_root.rglob("*") if p.is_file()):
-            extracted_files.append(
-                {
-                    "path": path.relative_to(args.out).as_posix(),
-                    "bytes": path.stat().st_size,
-                    "sha256": sha256_file(path),
-                }
-            )
+        files = []
+        for path in sorted(item for item in source_root.rglob("*") if item.is_file()):
+            files.append({"path": path.relative_to(cfg.out).as_posix(), "bytes": path.stat().st_size, "sha256": sha256(path)})
 
         manifest = {
             "dataset": "Hamburg 3D building model LoD3.0 Area1",
-            "dataset_url": args.dataset_url,
-            "archive_url": args.source_url,
-            "archive_bytes": args.archive.stat().st_size,
-            "archive_sha256": sha256_file(args.archive),
+            "dataset_url": cfg.dataset_url,
+            "archive_url": cfg.source_url,
+            "archive_bytes": cfg.archive.stat().st_size,
+            "archive_sha256": sha256(cfg.archive),
             "license": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
-            "target": {
-                "name": "Hansaplatz (Poly Haven HDRI capture point)",
-                "latitude": args.lat,
-                "longitude": args.lon,
-                "epsg": 25832,
-                "easting": target_x,
-                "northing": target_y,
-                "nominal_tile_e_km": tile_e,
-                "nominal_tile_n_km": tile_n,
-            },
-            "archive_entry_count": len(names),
+            "attribution": "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung",
+            "target": {"name": "Poly Haven Hansaplatz capture point", "latitude": cfg.lat, "longitude": cfg.lon, "epsg": 25832, "easting": east, "northing": north},
+            "archive_entry_count": len(archive_names),
             "gml_entry_count": len(gml_names),
             "image_entry_count": len(image_names),
-            "inspected_gml_files": inspected,
             "selected_gml": selected,
-            "bounds_evidence": bounds_evidence,
-            "unresolved_image_references": unresolved_refs,
-            "extracted_files": extracted_files,
+            "bounds_evidence": evidence,
+            "unresolved_image_references": unresolved,
+            "extracted_files": files,
         }
-
-        (args.out / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-        report_lines = [
+        (cfg.out / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        report = [
             "# Hansaplatz Hamburg LoD3 subset extraction",
             "",
-            f"GPS: {args.lat:.6f}, {args.lon:.6f}",
-            f"EPSG:25832: E={target_x:.3f} N={target_y:.3f}",
-            f"Archive entries: {len(names)}",
-            f"GML/XML entries: {len(gml_names)}",
+            f"Target WGS84: {cfg.lat:.6f}, {cfg.lon:.6f}",
+            f"Target EPSG:25832: E={east:.3f} N={north:.3f}",
+            f"GML/XML entries inspected: {len(evidence)}/{len(gml_names)}",
             f"Image entries: {len(image_names)}",
-            f"Inspected GML files: {inspected}",
             "",
-            "Selected CityGML/XML entries:",
+            "Selected CityGML:",
+            *[f"- {json.dumps(record)}" for record in selected],
+            "",
+            f"Extracted files: {len(files)}",
+            f"Extracted bytes: {sum(int(item['bytes']) for item in files)}",
+            f"Unresolved image refs: {len(unresolved)}",
+            "",
+            "Production acceptance requires selection_method=gml-envelope or geometry-coordinate-extents.",
+            "Filename-only fallback is diagnostic only.",
         ]
-        for item in selected:
-            report_lines.append(f"- {item['name']} | {json.dumps(item, default=list)}")
-        report_lines.extend(
-            [
-                "",
-                f"Extracted files: {len(extracted_files)}",
-                f"Extracted bytes: {sum(int(item['bytes']) for item in extracted_files)}",
-                f"Unresolved image refs: {len(unresolved_refs)}",
-                "",
-                "Acceptance rule: every production geometry selection must use either",
-                "gml-envelope or geometry-coordinate-extents. Filename-only fallback is diagnostic only.",
-            ]
-        )
-        (args.out / "REPORT.md").write_text("\n".join(report_lines) + "\n", encoding="utf-8")
+        (cfg.out / "REPORT.md").write_text("\n".join(report) + "\n", encoding="utf-8")
 
-    print((args.out / "REPORT.md").read_text(encoding="utf-8"))
+    print((cfg.out / "REPORT.md").read_text(encoding="utf-8"))
     return 0
 
 
