@@ -1,12 +1,14 @@
-name: Verify Hansaplatz LoD2 visual
+name: Verify Hansaplatz Hamburg visual
 
 on:
   push:
     branches:
-      - feat/c0-real-geometry-rebuild-20260909
+      - feat/c0-hamburg-lod3-quality-20260909
     paths:
       - public/assets/3d/night-intersection/c0/core/**
-      - assets-src/blender/night-intersection/berlin-lod2/**
+      - assets-src/blender/night-intersection/c0/**
+      - scripts/blender/**
+      - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/hansaplatz-lod2-visual-proof.mjs
       - .github/workflows/verify-hansaplatz-lod2-visual.yml
   workflow_dispatch:
@@ -15,13 +17,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: hansaplatz-lod2-visual
+  group: hansaplatz-hamburg-visual-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   visual:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Check out current branch
         uses: actions/checkout@v4
@@ -63,6 +65,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hansaplatz-lod2-browser-proof
+          name: hansaplatz-hamburg-browser-proof-${{ github.sha }}
           path: lod2-visual-proof/
           if-no-files-found: error
