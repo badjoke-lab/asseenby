@@ -78,7 +78,7 @@ jobs:
           cp .tmp/berlin-lod2/hansaplatz-lod2.obj "$dest/hansaplatz-lod2.obj"
           sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
 
-      - name: Apply official geometry and photographic facade projection
+      - name: Apply official geometry and photographic facade/ground projection
         run: |
           set -euo pipefail
           blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
@@ -91,13 +91,6 @@ jobs:
             --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj \
             --panorama "$panorama" \
             --panorama-yaw-deg 0
-
-      - name: Replace raised paving tiles with continuous plaza surface
-        run: |
-          set -euo pipefail
-          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
-          blender --background "$blend" \
-            --python scripts/blender/replace_hansaplatz_paving_field.py
 
       - name: Export updated C0 GLB
         run: |
@@ -116,9 +109,10 @@ jobs:
           Geometry license: dl-de-zero-2.0
           Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
           Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
-          Facade source license: CC0-1.0
+          Ground detail basis: tessellated Poly Haven Hansaplatz equirectangular panorama projection
+          Facade/ground source license: CC0-1.0
           Projection origin: Human reference eye at runtime XYZ 0,1.6,0
-          Plaza paving: one continuous coplanar Blender mesh using checked-in Poly Haven concrete_pavement PBR, CC0-1.0
+          Projection materials are non-emissive; authored runtime lighting/shadows provide depth
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
@@ -139,10 +133,7 @@ jobs:
             echo 'No generated Hansaplatz C0 changes'
             exit 0
           fi
-          git commit -m 'Replace raised Hansaplatz paving with continuous surface'
-          # Blender can touch already-tracked companion/source files outside the
-          # explicit generated set. Fold only tracked changes into this commit;
-          # never add the downloaded .tmp archives.
+          git commit -m 'Regenerate projected Hansaplatz reference ground'
           git add -u
           if ! git diff --cached --quiet; then
             git commit --amend --no-edit
