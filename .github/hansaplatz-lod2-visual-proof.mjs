@@ -6,7 +6,10 @@ const OUT = "lod2-visual-proof";
 await fs.rm(OUT, { recursive: true, force: true });
 await fs.mkdir(OUT, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  args: ["--use-gl=swiftshader", "--disable-gpu-sandbox"],
+});
 const errors = [];
 
 function collectErrors(page, label) {
@@ -35,16 +38,39 @@ async function readCanvas(page) {
   });
 }
 
-async function settle(page, millis = 9000) {
-  await page.waitForTimeout(millis);
+async function waitForC0(page, timeout = 120_000) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector("canvas.spatial-canvas");
+      return canvas instanceof HTMLCanvasElement
+        && canvas.dataset.sceneAuthoredAssetRootCount === "1"
+        && (canvas.dataset.sceneLoadedChunks || "").split(",").includes("c0");
+    },
+    { timeout, polling: 250 },
+  );
+  await page.waitForTimeout(1200);
   return readCanvas(page);
 }
 
-const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+async function captureViewport(page, path) {
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { data } = await session.send("Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+      captureBeyondViewport: false,
+    });
+    await fs.writeFile(path, Buffer.from(data, "base64"));
+  } finally {
+    await session.detach();
+  }
+}
+
+const desktop = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 collectErrors(desktop, "desktop");
-await desktop.goto(`${BASE}/?view=spatial&lod2_visual=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-let initial = await settle(desktop);
-await desktop.screenshot({ path: `${OUT}/desktop-forward.png`, fullPage: true });
+await desktop.goto(`${BASE}/?view=spatial&hamburg_visual=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+let initial = await waitForC0(desktop);
+await captureViewport(desktop, `${OUT}/desktop-forward.png`);
 
 let turned = null;
 let moved = null;
@@ -54,27 +80,32 @@ if (initial?.rect?.width > 0 && initial?.rect?.height > 0) {
   const sy = box.y + box.height * 0.50;
   await desktop.mouse.move(sx, sy);
   await desktop.mouse.down();
-  await desktop.mouse.move(sx + Math.min(280, box.width * 0.28), sy - 35, { steps: 12 });
+  await desktop.mouse.move(sx + Math.min(240, box.width * 0.24), sy - 30, { steps: 10 });
   await desktop.mouse.up();
-  await desktop.waitForTimeout(350);
+  await desktop.waitForTimeout(500);
   turned = await readCanvas(desktop);
-  await desktop.screenshot({ path: `${OUT}/desktop-turned.png`, fullPage: true });
+  await captureViewport(desktop, `${OUT}/desktop-turned.png`);
 
   await desktop.evaluate(() => document.querySelector("canvas.spatial-canvas")?.focus());
   await desktop.keyboard.down("w");
   await desktop.waitForTimeout(650);
   await desktop.keyboard.up("w");
-  await desktop.waitForTimeout(350);
+  await desktop.waitForTimeout(500);
   moved = await readCanvas(desktop);
-  await desktop.screenshot({ path: `${OUT}/desktop-moved.png`, fullPage: true });
+  await captureViewport(desktop, `${OUT}/desktop-moved.png`);
 }
 
-const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+const mobileContext = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 1,
+  isMobile: true,
+  hasTouch: true,
+});
 const mobile = await mobileContext.newPage();
 collectErrors(mobile, "mobile");
-await mobile.goto(`${BASE}/?view=spatial&lod2_mobile=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-const mobileState = await settle(mobile, 9000);
-await mobile.screenshot({ path: `${OUT}/mobile-forward.png`, fullPage: true });
+await mobile.goto(`${BASE}/?view=spatial&hamburg_mobile=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+const mobileState = await waitForC0(mobile);
+await captureViewport(mobile, `${OUT}/mobile-forward.png`);
 
 const result = {
   ok: errors.length === 0
