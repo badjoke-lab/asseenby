@@ -1,0 +1,85 @@
+name: Probe Hamburg LoD3 untextured Hansaplatz once
+
+on:
+  push:
+    branches:
+      - feat/hamburg-hansaplatz-lod3-20260909
+    paths:
+      - .github/workflows/probe-hamburg-lod3-untextured-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: probe-hamburg-lod3-untextured-once
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/hamburg-hansaplatz-lod3-20260909
+          fetch-depth: 0
+
+      - name: Install projection tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pyproj
+
+      - name: Download official untextured Area1 geometry archive
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 \
+            --output /tmp/hamburg-lod3-area1-untextured.zip \
+            https://archiv.transparenz.hamburg.de/hmbtgarchive/HMDK/lod3-hh_area1_notexture_2024_07_18_205377_snap_1.zip
+          test -s /tmp/hamburg-lod3-area1-untextured.zip
+          du -h /tmp/hamburg-lod3-area1-untextured.zip
+
+      - name: Resolve exact Hansaplatz CityGML geometry tile
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hansaplatz-lod3-untextured
+          python3 scripts/hamburg/extract_hansaplatz_lod3_subset.py \
+            --archive /tmp/hamburg-lod3-area1-untextured.zip \
+            --out /tmp/hansaplatz-lod3-untextured \
+            --lat 53.554451 \
+            --lon 10.012056 \
+            --source-url https://archiv.transparenz.hamburg.de/hmbtgarchive/HMDK/lod3-hh_area1_notexture_2024_07_18_205377_snap_1.zip \
+            --dataset-url https://suche.transparenz.hamburg.de/dataset/3d-gebaeudemodell-lod3-0-hh-hamburg-untexturiert3
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('/tmp/hansaplatz-lod3-untextured/MANIFEST.json').read_text())
+          selected = manifest['selected_gml']
+          if not selected or any(item.get('fallback_filename_only') for item in selected):
+              raise SystemExit('Hansaplatz geometry was not envelope-confirmed')
+          print('SELECTED:')
+          for item in selected:
+              print(item['name'], item.get('lower_corner'), item.get('upper_corner'))
+          PY
+
+      - name: Upload exact official geometry subset
+        uses: actions/upload-artifact@v4
+        with:
+          name: hamburg-hansaplatz-lod3-untextured-subset
+          path: /tmp/hansaplatz-lod3-untextured/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record exact geometry tile and remove bootstrap
+        run: |
+          set -euo pipefail
+          mkdir -p scripts/hamburg/evidence
+          cp /tmp/hansaplatz-lod3-untextured/MANIFEST.json scripts/hamburg/evidence/HANSAPLATZ_LOD3_UNTEXTURED_MANIFEST.json
+          cp /tmp/hansaplatz-lod3-untextured/REPORT.md scripts/hamburg/evidence/HANSAPLATZ_LOD3_UNTEXTURED_REPORT.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/hamburg/evidence/HANSAPLATZ_LOD3_UNTEXTURED_MANIFEST.json scripts/hamburg/evidence/HANSAPLATZ_LOD3_UNTEXTURED_REPORT.md
+          git rm .github/workflows/probe-hamburg-lod3-untextured-once.yml
+          git commit -m 'Record exact Hamburg LoD3 Hansaplatz geometry tile'
+          git fetch origin feat/hamburg-hansaplatz-lod3-20260909
+          git rebase origin/feat/hamburg-hansaplatz-lod3-20260909
+          git push origin HEAD:feat/hamburg-hansaplatz-lod3-20260909
