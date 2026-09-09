@@ -5,9 +5,9 @@ Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformat
 Macro geometry license: dl-de-by-2.0
 LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
 Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
-Close facade selection: camera-priority ranking for the initial yaw=0 / forward=-Z view, weighted by view angle and projected wall area
+Close facade selection: multi-view priority for yaw=0 and +/-1.05 rad, with all valid wall faces inside the initial +/-22 degree forward cone strongly guaranteed into the 64-face budget
 Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
-Nearfield authoring scope: wall faces within 95 m, capped at 40 selected facade faces
+Nearfield authoring scope: wall faces within 95 m, 64 selected facade faces
 Photographic reference: Poly Haven hansaplatz, CC0-1.0
 Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
 Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
