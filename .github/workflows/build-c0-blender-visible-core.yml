@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'feat/c0-*'
     paths:
       - .github/workflows/build-c0-blender-visible-core.yml
       - scripts/reference/extract_hansaplatz_reference_views.py
@@ -25,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: blender-c0-visible-core-main
+  group: blender-c0-visible-core-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,10 +34,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
-      - name: Check out main
+      - name: Check out current revision
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Install Blender and reference tooling
@@ -237,7 +237,7 @@ jobs:
           test "$(stat -c%s assets-src/blender/night-intersection/c0/night-intersection-c0.blend)" -lt 95000000
           test "$(stat -c%s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb)" -lt 95000000
 
-      - name: Commit generated reference and authored runtime assets to main
+      - name: Commit generated reference and authored runtime assets
         shell: bash
         run: |
           set -euo pipefail
@@ -265,6 +265,6 @@ jobs:
             exit 0
           fi
           git commit -m "Regenerate official-reference Hansaplatz C0"
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
