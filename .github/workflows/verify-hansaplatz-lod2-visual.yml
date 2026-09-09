@@ -7,18 +7,21 @@ on:
     paths:
       - public/assets/3d/night-intersection/c0/core/**
       - assets-src/blender/night-intersection/berlin-lod2/**
-      - .github/spatial-browser-check.mjs
-      - .github/spatial-turn-check.mjs
+      - .github/hansaplatz-lod2-visual-proof.mjs
       - .github/workflows/verify-hansaplatz-lod2-visual.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: hansaplatz-lod2-visual
+  cancel-in-progress: true
+
 jobs:
   visual:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - name: Check out current branch
         uses: actions/checkout@v4
@@ -40,10 +43,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Render browser proof
+      - name: Render focused browser proof
         run: |
           set -euo pipefail
-          rm -rf browser-check
+          rm -rf lod2-visual-proof
           npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/asseenby-preview.log 2>&1 &
           PREVIEW_PID=$!
           trap 'kill "$PREVIEW_PID" || true' EXIT
@@ -54,20 +57,12 @@ jobs:
             sleep 1
           done
           curl --fail http://127.0.0.1:4173/ >/dev/null
-          set +e
-          node .github/spatial-browser-check.mjs
-          BROWSER_EXIT=$?
-          node .github/spatial-turn-check.mjs
-          TURN_EXIT=$?
-          set -e
-          echo "browser_exit=${BROWSER_EXIT}" > browser-check/verification-exit.txt
-          echo "turn_exit=${TURN_EXIT}" >> browser-check/verification-exit.txt
-          exit $(( BROWSER_EXIT != 0 || TURN_EXIT != 0 ))
+          node .github/hansaplatz-lod2-visual-proof.mjs
 
       - name: Upload browser proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hansaplatz-lod2-browser-proof
-          path: browser-check/
+          path: lod2-visual-proof/
           if-no-files-found: error
