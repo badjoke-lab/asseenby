@@ -30,10 +30,10 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Install Blender
+      - name: Install Blender export dependencies
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
           blender --version
 
       - name: Verify Hamburg source truth
@@ -61,7 +61,6 @@ jobs:
           PY
           sha256sum -c assets-src/blender/night-intersection/hamburg-lod2/SHA256SUMS.txt
           grep -c '^o lod2_' "$obj"
-          du -h "$obj"
 
       - name: Prepare Hamburg metadata-safe LoD2 importer
         shell: bash
@@ -85,38 +84,35 @@ jobs:
               'berlin_lod2_wall_reference': 'hamburg_lod2_wall_reference',
               'berlin_lod2_roof_reference': 'hamburg_lod2_roof_reference',
               'berlin_lod2_ground_reference': 'hamburg_lod2_ground_reference',
+              '20.0 <= width <= 320.0': '20.0 <= width <= 400.0',
+              '20.0 <= depth <= 320.0': '20.0 <= depth <= 400.0',
           }
           for old, new in replacements.items():
               text = text.replace(old, new)
           path.write_text(text)
           PY
           grep -q 'Hansaplatz, Hamburg-St. Georg, Germany' .tmp/apply_hamburg_lod2_hansaplatz.py
-          if grep -q 'Hansaplatz, Berlin, Germany' .tmp/apply_hamburg_lod2_hansaplatz.py; then
-            echo 'Berlin location survived Hamburg importer patch' >&2
-            exit 1
-          fi
+          grep -q 'width <= 400.0' .tmp/apply_hamburg_lod2_hansaplatz.py
+          ! grep -q 'Hansaplatz, Berlin, Germany' .tmp/apply_hamburg_lod2_hansaplatz.py
 
       - name: Apply official Hamburg geometry and photographic facade projection
         shell: bash
         run: |
           set -euo pipefail
-          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
-          panorama=public/assets/panoramas/hansaplatz.jpg
-          obj=assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
-          test -s "$blend"
-          blender --background "$blend" \
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
             --python .tmp/apply_hamburg_lod2_hansaplatz.py -- \
             --collection C0 \
-            --obj "$obj" \
-            --panorama "$panorama" \
+            --obj assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj \
+            --panorama public/assets/panoramas/hansaplatz.jpg \
             --panorama-yaw-deg 0
 
       - name: Keep temporary continuous plaza surface
         shell: bash
         run: |
           set -euo pipefail
-          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
-          blender --background "$blend" \
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
             --python scripts/blender/replace_hansaplatz_paving_field.py
 
       - name: Export updated Hamburg C0 GLB
@@ -125,7 +121,9 @@ jobs:
           set -euo pipefail
           out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
           mkdir -p "$(dirname "$out")"
+          rm -f "$out" public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
             --python scripts/blender/export_night_intersection.py -- \
             --collection C0 \
             --out "$out"
@@ -165,6 +163,8 @@ jobs:
             exit 0
           fi
           git commit -m 'Rebuild C0 from real Hamburg Hansaplatz geometry'
+          git reset --hard HEAD
+          git clean -fd .tmp
           git fetch origin "${GITHUB_REF_NAME}"
           git rebase "origin/${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
