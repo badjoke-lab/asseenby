@@ -2,7 +2,7 @@
 """Prioritize Hamburg LoD2 facade authoring for the camera views users actually see.
 
 The underlying authoring implementation remains scripts/blender/author_hamburg_lod2_facades.py.
-This wrapper only changes candidate ranking and raises the nearfield facade budget. It keeps
+This wrapper changes candidate ranking and raises the nearfield facade budget. It keeps
 real Hamburg LoD2 wall planes, never substitutes geometry, and never maps the Hansaplatz
 panorama onto walls.
 """
@@ -28,6 +28,7 @@ original_parse_args = base.parse_args
 # Cover the initial forward view and the two large turn directions exercised by the
 # browser proof. The runtime's yaw=0 forward vector is (0, -1) in X/Z.
 VIEW_YAWS = (0.0, -1.05, 1.05)
+INITIAL_FORWARD_GUARANTEE_DEG = 22.0
 
 
 def expanded_parse_args():
@@ -49,6 +50,7 @@ def camera_priority_segment(points):
     if actual_distance < 0.001:
         seg["actual_distance"] = actual_distance
         seg["view_angle_deg"] = 0.0
+        seg["initial_forward_angle_deg"] = 0.0
         seg["priority_score"] = 0.0
         return seg
 
@@ -65,6 +67,9 @@ def camera_priority_segment(points):
     best_alignment = max(-1.0, min(1.0, max(alignments)))
     view_angle_deg = math.degrees(math.acos(best_alignment))
 
+    initial_forward_alignment = max(-1.0, min(1.0, -direction_z))
+    initial_forward_angle_deg = math.degrees(math.acos(initial_forward_alignment))
+
     projected_area = (float(seg["length"]) * float(seg["height"])) / max(actual_distance * actual_distance, 25.0)
 
     # Prefer walls visible in any of the three main views, especially large close planes.
@@ -74,8 +79,19 @@ def camera_priority_segment(points):
     outside_view_penalty = 55.0 if best_alignment < 0.10 else 0.0
     raw_priority = max(0.0, actual_distance + angle_penalty + outside_view_penalty - area_bonus)
 
+    # The browser proof showed that distance-first ranking could still drop a very large
+    # wall almost exactly on the initial optical axis (e.g. a 15.8m x 21.2m wall at
+    # ~90.5m ranked 84th). Any valid facade in the initial +/-22 degree cone is therefore
+    # guaranteed a strong ranking bonus. This does not fabricate geometry; it only makes
+    # existing official Hamburg wall planes receive the authored depth layer.
+    initial_forward_guaranteed = initial_forward_angle_deg <= INITIAL_FORWARD_GUARANTEE_DEG
+    if initial_forward_guaranteed:
+        raw_priority = max(0.0, raw_priority - 70.0)
+
     seg["actual_distance"] = actual_distance
     seg["view_angle_deg"] = view_angle_deg
+    seg["initial_forward_angle_deg"] = initial_forward_angle_deg
+    seg["initial_forward_guaranteed"] = initial_forward_guaranteed
     seg["projected_area_proxy"] = projected_area
     seg["priority_score"] = raw_priority
 
@@ -91,9 +107,10 @@ base.main()
 
 root = bpy.data.collections.get("C0")
 if root is not None:
-    root["hamburg_facade_selection_basis"] = "multi-view wall priority: yaw 0,+/-1.05 rad; 95m candidate domain retained; facade budget >=64"
-    root["hamburg_facade_selection_priority_version"] = 3
+    root["hamburg_facade_selection_basis"] = "multi-view wall priority: yaw 0,+/-1.05 rad; initial +/-22deg valid walls guaranteed; 95m candidate domain retained; facade budget >=64"
+    root["hamburg_facade_selection_priority_version"] = 4
     root["hamburg_facade_selection_view_yaws"] = "0,-1.05,1.05"
+    root["hamburg_facade_selection_initial_forward_guarantee_deg"] = INITIAL_FORWARD_GUARANTEE_DEG
     root["hamburg_facade_selection_min_budget"] = 64
     root["hamburg_facade_selection_panorama_projection"] = False
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
