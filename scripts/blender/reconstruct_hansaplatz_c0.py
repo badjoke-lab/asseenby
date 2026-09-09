@@ -318,6 +318,65 @@ def add_pavilion(
     return created
 
 
+def add_reference_perimeter_facade(
+    visual: bpy.types.Collection,
+    prefix: str,
+    center: tuple[float, float],
+    width: float,
+    storeys: int,
+    tile_material: bpy.types.Material,
+    stone: bpy.types.Material,
+    glass: bpy.types.Material,
+    frame: bpy.types.Material,
+    warm: bpy.types.Material,
+    cool: bpy.types.Material,
+) -> int:
+    """Author the deep, occupied perimeter elevations visible in the panorama.
+
+    The panorama's skyline is defined by five-to-six-storey perimeter buildings,
+    not only the low Hansaviertel shopping-centre roofs.  Windows are built as
+    recessed assemblies with lintels, sills and projecting floor bands so the
+    elevation retains depth at the Human observer's walking distance.
+    """
+    cx, cz = center
+    floor_height = 3.15
+    height = storeys * floor_height + 1.1
+    depth = 3.4
+    created = 0
+    add_box(visual, f"{prefix}_mass", (cx, height / 2, cz), (width, height, depth), tile_material, bevel=0.075)
+    created += 1
+
+    # A darker recessed street face prevents the old pasted-window appearance.
+    street_face = cz + depth / 2 + 0.012
+    add_box(visual, f"{prefix}_facade_shadow", (cx, height / 2, street_face), (width - 0.55, height - 0.65, 0.09), frame, bevel=0.018)
+    created += 1
+
+    bays = max(5, round(width / 2.75))
+    bay_width = (width - 1.25) / bays
+    for floor in range(1, storeys):
+        y = floor * floor_height + 1.48
+        # Continuous masonry bands and individual sills are clearly legible in
+        # yaw-000/yaw-060 and break the elevation into real floor plates.
+        add_box(visual, f"{prefix}_belt_{floor:02d}", (cx, floor * floor_height + 0.12, street_face + 0.13), (width + 0.18, 0.22, 0.26), stone, bevel=0.035)
+        created += 1
+        for bay in range(bays):
+            x = cx - (bays - 1) * bay_width / 2 + bay * bay_width
+            occupied = (floor * 7 + bay * 3) % 8 in (0, 1, 4)
+            backing = warm if occupied else cool if (floor + bay) % 5 == 0 else glass
+            add_box(visual, f"{prefix}_window_recess_{floor:02d}_{bay:02d}", (x, y, street_face + 0.08), (bay_width * 0.58, 1.72, 0.18), backing, bevel=0.025)
+            add_box(visual, f"{prefix}_window_head_{floor:02d}_{bay:02d}", (x, y + 0.99, street_face + 0.22), (bay_width * 0.76, 0.18, 0.30), stone, bevel=0.035)
+            add_box(visual, f"{prefix}_window_sill_{floor:02d}_{bay:02d}", (x, y - 0.98, street_face + 0.25), (bay_width * 0.75, 0.14, 0.36), stone, bevel=0.028)
+            # Real mullion depth remains visible against both lit and dark rooms.
+            add_box(visual, f"{prefix}_window_mullion_{floor:02d}_{bay:02d}", (x, y, street_face + 0.205), (0.055, 1.69, 0.08), frame, bevel=0.009)
+            created += 4
+
+    add_box(visual, f"{prefix}_cornice", (cx, height - 0.48, street_face + 0.28), (width + 0.72, 0.42, 0.52), stone, bevel=0.055)
+    add_box(visual, f"{prefix}_parapet", (cx, height + 0.34, cz), (width + 0.24, 0.72, depth + 0.18), stone, bevel=0.045)
+    created += 2
+    created += add_storefront_strip(visual, f"{prefix}_street_shops", (cx, 0, street_face + 0.24), width - 1.25, 1.0, glass, frame, warm, cool)
+    return created
+
+
 def add_canopy(
     visual: bpy.types.Collection,
     prefix: str,
@@ -407,6 +466,7 @@ def main() -> None:
         normal_strength=0.82,
     )
     ceramic_shadow = flat_material("hansaplatz_ceramic_joint", (0.18, 0.19, 0.18, 1), 0.72)
+    facade_stone = flat_material("hansaplatz_facade_stone", (0.39, 0.34, 0.27, 1), 0.68)
     roof = flat_material("hansaplatz_roof_dark", (0.065, 0.072, 0.078, 1), 0.48, 0.28)
     frame = flat_material("hansaplatz_steel_frame", (0.032, 0.042, 0.048, 1), 0.26, 0.82)
     glass = flat_material("hansaplatz_glass", (0.025, 0.060, 0.072, 1), 0.10, 0.08)
@@ -423,6 +483,19 @@ def main() -> None:
     created += add_pavilion(visual, "hansaplatz_south_retail", (-3.0, -9.0), (24.0, 7.0), 3.8, "north", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_west_retail", (-20.0, -28.0), (9.0, 18.0), 3.9, "south", ceramic, roof, glass, frame, warm, cool)
     created += add_pavilion(visual, "hansaplatz_grips_theatre", (-18.5, -47.0), (11.0, 10.0), 8.3, "south", ceramic, roof, glass, frame, warm, cool)
+
+    # Reference skyline: retain the low shopping-centre ensemble in front, but
+    # restore the tall occupied perimeter that dominates every photographic yaw.
+    # These are deliberately behind the pavilion/canopy layer so the scene reads
+    # as the real plaza hierarchy rather than a generic four-block intersection.
+    created += add_reference_perimeter_facade(
+        visual, "hansaplatz_north_perimeter", (5.0, -57.0), 37.0, 6,
+        ceramic, facade_stone, glass, frame, warm, cool,
+    )
+    created += add_reference_perimeter_facade(
+        visual, "hansaplatz_northwest_perimeter", (-21.5, -55.7), 14.0, 5,
+        ceramic, facade_stone, glass, frame, warm, cool,
+    )
 
     created += add_canopy(visual, "hansaplatz_canopy_north", (0.0, -40.8), (30.0, 3.0), roof, frame)
     created += add_canopy(visual, "hansaplatz_canopy_east", (13.6, -28.0), (3.0, 21.0), roof, frame)

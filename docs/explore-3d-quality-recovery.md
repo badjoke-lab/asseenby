@@ -242,6 +242,10 @@ Current work:
 - the earlier invented brick-block macro layout is being removed;
 - C0 is being rebuilt toward Hansaplatz low-rise modernist retail/pavilion architecture, canopies, plaza/atrium, storefront glazing, transit entrance, white-tile material language and practical night lighting;
 - third-party authored assets are retained only where they fit the reference and licensing remains explicit.
+- the next Blender source candidate restores the tall occupied perimeter visible
+  in the photographic plates with recessed windows, projecting masonry details,
+  varied room states and ground-floor shopfront depth; it remains pending generated
+  GLB and rendered desktop/mobile acceptance and therefore does not change QR2 status.
 
 Acceptance for **quality closeout**:
 - representative ground-level screenshots no longer read as placeholder/debug/cheap low-poly work;

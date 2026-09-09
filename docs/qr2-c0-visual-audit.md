@@ -2,6 +2,42 @@
 
 Status: **IN PROGRESS / VISUAL FAIL / DO NOT MERGE AS QR2-COMPLETE**
 
+## September 2026 reference mismatch review
+
+The six fixed 82° Hansaplatz plates were re-reviewed against the checked-in
+browser artifacts before the next authored rebuild. The highest-impact mismatches
+are, in priority order:
+
+1. the photographic skyline is dominated by occupied five-to-six-storey perimeter
+   facades, while the authored reconstruction is dominated by low pavilion boxes;
+2. photographic windows have deep masonry heads, sills, frames and varied lit-room
+   states, while the current elevations read as flat repeated panels;
+3. the reference has a continuous, irregular ground-floor shopfront rhythm rather
+   than a few uniform emissive bays;
+4. facade cornices, floor bands, balconies and entrance projections create strong
+   grazing-light depth that is absent from the current silhouette;
+5. mature tree canopies overlap several facade storeys, while the authored planting
+   scale and distribution remain sparse;
+6. plaza furniture, bicycles, utility cabinets, tree works and parked vehicles make
+   the reference lived-in; the current open areas remain visually under-populated;
+7. the reference pavement changes module and tone between carriageway, plaza and
+   storefront apron, while the authored paving remains too uniform;
+8. storefront and street-lamp practicals create pools of light and facade falloff;
+   the current lighting remains comparatively flat;
+9. distant rooflines and street exits close the reference composition, while the
+   authored chunk exposes abrupt, empty edges.
+
+The current source increment addresses items 1–4 first in Blender by adding two
+reference-perimeter elevations behind the low shopping-centre layer. Each elevation
+uses recessed room/window assemblies, real lintel/sill/mullion geometry, projecting
+floor bands and cornices, varied occupied-room emission and a continuous authored
+shopfront. It deliberately does not add primary-visible geometry to Three.js.
+
+This is an **unrendered source candidate**, not a quality pass: the canonical main
+workflow must regenerate the `.blend` and GLB, then fresh desktop/mobile and
+reference-paired screenshots must be inspected. QR2 remains open regardless of
+object count or successful export.
+
 Latest inspected browser run: `34247303806` on the authored-prop candidate. The run was technically green and its forward, turned, translated, opposite and mobile screenshots were manually inspected.
 
 The current Blender-generated refinement candidate is `848a9c4f8ba6b736f7c9714f33fc40d9849952b7`. It was generated successfully by `Build Blender C0 visible core` run `34250084381`, including the new architecture/street-detail pass. This candidate remains **unaccepted until a fresh browser screenshot run on this generated GLB is inspected visually**.
