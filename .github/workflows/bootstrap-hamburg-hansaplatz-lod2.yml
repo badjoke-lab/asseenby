@@ -1,0 +1,83 @@
+name: Bootstrap Hamburg Hansaplatz LoD2 subset
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-hansaplatz-source-truth-20260909
+    paths:
+      - .github/workflows/bootstrap-hamburg-hansaplatz-lod2.yml
+      - scripts/hamburg/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-hamburg-hansaplatz-lod2
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source-truth branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/c0-hamburg-hansaplatz-source-truth-20260909
+          fetch-depth: 0
+
+      - name: Install geospatial tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pyproj
+          python3 - <<'PY'
+          import pyproj
+          print('pyproj', pyproj.__version__)
+          PY
+
+      - name: Download official Hamburg LoD2-DE 2026
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/hamburg-lod2
+          url='https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip'
+          curl -fL --retry 4 --retry-delay 5 --connect-timeout 30 \
+            -A 'AsSeenBy-Hamburg-Hansaplatz/1.0 (+https://github.com/badjoke-lab/asseenby)' \
+            -o .tmp/hamburg-lod2/hamburg-lod2-2026.zip "$url"
+          test -s .tmp/hamburg-lod2/hamburg-lod2-2026.zip
+          du -h .tmp/hamburg-lod2/hamburg-lod2-2026.zip
+
+      - name: Stream real Hansaplatz subset from CityGML archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest='assets-src/blender/night-intersection/hamburg-lod2'
+          rm -rf "$dest"
+          mkdir -p "$dest"
+          python3 scripts/hamburg/citygml_hansaplatz_from_zip.py \
+            --zip .tmp/hamburg-lod2/hamburg-lod2-2026.zip \
+            --lat 53.554451 \
+            --lon 10.012056 \
+            --radius-m 170 \
+            --source-epsg 25832 \
+            --out "$dest/hansaplatz-lod2.obj" \
+            --source-json "$dest/SOURCE.json"
+          test -s "$dest/hansaplatz-lod2.obj"
+          test -s "$dest/SOURCE.json"
+          sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
+          cat "$dest/SOURCE.json"
+          du -h "$dest/hansaplatz-lod2.obj"
+
+      - name: Commit only the local official subset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/hamburg assets-src/blender/night-intersection/hamburg-lod2
+          git rm .github/workflows/bootstrap-hamburg-hansaplatz-lod2.yml
+          git commit -m 'Extract real Hamburg Hansaplatz from official LoD2-DE 2026'
+          git fetch origin feat/c0-hamburg-hansaplatz-source-truth-20260909
+          git rebase origin/feat/c0-hamburg-hansaplatz-source-truth-20260909
+          git push origin HEAD:feat/c0-hamburg-hansaplatz-source-truth-20260909
