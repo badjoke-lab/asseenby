@@ -3,6 +3,11 @@
 Runs after reconstruct_hansaplatz_c0.py. The plaza paving, canopies, subway entry
 and authored street props remain, while all hand-guessed building/pavilion masses
 are deleted and replaced with the local OBJ generated from Berlin's official LoD2.
+
+The intermediate OBJ is intentionally written in browser/runtime XYZ coordinates
+(X east, Y up, -Z north). The normalized Blender source still stores runtime XYZ
+as Blender (X, -Z, Y), so every imported vertex is converted through
+``runtime_to_blender`` before mesh creation.
 """
 
 from __future__ import annotations
@@ -24,19 +29,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def runtime_to_blender(point: tuple[float, float, float]) -> tuple[float, float, float]:
+    x, y, z = point
+    return (x, -z, y)
+
+
 def find_visual(root: bpy.types.Collection) -> bpy.types.Collection:
     visual = next((child for child in root.children if child.name == "VISUAL_LOD0"), None)
     if visual is None:
         raise RuntimeError("C0 is missing VISUAL_LOD0")
     return visual
-
-
-def relink(obj: bpy.types.Object, target: bpy.types.Collection) -> None:
-    if target not in obj.users_collection:
-        target.objects.link(obj)
-    for current in list(obj.users_collection):
-        if current != target:
-            current.objects.unlink(obj)
 
 
 def remove_guessed_buildings() -> int:
@@ -105,10 +107,17 @@ def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
     )
 
     created = 0
+    min_runtime = [float("inf"), float("inf"), float("inf")]
+    max_runtime = [float("-inf"), float("-inf"), float("-inf")]
     for name, global_faces in objects.items():
         used = sorted({index for face in global_faces for index in face})
         remap = {old: new for new, old in enumerate(used)}
-        local_vertices = [vertices[index] for index in used]
+        runtime_vertices = [vertices[index] for index in used]
+        for point in runtime_vertices:
+            for axis in range(3):
+                min_runtime[axis] = min(min_runtime[axis], point[axis])
+                max_runtime[axis] = max(max_runtime[axis], point[axis])
+        local_vertices = [runtime_to_blender(point) for point in runtime_vertices]
         local_faces = [[remap[index] for index in face] for face in global_faces]
         mesh = bpy.data.meshes.new(f"{name}_mesh")
         mesh.from_pydata(local_vertices, [], local_faces)
@@ -123,6 +132,17 @@ def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
         obj["source_license"] = "dl-de-zero-2.0"
         obj["source_semantic"] = semantic
         created += 1
+
+    # Guard against another axis/scale regression before the GLB is exported.
+    width = max_runtime[0] - min_runtime[0]
+    height = max_runtime[1] - min_runtime[1]
+    depth = max_runtime[2] - min_runtime[2]
+    if not (20.0 <= width <= 320.0 and 3.0 <= height <= 120.0 and 20.0 <= depth <= 320.0):
+        raise RuntimeError(
+            "Official LoD2 local bounds are implausible for the Hansaplatz subset: "
+            f"width={width:.2f}m height={height:.2f}m depth={depth:.2f}m"
+        )
+    print(f"LoD2 runtime bounds: width={width:.2f}m height={height:.2f}m depth={depth:.2f}m")
     return created
 
 
