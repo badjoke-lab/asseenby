@@ -46,17 +46,7 @@ jobs:
       - name: Wait for Pages deployment and verify authored C0
         env:
           ASSEENBY_PRODUCTION_URL: https://asseenby.pages.dev
-        run: |
-          for attempt in $(seq 1 12); do
-            echo "production C0 verification attempt ${attempt}/12"
-            if node .github/production-spatial-c0-check.mjs; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 12 ]; then
-              sleep 20
-            fi
-          done
-          exit 1
+        run: node .github/production-spatial-c0-check.mjs
 
       - name: Upload production C0 proof
         if: always()
