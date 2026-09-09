@@ -1,0 +1,22 @@
+name: Diagnose Hamburg fragment geometry
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/diagnose_hamburg_fragments.py
+      - .github/workflows/diagnose-hamburg-fragments.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print fragmented wall geometry
+        run: python3 .github/diagnose_hamburg_fragments.py
