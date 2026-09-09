@@ -1,0 +1,41 @@
+name: Diagnose Hamburg C0 objects
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/workflows/diagnose-hamburg-c0-objects.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
+      - name: Print nearfield non-LoD2 meshes
+        run: |
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 --python-expr "import bpy, mathutils; root=bpy.data.collections.get('C0'); visual=next((c for c in root.children if c.name=='VISUAL_LOD0'),None); print('=== LEGACY HANSAPLATZ OBJECTS ==='); [print(o.name, o.type) for o in bpy.data.objects if o.name.startswith('hansaplatz_')]; print('=== NEARFIELD NON-LOD2 MESHES ==='); rows=[]; objs=list(visual.all_objects) if visual else list(bpy.data.objects); [(lambda o: None)(o) for o in []];
+for o in objs:
+    if o.type!='MESH' or o.name.startswith('lod2_') or o.name.startswith('hamburg_facade_authored_'): continue
+    pts=[o.matrix_world @ mathutils.Vector(c) for c in o.bound_box]
+    mn=[min(p[i] for p in pts) for i in range(3)]; mx=[max(p[i] for p in pts) for i in range(3)]
+    cx=(mn[0]+mx[0])/2; cy=(mn[1]+mx[1])/2; cz=(mn[2]+mx[2])/2
+    dx=mx[0]-mn[0]; dy=mx[1]-mn[1]; dz=mx[2]-mn[2]
+    rx=cx; ry=cz; rz=-cy; rdx=dx; rdy=dz; rdz=dy
+    if abs(rx)<=80 and -100<=rz<=25 and max(rdx,rdy,rdz)>=1.5:
+        mats=','.join(s.material.name for s in o.material_slots if s.material)
+        rows.append((rz, math.hypot(rx,rz), o.name, (rx,ry,rz), (rdx,rdy,rdz), mats, list(o.keys())))
+rows.sort(key=lambda r:(r[0],r[1]))
+for r in rows: print('OBJ',r)
+print('COUNT',len(rows))"
