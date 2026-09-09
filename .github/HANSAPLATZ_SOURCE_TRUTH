@@ -1,0 +1,8 @@
+reference_asset=Poly Haven hansaplatz
+location=Hansaplatz, Hamburg-St. Georg, Germany
+lat=53.554451
+lon=10.012056
+geometry_provider=Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
+geometry_dataset=3D-Gebäudemodell LoD2-DE Hamburg 2026
+geometry_crs=EPSG:25832
+geometry_license=dl-de-by-2.0

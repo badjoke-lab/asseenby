@@ -1,0 +1,27 @@
+{
+  "provider": "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)",
+  "dataset": "3D-Gebäudemodell LoD2-DE Hamburg 2026",
+  "source_url": "https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip",
+  "license": "dl-de-by-2.0",
+  "attribution": "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)",
+  "reference": {
+    "asset": "Poly Haven hansaplatz",
+    "gps_source": "https://polyhaven.com/a/hansaplatz",
+    "lat": 53.554451,
+    "lon": 10.012056,
+    "location": "Hansaplatz, Hamburg-St. Georg, Germany"
+  },
+  "selection": {
+    "radius_m": 170.0,
+    "source_epsg": 25832,
+    "origin_easting": 567045.146949287,
+    "origin_northing": 5934427.863514651,
+    "citygml_member_count": 783
+  },
+  "output": {
+    "building_count": 113,
+    "vertex_count": 8586,
+    "semantic_object_count": 339,
+    "base_height": 6.503
+  }
+}

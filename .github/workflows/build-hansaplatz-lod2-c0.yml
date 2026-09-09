@@ -1,12 +1,12 @@
-name: Build Hansaplatz C0 from Berlin LoD2
-# Feature-branch visual rebuilds are intentional: source changes must produce reviewable GLB proof before merge.
+name: Build Hansaplatz C0 from Hamburg LoD2
 
 on:
   push:
     branches:
-      - 'feat/c0-*'
+      - feat/c0-hamburg-hansaplatz-source-truth-20260909
     paths:
-      - scripts/berlin/**
+      - scripts/hamburg/**
+      - assets-src/blender/night-intersection/hamburg-lod2/**
       - scripts/blender/apply_berlin_lod2_hansaplatz.py
       - scripts/blender/replace_hansaplatz_paving_field.py
       - .github/workflows/build-hansaplatz-lod2-c0.yml
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: hansaplatz-lod2-c0-${{ github.ref }}
+  group: hamburg-hansaplatz-lod2-c0-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,124 +30,141 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Install Blender and geospatial tooling
+      - name: Install Blender export dependencies
         run: |
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-pyproj
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
           blender --version
-          python3 - <<'PY'
-          import pyproj
-          print('pyproj', pyproj.__version__)
-          PY
 
-      - name: Fetch official Berlin LoD2 tiles around Hansaplatz
+      - name: Verify Hamburg source truth
+        shell: bash
         run: |
           set -euo pipefail
-          rm -rf .tmp/berlin-lod2
-          mkdir -p .tmp/berlin-lod2
-          python3 scripts/berlin/fetch_hansaplatz_lod2.py \
-            --lat 52.5178 \
-            --lon 13.34216 \
-            --radius-m 200 \
-            --source-epsg 25833 \
-            --out .tmp/berlin-lod2
-          cat .tmp/berlin-lod2/SOURCE.json
-          du -sh .tmp/berlin-lod2
-
-      - name: Convert official CityGML to local Hansaplatz OBJ
-        run: |
-          set -euo pipefail
-          python3 scripts/berlin/citygml_hansaplatz_to_obj.py \
-            --input-dir .tmp/berlin-lod2 \
-            --lat 52.5178 \
-            --lon 13.34216 \
-            --radius-m 135 \
-            --source-epsg 25833 \
-            --out .tmp/berlin-lod2/hansaplatz-lod2.obj
-          test -s .tmp/berlin-lod2/hansaplatz-lod2.obj
-          grep -c '^o lod2_' .tmp/berlin-lod2/hansaplatz-lod2.obj
-          du -h .tmp/berlin-lod2/hansaplatz-lod2.obj
-
-      - name: Preserve reproducible LoD2 subset and provenance
-        run: |
-          set -euo pipefail
-          dest=assets-src/blender/night-intersection/berlin-lod2
-          rm -rf "$dest"
-          mkdir -p "$dest"
-          cp .tmp/berlin-lod2/SOURCE.json "$dest/SOURCE.json"
-          cp .tmp/berlin-lod2/hansaplatz-lod2.obj "$dest/hansaplatz-lod2.obj"
-          sha256sum "$dest/hansaplatz-lod2.obj" > "$dest/SHA256SUMS.txt"
-
-      - name: Apply official geometry and photographic facade projection
-        run: |
-          set -euo pipefail
-          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          source_json=assets-src/blender/night-intersection/hamburg-lod2/SOURCE.json
+          obj=assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
           panorama=public/assets/panoramas/hansaplatz.jpg
-          test -s "$blend"
+          test -s "$source_json"
+          test -s "$obj"
           test -s "$panorama"
-          blender --background "$blend" \
-            --python scripts/blender/apply_berlin_lod2_hansaplatz.py -- \
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          source = json.loads(Path('assets-src/blender/night-intersection/hamburg-lod2/SOURCE.json').read_text())
+          ref = source['reference']
+          assert source['provider'] == 'Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)'
+          assert source['license'] == 'dl-de-by-2.0'
+          assert abs(ref['lat'] - 53.554451) < 1e-8
+          assert abs(ref['lon'] - 10.012056) < 1e-8
+          assert ref['location'] == 'Hansaplatz, Hamburg-St. Georg, Germany'
+          assert source['output']['building_count'] >= 100
+          print(json.dumps(source, indent=2, ensure_ascii=False))
+          PY
+          sha256sum -c assets-src/blender/night-intersection/hamburg-lod2/SHA256SUMS.txt
+          grep -c '^o lod2_' "$obj"
+
+      - name: Prepare Hamburg metadata-safe LoD2 importer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp
+          cp scripts/blender/apply_berlin_lod2_hansaplatz.py .tmp/apply_hamburg_lod2_hansaplatz.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.tmp/apply_hamburg_lod2_hansaplatz.py')
+          text = path.read_text()
+          replacements = {
+              'official Berlin LoD2 geometry': 'official Hamburg LoD2-DE geometry',
+              'Berlin official cadastral LoD2': 'Hamburg official LoD2-DE, GPS-aligned to Poly Haven Hansaplatz',
+              'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin': 'Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)',
+              '3D-Gebäudemodelle im Level of Detail 2 (LoD 2)': '3D-Gebäudemodell LoD2-DE Hamburg 2026',
+              'dl-de-zero-2.0': 'dl-de-by-2.0',
+              'https://gdi.berlin.de/data/a_lod2/atom/0.atom': 'https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip',
+              'Hansaplatz, Berlin, Germany': 'Hansaplatz, Hamburg-St. Georg, Germany',
+              'Berlin LoD2 Hansaplatz applied': 'Hamburg LoD2 Hansaplatz applied',
+              'berlin_lod2_wall_reference': 'hamburg_lod2_wall_reference',
+              'berlin_lod2_roof_reference': 'hamburg_lod2_roof_reference',
+              'berlin_lod2_ground_reference': 'hamburg_lod2_ground_reference',
+              '20.0 <= width <= 320.0': '20.0 <= width <= 400.0',
+              '20.0 <= depth <= 320.0': '20.0 <= depth <= 400.0',
+          }
+          for old, new in replacements.items():
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+          grep -q 'Hansaplatz, Hamburg-St. Georg, Germany' .tmp/apply_hamburg_lod2_hansaplatz.py
+          grep -q 'width <= 400.0' .tmp/apply_hamburg_lod2_hansaplatz.py
+          ! grep -q 'Hansaplatz, Berlin, Germany' .tmp/apply_hamburg_lod2_hansaplatz.py
+
+      - name: Apply official Hamburg geometry and photographic facade projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python .tmp/apply_hamburg_lod2_hansaplatz.py -- \
             --collection C0 \
-            --obj assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj \
-            --panorama "$panorama" \
+            --obj assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj \
+            --panorama public/assets/panoramas/hansaplatz.jpg \
             --panorama-yaw-deg 0
 
-      - name: Replace raised paving tiles with continuous plaza surface
+      - name: Keep temporary continuous plaza surface
+        shell: bash
         run: |
           set -euo pipefail
-          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
-          blender --background "$blend" \
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
             --python scripts/blender/replace_hansaplatz_paving_field.py
 
-      - name: Export updated C0 GLB
+      - name: Export updated Hamburg C0 GLB
+        shell: bash
         run: |
           set -euo pipefail
           out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          mkdir -p "$(dirname "$out")"
+          rm -f "$out" public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
             --python scripts/blender/export_night_intersection.py -- \
             --collection C0 \
             --out "$out"
           test -s "$out"
           sha256sum "$out" > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           cat > public/assets/3d/night-intersection/c0/core/BUILD.txt <<'EOF'
-          Geometry basis: Berlin official 3D-Gebäudemodelle im Level of Detail 2 (LoD 2)
-          Reference location: Hansaplatz, Berlin, Germany
-          Official ATOM: https://gdi.berlin.de/data/a_lod2/atom/0.atom
-          Geometry license: dl-de-zero-2.0
-          Derived subset: assets-src/blender/night-intersection/berlin-lod2/hansaplatz-lod2.obj
+          Geometry basis: Hamburg official 3D-Gebäudemodell LoD2-DE Hamburg 2026
+          Reference location: Hansaplatz, Hamburg-St. Georg, Germany
+          Reference coordinates: 53.554451, 10.012056
+          Official source: https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip
+          Geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
+          Geometry license: dl-de-by-2.0
+          Geometry attribution: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
+          Derived subset: assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
+          Derived subset scope: 170 m radius, 113 buildings, EPSG:25832 source frame
           Facade detail basis: Poly Haven Hansaplatz equirectangular panorama projection
+          Facade source: https://polyhaven.com/a/hansaplatz
           Facade source license: CC0-1.0
           Projection origin: Human reference eye at runtime XYZ 0,1.6,0
-          Plaza paving: one continuous coplanar Blender mesh using checked-in Poly Haven concrete_pavement PBR, CC0-1.0
+          Plaza paving: temporary continuous coplanar Blender mesh; replace with reference-derived Hamburg ground geometry next
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
+          cat public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
 
-      - name: Commit generated quality increment
+      - name: Commit generated Hamburg C0 to quality branch
+        shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
-            scripts/berlin \
-            scripts/blender/apply_berlin_lod2_hansaplatz.py \
-            scripts/blender/replace_hansaplatz_paving_field.py \
-            assets-src/blender/night-intersection/berlin-lod2 \
             assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             public/assets/3d/night-intersection/c0/core
           if git diff --cached --quiet; then
-            echo 'No generated Hansaplatz C0 changes'
+            echo 'No generated Hamburg C0 changes'
             exit 0
           fi
-          git commit -m 'Replace raised Hansaplatz paving with continuous surface'
-          # Blender can touch already-tracked companion/source files outside the
-          # explicit generated set. Fold only tracked changes into this commit;
-          # never add the downloaded .tmp archives.
-          git add -u
-          if ! git diff --cached --quiet; then
-            git commit --amend --no-edit
-          fi
-          git status --short
+          git commit -m 'Rebuild C0 from real Hamburg Hansaplatz geometry'
+          git reset --hard HEAD
+          git clean -fd .tmp
           git fetch origin "${GITHUB_REF_NAME}"
           git rebase "origin/${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"

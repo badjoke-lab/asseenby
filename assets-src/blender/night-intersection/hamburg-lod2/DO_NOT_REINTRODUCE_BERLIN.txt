@@ -1,0 +1,2 @@
+The Poly Haven `hansaplatz` reference is Hamburg-St. Georg (53.554451, 10.012056).
+Do not pair this reference with Berlin LoD2 geometry.
