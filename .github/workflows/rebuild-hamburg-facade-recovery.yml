@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/blender/remove_hamburg_panorama_wall_projection.py
       - scripts/blender/author_hamburg_hansaplatz_facade_depth.py
+      - scripts/blender/author_hamburg_lod2_facades.py
       - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/workflows/rebuild-hamburg-facade-recovery.yml
   workflow_dispatch:
@@ -45,6 +46,7 @@ jobs:
           grep -q '^raw_equirectangular_wall_projection=forbidden$' .github/HANSAPLATZ_SOURCE_TRUTH
           grep -q '^lod3_status=official Area1 has a verified Hansaplatz nearfield coverage gap' .github/HANSAPLATZ_SOURCE_TRUTH
           test -s assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          test -s assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
 
       - name: Remove temporary panorama wall projection
         run: |
@@ -53,19 +55,30 @@ jobs:
             --python-exit-code 1 \
             --python scripts/blender/remove_hamburg_panorama_wall_projection.py
 
-      - name: Author bounded nearfield facade depth
+      - name: Remove legacy axis-aligned generic facade layer
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python-exit-code 1 \
-            --python scripts/blender/author_hamburg_hansaplatz_facade_depth.py
+            --python-expr "import bpy; doomed=[o for o in list(bpy.data.objects) if o.name.startswith('hamburg_authored_facade_')]; [bpy.data.objects.remove(o, do_unlink=True) for o in doomed]; root=bpy.data.collections.get('C0'); root['authored_close_facade']=False; root['authored_close_facade_buildings']=0; root['authored_close_facade_bays']=0; bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath); print('REMOVED_LEGACY_AUTHORED', len(doomed))"
+
+      - name: Author wall-plane aligned nearfield facades
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python scripts/blender/author_hamburg_lod2_facades.py -- \
+            --collection C0 \
+            --obj assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj \
+            --radius-m 95 \
+            --max-facades 40
 
       - name: Validate Blender scene contract
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python-exit-code 1 \
-            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad, bad; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert len(authored)>=4, len(authored); assert root.get('raw_panorama_wall_projection') is False; assert int(root.get('authored_close_facade_buildings',0))>=1; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('AUTHORED_BUILDINGS',root.get('authored_close_facade_buildings')); print('AUTHORED_BAYS',root.get('authored_close_facade_bays'))"
+            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad, bad; legacy=[o.name for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert not legacy, legacy; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_authored_')]; assert len(authored)>=5, len(authored); assert root.get('raw_panorama_wall_projection') is False; assert root.get('hamburg_facade_panorama_projection') is False; assert int(root.get('hamburg_facade_authored_face_count',0))>=20; assert int(root.get('hamburg_facade_authored_window_count',0))>=40; assert int(root.get('hamburg_facade_authored_shopfront_count',0))>=10; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('AUTHORED_FACES',root.get('hamburg_facade_authored_face_count')); print('AUTHORED_WINDOWS',root.get('hamburg_facade_authored_window_count')); print('AUTHORED_SHOPFRONTS',root.get('hamburg_facade_authored_shopfront_count')); print('AUTHORED_BAYS',root.get('hamburg_facade_authored_bay_count'))"
 
       - name: Export recovered C0 GLB
         run: |
@@ -87,11 +100,12 @@ jobs:
           Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
           Macro geometry license: dl-de-by-2.0
           LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
-          Close facade: Blender-authored structural depth over the nearest official LoD2 walls
-          Close facade elements: storefront glazing, mullions, upper glazing, sills, heads, floor bands and cornices
+          Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
+          Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
+          Nearfield authoring scope: wall faces within 95 m, capped at 40 selected facade faces
           Photographic reference: Poly Haven hansaplatz, CC0-1.0
           Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
-          Current close-facade status: structural depth pass; facade-by-facade photo registration remains open
+          Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
           du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
@@ -122,7 +136,7 @@ jobs:
             echo 'No generated C0 changes'
             exit 0
           fi
-          git commit -m 'Rebuild Hamburg C0 with authored facade depth'
+          git commit -m 'Rebuild Hamburg C0 with wall-plane facades'
           echo 'Transient files before cleanup:'
           git status --short || true
           git reset --hard HEAD
