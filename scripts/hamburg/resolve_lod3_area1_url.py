@@ -3,7 +3,7 @@
 
 The resolver intentionally starts from public metadata pages instead of pinning an
 opaque download URL. It fails closed unless it can identify exactly one plausible
-Area 1 archive URL.
+Area 1 archive URL after canonicalizing escaped metadata representations.
 """
 
 from __future__ import annotations
@@ -32,13 +32,22 @@ def fetch(url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
+def canonicalize_url(value: str) -> str:
+    value = unescape(value)
+    value = value.replace("\\/", "/")
+    # Some metadata pages expose the same JSON-escaped URL both as a raw text
+    # match and as an href/content value. Strip serialization punctuation so
+    # those representations collapse to one canonical download URL.
+    value = value.rstrip("\\),.;\"'")
+    return value
+
+
 def normalized_candidates(base_url: str, text: str) -> set[str]:
     raw: set[str] = set(URL_RE.findall(text))
     raw.update(urljoin(base_url, unescape(value)) for value in HREF_RE.findall(text))
     candidates: set[str] = set()
-    for value in raw:
-        value = unescape(value).replace("\\/", "/")
-        value = value.rstrip("),.;\"")
+    for raw_value in raw:
+        value = canonicalize_url(raw_value)
         lower = value.lower()
         if "lod3" not in lower:
             continue
@@ -53,10 +62,10 @@ def normalized_candidates(base_url: str, text: str) -> set[str]:
 def score(url: str) -> tuple[int, int, int, int]:
     lower = url.lower()
     return (
-        1 if ".zip" in lower else 0,
+        1 if lower.endswith(".zip") else 0,
         1 if "2025" in lower else 0,
         1 if "area1" in lower or "area_1" in lower else 0,
-        1 if "hamburg" in lower or "lod3" in lower else 0,
+        1 if "daten-hamburg.de/opendata/3d_stadtmodell_lod3/" in lower else 0,
     )
 
 
