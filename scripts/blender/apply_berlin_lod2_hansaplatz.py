@@ -17,6 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 import sys
 
+import bmesh
 import bpy
 
 
@@ -91,6 +92,25 @@ def load_obj(path: Path):
     return vertices, objects
 
 
+def triangulate_mesh(mesh: bpy.types.Mesh) -> None:
+    """Resolve CityGML n-gons before glTF tangent generation."""
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(mesh)
+        if bm.faces:
+            bmesh.ops.triangulate(
+                bm,
+                faces=list(bm.faces),
+                quad_method="BEAUTY",
+                ngon_method="BEAUTY",
+            )
+        bm.to_mesh(mesh)
+        mesh.validate(verbose=False)
+        mesh.update(calc_edges=True)
+    finally:
+        bm.free()
+
+
 def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
     vertices, objects = load_obj(path)
     if not vertices or not objects:
@@ -123,6 +143,9 @@ def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
         mesh.from_pydata(local_vertices, [], local_faces)
         mesh.validate(verbose=False)
         mesh.update(calc_edges=True)
+        triangulate_mesh(mesh)
+        if any(len(poly.vertices) != 3 for poly in mesh.polygons):
+            raise RuntimeError(f"LoD2 mesh remained non-triangular after cleanup: {name}")
         obj = bpy.data.objects.new(name, mesh)
         visual.objects.link(obj)
         semantic = "roof" if name.endswith("_roof") else "ground" if name.endswith("_ground") else "wall"
@@ -161,6 +184,7 @@ def main() -> None:
     root["official_lod2_removed_guessed_objects"] = removed
     root["official_lod2_created_semantic_objects"] = created
     root["macro_geometry_basis"] = "Berlin official cadastral LoD2"
+    root["official_lod2_mesh_topology"] = "triangulated-before-gltf"
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(f"Berlin LoD2 Hansaplatz applied: removed guessed={removed}, created semantic objects={created}")
