@@ -1,0 +1,53 @@
+{
+  "asset_id": "rectangular_paving",
+  "name": "Rectangular Paving",
+  "authors": {
+    "Dimitrios Savva": "All"
+  },
+  "canonical_page": "https://polyhaven.com/a/rectangular_paving",
+  "api_files_url": "https://api.polyhaven.com/files/rectangular_paving",
+  "api_info_url": "https://api.polyhaven.com/info/rectangular_paving",
+  "files_hash": "a144ac237eb760c6de37688d793f6eb83acda849",
+  "license": "CC0-1.0",
+  "requested_resolution": "1k",
+  "maps": {
+    "diff": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rectangular_paving/rectangular_paving_diff_1k.jpg",
+      "filename": "rectangular_paving_diff_1k.jpg",
+      "size": 649580,
+      "md5": "bed8a330f7a03e21be9c719a25bb6a89",
+      "sha256": "23f3da5644a95fbcc1916165c8b03ac74d0836ce4b6f5bf2a28b0266dcdf84c5",
+      "api_tree_path": [
+        "blend",
+        "1k",
+        "blend",
+        "include",
+        "textures/rectangular_paving_diff_1k.jpg"
+      ]
+    },
+    "nor_gl": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rectangular_paving/rectangular_paving_nor_gl_1k.jpg",
+      "filename": "rectangular_paving_nor_gl_1k.jpg",
+      "size": 637525,
+      "md5": "105333249daad1434def654e43830320",
+      "sha256": "0c3a0b827ce1e240ae52f447b773d52d9712730c8b81a6aa323a4df4c84f1108",
+      "api_tree_path": [
+        "nor_gl",
+        "1k",
+        "jpg"
+      ]
+    },
+    "rough": {
+      "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rectangular_paving/rectangular_paving_rough_1k.jpg",
+      "filename": "rectangular_paving_rough_1k.jpg",
+      "size": 432381,
+      "md5": "bbdd18934dcd93e077d6d9df1bf0e685",
+      "sha256": "4d6a475b6c6c33e34c9dd42546dbe01eed5cc2cd704fddf574d8e2013414b3a8",
+      "api_tree_path": [
+        "Rough",
+        "1k",
+        "jpg"
+      ]
+    }
+  }
+}
