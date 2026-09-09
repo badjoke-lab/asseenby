@@ -129,4 +129,6 @@ jobs:
             exit 0
           fi
           git commit -m 'Project real Hansaplatz detail onto official LoD2 facades'
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
