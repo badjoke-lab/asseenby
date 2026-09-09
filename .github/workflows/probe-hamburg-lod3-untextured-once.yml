@@ -6,6 +6,7 @@ on:
       - feat/hamburg-hansaplatz-lod3-20260909
     paths:
       - .github/workflows/probe-hamburg-lod3-untextured-once.yml
+      - scripts/hamburg/extract_hansaplatz_lod3_subset.py
 
 permissions:
   contents: write
@@ -55,10 +56,13 @@ jobs:
           manifest = json.loads(Path('/tmp/hansaplatz-lod3-untextured/MANIFEST.json').read_text())
           selected = manifest['selected_gml']
           if not selected or any(item.get('fallback_filename_only') for item in selected):
-              raise SystemExit('Hansaplatz geometry was not envelope-confirmed')
+              raise SystemExit('Hansaplatz geometry was not coordinate-confirmed')
+          accepted = {'gml-envelope', 'geometry-coordinate-extents'}
+          if any(item.get('selection_method') not in accepted for item in selected):
+              raise SystemExit(f'unaccepted spatial method: {selected}')
           print('SELECTED:')
           for item in selected:
-              print(item['name'], item.get('lower_corner'), item.get('upper_corner'))
+              print(item['name'], item.get('selection_method'), item.get('lower_corner'), item.get('upper_corner'))
           PY
 
       - name: Upload exact official geometry subset
