@@ -1,0 +1,73 @@
+name: Verify Hansaplatz LoD2 visual
+
+on:
+  push:
+    branches:
+      - feat/c0-real-geometry-rebuild-20260909
+    paths:
+      - public/assets/3d/night-intersection/c0/core/**
+      - assets-src/blender/night-intersection/berlin-lod2/**
+      - .github/spatial-browser-check.mjs
+      - .github/spatial-turn-check.mjs
+      - .github/workflows/verify-hansaplatz-lod2-visual.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Render browser proof
+        run: |
+          set -euo pipefail
+          rm -rf browser-check
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/asseenby-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:4173/ >/dev/null
+          set +e
+          node .github/spatial-browser-check.mjs
+          BROWSER_EXIT=$?
+          node .github/spatial-turn-check.mjs
+          TURN_EXIT=$?
+          set -e
+          echo "browser_exit=${BROWSER_EXIT}" > browser-check/verification-exit.txt
+          echo "turn_exit=${TURN_EXIT}" >> browser-check/verification-exit.txt
+          exit $(( BROWSER_EXIT != 0 || TURN_EXIT != 0 ))
+
+      - name: Upload browser proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hansaplatz-lod2-browser-proof
+          path: browser-check/
+          if-no-files-found: error
