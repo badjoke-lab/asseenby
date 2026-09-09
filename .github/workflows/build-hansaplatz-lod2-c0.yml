@@ -129,6 +129,14 @@ jobs:
             exit 0
           fi
           git commit -m 'Project real Hansaplatz detail onto official LoD2 facades'
+          # Blender can touch already-tracked companion/source files outside the
+          # explicit generated set. Fold only tracked changes into this commit;
+          # never add the downloaded .tmp archives.
+          git add -u
+          if ! git diff --cached --quiet; then
+            git commit --amend --no-edit
+          fi
+          git status --short
           git fetch origin "${GITHUB_REF_NAME}"
           git rebase "origin/${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
