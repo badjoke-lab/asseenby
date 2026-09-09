@@ -1,1 +1,1 @@
-00a9ea5b97d5c73dddf6b273b019274b3911c2710f554748c7051735f8a009c1  public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+c64985f8946f88cabb14bb4749fc9a27af7083da20db90fcc547f12447d6cef5  public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
