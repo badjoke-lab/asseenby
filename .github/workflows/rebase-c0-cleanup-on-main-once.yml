@@ -1,0 +1,31 @@
+name: Rebase C0 cleanup onto current main once
+
+on:
+  push:
+    branches:
+      - feat/c0-remove-placeholder-foreground-20260909
+    paths:
+      - .github/workflows/rebase-c0-cleanup-on-main-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/c0-remove-placeholder-foreground-20260909
+          fetch-depth: 0
+      - name: Rebase onto current main and remove bootstrap workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/rebase-c0-cleanup-on-main-once.yml
+          git commit -m "Remove C0 cleanup rebase bootstrap"
+          git fetch origin main
+          git rebase origin/main
+          git push --force-with-lease origin HEAD:feat/c0-remove-placeholder-foreground-20260909
