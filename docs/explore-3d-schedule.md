@@ -336,6 +336,9 @@ Keep Hansaplatz as a clearly labeled photographic reference scene.
 Do not present it as the full Explore 3D experience.
 
 ## Permanent rules
+- The active QR2 source candidate adds the missing Hansaplatz tall perimeter facade
+  layer in Blender; regeneration and fresh rendered comparison are still required,
+  so this source increment is not a QR2 quality-closeout claim.
 - **Work-in-progress visual quality does not block deployment.** Completed Explore 3D implementation increments go to `main` so the public site can be inspected continuously.
 - Quality labels still matter: do not call a weak render QR2/QR7 complete merely because it was deployed.
 - Hansaplatz is the canonical current Night Intersection reconstruction reference; new macro architecture must be justified against the real reference instead of invented generic city-block styling.
