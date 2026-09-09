@@ -1,4 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
+# Visual proof trigger after camera-priority C0 regeneration.
 
 on:
   push:
