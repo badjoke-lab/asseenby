@@ -326,27 +326,28 @@ export function mountNightIntersectionScene(
   scene.background = new THREE.Color(0x111927);
   scene.fog = new THREE.FogExp2(0x111722, 0.0030);
 
-  const hemisphere = new THREE.HemisphereLight(0xa8bad0, 0x3d3024, 2.15);
+  const hemisphere = new THREE.HemisphereLight(0xa8bad0, 0x3d3024, 0.95);
   hemisphere.name = "night-sky-fill";
   root.add(hemisphere);
 
-  const ambient = new THREE.AmbientLight(0x8f9baa, 0.72);
+  const ambient = new THREE.AmbientLight(0x8f9baa, 0.22);
   ambient.name = "street-ambient-fill";
   root.add(ambient);
 
-  const moon = new THREE.DirectionalLight(0xb4c8de, 1.85);
+  const moon = new THREE.DirectionalLight(0xb4c8de, 1.35);
   moon.name = "moon-key";
   moon.position.set(-38, 58, 30);
-  moon.castShadow = false;
-  moon.shadow.mapSize.set(512, 512);
+  moon.castShadow = true;
+  moon.shadow.mapSize.set(1024, 1024);
   moon.shadow.camera.left = -70;
   moon.shadow.camera.right = 70;
   moon.shadow.camera.top = 70;
   moon.shadow.camera.bottom = -70;
-  moon.shadow.bias = -0.0007;
+  moon.shadow.bias = -0.00035;
+  moon.shadow.normalBias = 0.025;
   root.add(moon);
 
-  const intersectionFill = new THREE.PointLight(0xffddb0, 9.5, 36, 1.7);
+  const intersectionFill = new THREE.PointLight(0xffddb0, 4.2, 36, 1.7);
   intersectionFill.name = "intersection-fill";
   intersectionFill.position.set(-2, 7.5, -25);
   root.add(intersectionFill);
