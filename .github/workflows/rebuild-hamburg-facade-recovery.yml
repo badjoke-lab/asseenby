@@ -73,14 +73,14 @@ jobs:
             --collection C0 \
             --obj assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj \
             --radius-m 95 \
-            --max-facades 40
+            --max-facades 64
 
       - name: Validate Blender scene contract
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python-exit-code 1 \
-            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad, bad; legacy=[o.name for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert not legacy, legacy; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_authored_')]; assert len(authored)>=5, len(authored); assert root.get('raw_panorama_wall_projection') is False; assert root.get('hamburg_facade_panorama_projection') is False; assert int(root.get('hamburg_facade_selection_priority_version',0))==3; assert int(root.get('hamburg_facade_authored_face_count',0))>=20; assert int(root.get('hamburg_facade_authored_window_count',0))>=40; assert int(root.get('hamburg_facade_authored_shopfront_count',0))>=10; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('SELECTION_BASIS',root.get('hamburg_facade_selection_basis')); print('AUTHORED_FACES',root.get('hamburg_facade_authored_face_count')); print('AUTHORED_WINDOWS',root.get('hamburg_facade_authored_window_count')); print('AUTHORED_SHOPFRONTS',root.get('hamburg_facade_authored_shopfront_count')); print('AUTHORED_BAYS',root.get('hamburg_facade_authored_bay_count'))"
+            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad, bad; legacy=[o.name for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert not legacy, legacy; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_authored_')]; assert len(authored)>=5, len(authored); assert root.get('raw_panorama_wall_projection') is False; assert root.get('hamburg_facade_panorama_projection') is False; assert int(root.get('hamburg_facade_selection_priority_version',0))==4; assert float(root.get('hamburg_facade_selection_initial_forward_guarantee_deg',0))==22.0; assert int(root.get('hamburg_facade_authored_face_count',0))>=64; assert int(root.get('hamburg_facade_authored_window_count',0))>=40; assert int(root.get('hamburg_facade_authored_shopfront_count',0))>=10; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('SELECTION_BASIS',root.get('hamburg_facade_selection_basis')); print('AUTHORED_FACES',root.get('hamburg_facade_authored_face_count')); print('AUTHORED_WINDOWS',root.get('hamburg_facade_authored_window_count')); print('AUTHORED_SHOPFRONTS',root.get('hamburg_facade_authored_shopfront_count')); print('AUTHORED_BAYS',root.get('hamburg_facade_authored_bay_count'))"
 
       - name: Export recovered C0 GLB
         run: |
@@ -103,9 +103,9 @@ jobs:
           Macro geometry license: dl-de-by-2.0
           LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
           Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
-          Close facade selection: camera-priority ranking for the initial yaw=0 / forward=-Z view, weighted by view angle and projected wall area
+          Close facade selection: multi-view priority for yaw=0 and +/-1.05 rad, with all valid wall faces inside the initial +/-22 degree forward cone strongly guaranteed into the 64-face budget
           Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
-          Nearfield authoring scope: wall faces within 95 m, capped at 40 selected facade faces
+          Nearfield authoring scope: wall faces within 95 m, 64 selected facade faces
           Photographic reference: Poly Haven hansaplatz, CC0-1.0
           Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
           Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
@@ -139,7 +139,7 @@ jobs:
             echo 'No generated C0 changes'
             exit 0
           fi
-          git commit -m 'Rebuild Hamburg C0 with camera-priority facades'
+          git commit -m 'Rebuild Hamburg C0 with forward-guaranteed facades'
           echo 'Transient files before cleanup:'
           git status --short || true
           git reset --hard HEAD
