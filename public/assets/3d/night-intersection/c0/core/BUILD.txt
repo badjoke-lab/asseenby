@@ -4,9 +4,10 @@ Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
 Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
 Macro geometry license: dl-de-by-2.0
 LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
-Close facade: Blender-authored structural depth over the nearest official LoD2 walls
-Close facade elements: storefront glazing, mullions, upper glazing, sills, heads, floor bands and cornices
+Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
+Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
+Nearfield authoring scope: wall faces within 95 m, capped at 40 selected facade faces
 Photographic reference: Poly Haven hansaplatz, CC0-1.0
 Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
-Current close-facade status: structural depth pass; facade-by-facade photo registration remains open
+Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
 Runtime: Blender-authored C0 exported to GLB for Three.js
