@@ -1,5 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof trigger after v6 C0 regeneration: forward guarantee, narrow relief, procedural substrate.
+# Visual proof trigger after v7 C0 regeneration: dark runtime background, varied substrates, narrow and large-wall relief.
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
       - public/assets/3d/night-intersection/c0/core/**
       - assets-src/blender/night-intersection/c0/**
       - scripts/blender/**
+      - src/spatial/sceneRuntime.ts
       - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/hansaplatz-lod2-visual-proof.mjs
       - .github/workflows/verify-hansaplatz-lod2-visual.yml
