@@ -35,8 +35,11 @@ const HANSAPLATZ_REFERENCE_URL = "/assets/panoramas/hansaplatz.jpg";
 const NIGHT_BACKGROUND = new THREE.Color(0x05080d);
 const HANSAPLATZ_NIGHT_NAVIGATION: SpatialGroundNavigation = {
   ...NIGHT_INTERSECTION_NAVIGATION,
-  initialPosition: [0, -34],
-  initialYaw: -0.18,
+  // The official LoD2 subset is translated against the Poly Haven HDRI GPS,
+  // so runtime X/Z = 0/0 is the photographic capture point. Keep the baseline
+  // here; close-up quality views must be separate guided/diagnostic views.
+  initialPosition: [0, 0],
+  initialYaw: 0,
 };
 
 const countAuthoredAssetRoots = (scene: THREE.Scene) => {
