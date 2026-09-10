@@ -1,5 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof for iterative Hansaplatz production checkpoints, including Day/Night lighting parity. Repaired Day-default switch proof.
+# Visual proof for iterative Hansaplatz production checkpoints, including Day/Night lighting parity. Final Day-default async-switch proof.
 
 on:
   push:
