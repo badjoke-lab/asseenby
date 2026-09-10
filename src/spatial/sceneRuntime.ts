@@ -30,6 +30,7 @@ export type SpatialSceneRuntime = {
 };
 
 const HANSAPLATZ_REFERENCE_URL = "/assets/panoramas/hansaplatz.jpg";
+const NIGHT_BACKGROUND = new THREE.Color(0x090d14);
 
 const countAuthoredAssetRoots = (scene: THREE.Scene) => {
   let count = 0;
@@ -42,7 +43,7 @@ const countAuthoredAssetRoots = (scene: THREE.Scene) => {
 const loadHansaplatzTexture = (
   scene: THREE.Scene,
   renderScene: () => void,
-  options: { useAsEnvironment: boolean },
+  options: { useAsEnvironment: boolean; showAsBackground: boolean },
 ) => {
   let disposed = false;
   let activeTexture: THREE.Texture | null = null;
@@ -51,6 +52,11 @@ const loadHansaplatzTexture = (
   const previousBackgroundIntensity = scene.backgroundIntensity;
   const previousEnvironmentIntensity = scene.environmentIntensity;
   const loader = new THREE.TextureLoader();
+
+  if (!options.showAsBackground) {
+    scene.background = NIGHT_BACKGROUND;
+    scene.backgroundIntensity = 1;
+  }
 
   loader.load(
     HANSAPLATZ_REFERENCE_URL,
@@ -65,8 +71,10 @@ const loadHansaplatzTexture = (
       texture.magFilter = THREE.LinearFilter;
       texture.anisotropy = 4;
       activeTexture = texture;
-      scene.background = texture;
-      scene.backgroundIntensity = options.useAsEnvironment ? 0.86 : 1;
+      if (options.showAsBackground) {
+        scene.background = texture;
+        scene.backgroundIntensity = options.useAsEnvironment ? 0.86 : 1;
+      }
       if (options.useAsEnvironment) {
         scene.environment = texture;
         scene.environmentIntensity = 0.42;
@@ -81,7 +89,11 @@ const loadHansaplatzTexture = (
 
   return () => {
     disposed = true;
-    if (activeTexture && scene.background === activeTexture) scene.background = previousBackground;
+    if (options.showAsBackground && activeTexture && scene.background === activeTexture) {
+      scene.background = previousBackground;
+    } else if (!options.showAsBackground && scene.background === NIGHT_BACKGROUND) {
+      scene.background = previousBackground;
+    }
     if (activeTexture && scene.environment === activeTexture) scene.environment = previousEnvironment;
     scene.backgroundIntensity = previousBackgroundIntensity;
     scene.environmentIntensity = previousEnvironmentIntensity;
@@ -94,13 +106,13 @@ const loadHansaplatzTexture = (
  * QR2 moves C0's primary-visible responsibility to the Blender-authored chunk.
  * The legacy Night Intersection mount is still temporarily retained for its
  * accepted navigation contract and runtime lights. Hide its close/mid visual
- * geometry so it cannot overlap or visually mask the authored world. The
- * distant visual context now comes from the real CC0 Hansaplatz panorama used
- * as the reconstruction reference/environment instead of invented far boxes.
+ * geometry so it cannot overlap or visually mask the authored world.
  *
- * This is deliberately a migration boundary, not a final architecture. QR3/QR4
- * move lighting/navigation into authored chunk contracts and remove the legacy
- * scene mount entirely.
+ * The CC0 Hansaplatz panorama remains reconstruction evidence and IBL input for
+ * Night Intersection, but it is intentionally not shown as the literal scene
+ * background there: its photographed street horizon otherwise leaks through
+ * gaps beneath/behind the authored Hamburg geometry as a bright image strip.
+ * Photo Reference mode still displays the original panorama directly.
  */
 const retireLegacyPrimaryVisibleGeometry = (root: THREE.Object3D) => {
   root.traverse((object) => {
@@ -126,7 +138,10 @@ export function createSpatialSceneRuntime(
   if (sceneId === "night-intersection") {
     const mounted = mountNightIntersectionScene(scene, renderScene);
     retireLegacyPrimaryVisibleGeometry(mounted.root);
-    const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, { useAsEnvironment: true });
+    const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, {
+      useAsEnvironment: true,
+      showAsBackground: false,
+    });
     const chunkRuntime = new SpatialChunkRuntime(scene, NIGHT_INTERSECTION_CHUNKS, renderScene);
     return {
       id: sceneId,
@@ -153,7 +168,10 @@ export function createSpatialSceneRuntime(
     throw new Error(`Unsupported Explore 3D scene: ${sceneId}`);
   }
 
-  const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, { useAsEnvironment: false });
+  const disposeReferenceEnvironment = loadHansaplatzTexture(scene, renderScene, {
+    useAsEnvironment: false,
+    showAsBackground: true,
+  });
 
   return {
     id: sceneId,
