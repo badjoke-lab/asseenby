@@ -113,52 +113,39 @@ if (!live) {
 }
 
 await page.screenshot({ path: `${OUT}/production-c0-forward.png`, fullPage: true });
-const canvas = page.locator("canvas.spatial-canvas");
-const lightingSelect = page.locator("#spatial-lighting-select");
-const lightingBaseline = await canvas.evaluate((element) => ({
-  position: element.dataset.cameraPosition,
-  yaw: element.dataset.cameraYaw,
-  pitch: element.dataset.cameraPitch,
-  fov: element.dataset.cameraFov,
-  loadedChunks: element.dataset.sceneLoadedChunks,
-  roots: element.dataset.sceneAuthoredAssetRootCount,
-  vision: element.dataset.visionMode,
-}));
-await lightingSelect.selectOption("night");
+const readLightingState = async () => page.evaluate(() => {
+  const element = document.querySelector("canvas.spatial-canvas");
+  if (!(element instanceof HTMLCanvasElement)) return null;
+  return {
+    lighting: element.dataset.sceneLightingMode ?? null,
+    renderState: element.dataset.sceneLightingRenderState ?? null,
+    position: element.dataset.cameraPosition ?? null,
+    yaw: element.dataset.cameraYaw ?? null,
+    pitch: element.dataset.cameraPitch ?? null,
+    fov: element.dataset.cameraFov ?? null,
+    loadedChunks: element.dataset.sceneLoadedChunks ?? null,
+    roots: element.dataset.sceneAuthoredAssetRootCount ?? null,
+    vision: element.dataset.visionMode ?? null,
+  };
+});
+const lightingBaseline = await readLightingState();
+await page.selectOption("#spatial-lighting-select", "night");
 await page.waitForFunction(() => {
   const element = document.querySelector("canvas.spatial-canvas");
   return element instanceof HTMLCanvasElement
     && element.dataset.sceneLightingMode === "night"
     && element.dataset.sceneLightingRenderState === "complete";
 }, undefined, { timeout: 120_000 });
-const nightLighting = await canvas.evaluate((element) => ({
-  lighting: element.dataset.sceneLightingMode,
-  position: element.dataset.cameraPosition,
-  yaw: element.dataset.cameraYaw,
-  pitch: element.dataset.cameraPitch,
-  fov: element.dataset.cameraFov,
-  loadedChunks: element.dataset.sceneLoadedChunks,
-  roots: element.dataset.sceneAuthoredAssetRootCount,
-  vision: element.dataset.visionMode,
-}));
+const nightLighting = await readLightingState();
 await page.screenshot({ path: `${OUT}/production-c0-night.png`, fullPage: true });
-await lightingSelect.selectOption("day");
+await page.selectOption("#spatial-lighting-select", "day");
 await page.waitForFunction(() => {
   const element = document.querySelector("canvas.spatial-canvas");
   return element instanceof HTMLCanvasElement
     && element.dataset.sceneLightingMode === "day"
     && element.dataset.sceneLightingRenderState === "complete";
 }, undefined, { timeout: 120_000 });
-const returnedDayLighting = await canvas.evaluate((element) => ({
-  lighting: element.dataset.sceneLightingMode,
-  position: element.dataset.cameraPosition,
-  yaw: element.dataset.cameraYaw,
-  pitch: element.dataset.cameraPitch,
-  fov: element.dataset.cameraFov,
-  loadedChunks: element.dataset.sceneLoadedChunks,
-  roots: element.dataset.sceneAuthoredAssetRootCount,
-  vision: element.dataset.visionMode,
-}));
+const returnedDayLighting = await readLightingState();
 const sameLightingState = (state) => state
   && state.position === lightingBaseline.position
   && state.yaw === lightingBaseline.yaw
@@ -171,13 +158,15 @@ const lightingParity = nightLighting?.lighting === "night"
   && returnedDayLighting?.lighting === "day"
   && sameLightingState(nightLighting)
   && sameLightingState(returnedDayLighting);
-const before = await canvas.evaluate((element) => element.dataset.cameraPosition);
-await canvas.focus();
+const movementCanvas = page.locator("canvas.spatial-canvas");
+await movementCanvas.waitFor({ state: "visible", timeout: 30_000 });
+const before = await movementCanvas.evaluate((element) => element.dataset.cameraPosition);
+await movementCanvas.focus();
 await page.keyboard.down("w");
 await page.waitForTimeout(420);
 await page.keyboard.up("w");
 await page.waitForTimeout(180);
-const after = await canvas.evaluate((element) => ({
+const after = await movementCanvas.evaluate((element) => ({
   position: element.dataset.cameraPosition,
   viewpoint: element.dataset.cameraViewpoint,
   movement: element.dataset.observerMovement,
@@ -205,7 +194,7 @@ await fs.writeFile(
   ),
 );
 await browser.close();
-if (!ok) throw new Error(`Production C0 verification failed: ${JSON.stringify({ state, before, after, moved, fatalErrors })}`);
+if (!ok) throw new Error(`Production C0 verification failed: ${JSON.stringify({ state, lightingBaseline, nightLighting, returnedDayLighting, lightingParity, before, after, moved, fatalErrors })}`);
 console.log(
   JSON.stringify(
     { ok, live, state, expectedSha: EXPECTED_SHA, deployedSha, lightingBaseline, nightLighting, returnedDayLighting, lightingParity, before, after, moved, transientChunkFetchErrors },
