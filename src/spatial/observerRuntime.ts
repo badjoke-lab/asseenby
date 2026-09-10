@@ -33,12 +33,21 @@ type ObserverRuntimeOptions = {
   onPositionChange?: (position: THREE.Vector3) => void;
 };
 
-const GUIDED_VIEWPOINT_POSITIONS: Record<SpatialGuidedViewpoint, [number, number, number]> = {
+const GUIDED_VIEWPOINT_OFFSETS: Record<SpatialGuidedViewpoint, [number, number, number]> = {
   baseline: [0, 0, 0],
   offset: [3.2, 0, -4.2],
 };
 
 const MOVE_KEYS = new Set(["w", "a", "s", "d", "shift"]);
+
+const guidedPosition = (
+  guidedViewpoint: SpatialGuidedViewpoint,
+  navigation: SpatialGroundNavigation | null,
+): [number, number, number] => {
+  const offset = GUIDED_VIEWPOINT_OFFSETS[guidedViewpoint];
+  const [baseX, baseZ] = navigation?.initialPosition ?? [0, 0];
+  return [baseX + offset[0], navigation?.eyeY ?? offset[1], baseZ + offset[2]];
+};
 
 export function createSpatialObserverRuntime(
   observerId: SpatialObserverId,
@@ -49,7 +58,7 @@ export function createSpatialObserverRuntime(
   }
 
   let navigation = initialNavigation;
-  let yaw = 0;
+  let yaw = navigation?.initialYaw ?? 0;
   let pitch = -0.01;
   let activePointer: number | null = null;
   let lastX = 0;
@@ -60,7 +69,7 @@ export function createSpatialObserverRuntime(
   let movementFrame = 0;
   let lastMovementTime = 0;
 
-  camera.position.set(...GUIDED_VIEWPOINT_POSITIONS.baseline);
+  camera.position.set(...guidedPosition("baseline", navigation));
   camera.rotation.order = "YXZ";
 
   const movementMode = () => navigation ? "bounded-ground" as const : "look-only" as const;
@@ -175,11 +184,10 @@ export function createSpatialObserverRuntime(
   const setGuidedViewpoint = (nextViewpoint: SpatialGuidedViewpoint) => {
     clearMovement();
     viewpoint = nextViewpoint;
-    const target = GUIDED_VIEWPOINT_POSITIONS[nextViewpoint];
-    camera.position.set(target[0], navigation?.eyeY ?? target[1], target[2]);
+    const target = guidedPosition(nextViewpoint, navigation);
+    camera.position.set(...target);
     if (navigation && !navigation.canOccupy(camera.position.x, camera.position.z, navigation.radius)) {
-      camera.position.set(...GUIDED_VIEWPOINT_POSITIONS.baseline);
-      camera.position.y = navigation.eyeY;
+      camera.position.set(...guidedPosition("baseline", navigation));
       viewpoint = "baseline";
     }
     onViewpointChange?.(viewpoint);
@@ -189,11 +197,10 @@ export function createSpatialObserverRuntime(
 
   const reset = () => {
     clearMovement();
-    yaw = 0;
+    yaw = navigation?.initialYaw ?? 0;
     pitch = -0.01;
     viewpoint = "baseline";
-    camera.position.set(...GUIDED_VIEWPOINT_POSITIONS.baseline);
-    if (navigation) camera.position.y = navigation.eyeY;
+    camera.position.set(...guidedPosition("baseline", navigation));
     camera.fov = 52;
     camera.updateProjectionMatrix();
     onViewpointChange?.("baseline");
