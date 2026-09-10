@@ -6,6 +6,11 @@ The documented ring of mature lindens around Hansabrunnen remains a spatial/desi
 but exact individual tree positions and the species of the imported mesh are not claimed as
 surveyed facts. Poly Haven ``tree_small_02`` is used as a CC0 broadleaf visual proxy only.
 
+The source tree is intentionally reduced to a bounded nearfield web mesh before it is linked
+around the plaza. Shipping the raw ~2M-triangle source twelve times through the browser render
+path would be a production regression, not a quality improvement. PBR materials/textures are
+retained while geometry is reduced to a target that can survive mobile/desktop review.
+
 This pass deliberately removes the ico-sphere/cylinder linden proxies from VISUAL_LOD0.
 It does not project panorama pixels onto walls and it does not close QR2 by itself; facade-by-
 facade photo registration and further landmark/street-detail art passes remain required.
@@ -29,6 +34,8 @@ FOUNTAIN_RUNTIME = (-7.377, 0.0, -30.192)
 TREE_RING_RADIUS_M = 13.8
 TREE_COUNT = 12
 TARGET_TREE_HEIGHT_M = 9.0
+MAX_TREE_POLYGONS = 90_000
+MIN_TREE_POLYGONS = 25_000
 ASSET_ID = "tree_small_02"
 ASSET_PAGE = "https://polyhaven.com/a/tree_small_02"
 
@@ -70,7 +77,41 @@ def resolve_primary_gltf(asset_dir: Path) -> Path:
     return primary
 
 
-def import_joined_mesh(gltf_path: Path) -> bpy.types.Object:
+def reduce_for_runtime(source: bpy.types.Object) -> tuple[int, int]:
+    before = len(source.data.polygons)
+    if before <= MAX_TREE_POLYGONS:
+        return before, before
+
+    bpy.ops.object.select_all(action="DESELECT")
+    source.hide_set(False)
+    source.select_set(True)
+    bpy.context.view_layer.objects.active = source
+
+    # Keep UV/material data while collapsing the dense source geometry. The linked instances
+    # then share this one bounded mesh datablock instead of copying the raw source mesh.
+    modifier = source.modifiers.new(name="v12_web_geometry_budget", type="DECIMATE")
+    modifier.decimate_type = "COLLAPSE"
+    modifier.ratio = max(0.01, min(1.0, MAX_TREE_POLYGONS / float(before)))
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+    after = len(source.data.polygons)
+    if after > int(MAX_TREE_POLYGONS * 1.08):
+        modifier = source.modifiers.new(name="v12_web_geometry_budget_final", type="DECIMATE")
+        modifier.decimate_type = "COLLAPSE"
+        modifier.ratio = max(0.01, min(1.0, (MAX_TREE_POLYGONS * 0.98) / float(after)))
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+        after = len(source.data.polygons)
+
+    source.select_set(False)
+    if not (MIN_TREE_POLYGONS <= after <= int(MAX_TREE_POLYGONS * 1.08)):
+        raise RuntimeError(
+            f"Runtime tree mesh outside quality/performance budget: {before} -> {after} polygons"
+        )
+    print(f"V12_TREE_GEOMETRY_BUDGET source={before} runtime={after}")
+    return before, after
+
+
+def import_joined_mesh(gltf_path: Path) -> tuple[bpy.types.Object, int, int]:
     before = {obj.as_pointer() for obj in bpy.data.objects}
     bpy.ops.import_scene.gltf(filepath=str(gltf_path))
     imported = [obj for obj in bpy.data.objects if obj.as_pointer() not in before]
@@ -95,8 +136,11 @@ def import_joined_mesh(gltf_path: Path) -> bpy.types.Object:
     source = bpy.context.view_layer.objects.active
     source.name = f"{V12_PREFIX}{ASSET_ID}_source"
 
-    # Bake all import transforms, then normalize XY around the mesh centre and put its base at Z=0.
+    # Bake all import transforms before simplification/normalization.
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    source_polygons, runtime_polygons = reduce_for_runtime(source)
+
+    # Normalize XY around the mesh centre and put its base at Z=0.
     xs = [vertex.co.x for vertex in source.data.vertices]
     ys = [vertex.co.y for vertex in source.data.vertices]
     zs = [vertex.co.z for vertex in source.data.vertices]
@@ -124,7 +168,7 @@ def import_joined_mesh(gltf_path: Path) -> bpy.types.Object:
     for obj in imported:
         if obj != source and obj.name in bpy.data.objects:
             bpy.data.objects.remove(obj, do_unlink=True)
-    return source
+    return source, source_polygons, runtime_polygons
 
 
 def runtime_ground_to_blender(x: float, z: float) -> tuple[float, float, float]:
@@ -181,7 +225,7 @@ def main() -> None:
         )
 
     primary_gltf = resolve_primary_gltf(Path(args.asset_dir).resolve())
-    source = import_joined_mesh(primary_gltf)
+    source, source_polygons, runtime_polygons = import_joined_mesh(primary_gltf)
     placed = place_tree_ring(source, visual)
     unlink_and_remove_source(source)
 
@@ -191,6 +235,9 @@ def main() -> None:
     root["hamburg_v12_tree_asset_license"] = "CC0-1.0"
     root["hamburg_v12_tree_instance_count"] = len(placed)
     root["hamburg_v12_tree_target_height_m"] = TARGET_TREE_HEIGHT_M
+    root["hamburg_v12_tree_source_polygons"] = source_polygons
+    root["hamburg_v12_tree_runtime_polygons"] = runtime_polygons
+    root["hamburg_v12_tree_geometry_budget"] = MAX_TREE_POLYGONS
     root["hamburg_v12_tree_species_claim"] = False
     root["hamburg_v12_tree_positions_surveyed"] = False
     root["hamburg_v12_facade_photo_registration_required"] = True
@@ -206,7 +253,8 @@ def main() -> None:
     print(
         "Hansaplatz v12 vegetation art pass authored: "
         f"removed_v12={removed_v12} removed_v10_tree_objects={removed_v10_trees} "
-        f"instances={len(placed)} asset={ASSET_ID} target_height={TARGET_TREE_HEIGHT_M}m"
+        f"instances={len(placed)} asset={ASSET_ID} target_height={TARGET_TREE_HEIGHT_M}m "
+        f"source_polygons={source_polygons} runtime_polygons={runtime_polygons}"
     )
 
 
