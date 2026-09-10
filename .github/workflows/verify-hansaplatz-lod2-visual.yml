@@ -1,5 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof trigger after v8 C0 regeneration: per-building facade grammar, party-wall articulation and ground continuity.
+# Visual proof trigger after v9 C0 regeneration: closer street start, camera-aware blank-wall depth and darker local night lighting.
 
 on:
   push:
