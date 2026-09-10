@@ -76,13 +76,14 @@ jobs:
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python-exit-code 1 \
-            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; assert int(root.get('hamburg_hansaplatz_quality_version',0))==12; assert root.get('hamburg_hansaplatz_v12_artpass') is True; assert root.get('hamburg_v12_tree_asset_id')=='tree_small_02'; assert root.get('hamburg_v12_tree_asset_license')=='CC0-1.0'; assert int(root.get('hamburg_v12_tree_instance_count',0))==12; assert root.get('hamburg_v12_tree_species_claim') is False; assert root.get('hamburg_v12_tree_positions_surveyed') is False; assert root.get('hamburg_v12_facade_photo_registration_required') is True; assert root.get('raw_panorama_wall_projection') is False; new=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v12_linden_ring_')]; old=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v10_linden_')]; assert len(new)==12,len(new); assert not old,old[:5]; assert all(o.type=='MESH' for o in new); assert all(len(o.data.vertices)>100 for o in new); print('V12_TREE_INSTANCES',len(new),'VERTICES_PER_LINKED_MESH',len(new[0].data.vertices))"
+            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; assert int(root.get('hamburg_hansaplatz_quality_version',0))==12; assert root.get('hamburg_hansaplatz_v12_artpass') is True; assert root.get('hamburg_v12_tree_asset_id')=='tree_small_02'; assert root.get('hamburg_v12_tree_asset_license')=='CC0-1.0'; assert int(root.get('hamburg_v12_tree_instance_count',0))==12; assert root.get('hamburg_v12_tree_species_claim') is False; assert root.get('hamburg_v12_tree_positions_surveyed') is False; assert root.get('hamburg_v12_facade_photo_registration_required') is True; assert root.get('raw_panorama_wall_projection') is False; new=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v12_linden_ring_')]; old=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v10_linden_')]; assert len(new)==12,len(new); assert not old,old[:5]; assert all(o.type=='MESH' for o in new); assert len({o.data.as_pointer() for o in new})==1; poly=len(new[0].data.polygons); assert 25000 <= poly <= 97200, poly; assert int(root.get('hamburg_v12_tree_runtime_polygons',0))==poly; assert int(root.get('hamburg_v12_tree_source_polygons',0))>poly; print('V12_TREE_INSTANCES',len(new),'SHARED_POLYGONS',poly,'VERTICES',len(new[0].data.vertices),'SOURCE_POLYGONS',root.get('hamburg_v12_tree_source_polygons'))"
 
       - name: Export v12 C0 GLB
         run: |
           set -euo pipefail
           out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
-          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          blender --background "$blend" \
             --python-exit-code 1 \
             --python scripts/blender/export_night_intersection.py -- \
             --collection C0 \
@@ -100,13 +101,23 @@ jobs:
           v12 vegetation art pass: primitive linden cylinder/ico proxies removed from VISUAL_LOD0
           v12 tree source asset: Poly Haven tree_small_02, CC0-1.0
           v12 tree use: 12 linked broadleaf PBR visual proxies for the documented linden ring
+          v12 tree runtime geometry: source mesh reduced to <= 90,000 polygons before linked placement
           Species claim: false; the imported broadleaf mesh is not asserted to be Tilia
           Survey-position claim: false; individual tree coordinates remain bounded visual reconstruction
           Photo reference: Poly Haven hansaplatz, CC0-1.0; environment/reference only
           Raw equirectangular wall projection: forbidden
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
-          du -h assets-src/blender/night-intersection/c0/night-intersection-c0.blend "$out"
+
+          blend_bytes=$(stat -c%s "$blend")
+          glb_bytes=$(stat -c%s "$out")
+          echo "BLEND_BYTES=$blend_bytes"
+          echo "GLB_BYTES=$glb_bytes"
+          # Keep each committed artifact below GitHub's 100 MiB hard file ceiling and set a
+          # much tighter browser runtime ceiling on the GLB so art quality cannot hide a size regression.
+          test "$blend_bytes" -lt 94371840
+          test "$glb_bytes" -lt 50331648
+          du -h "$blend" "$out"
           cat public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
 
       - name: Validate repository build
