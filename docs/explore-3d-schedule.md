@@ -8,18 +8,19 @@ Explore 3D Steps E1 through E4 were deployed and production-verified as technica
 The current procedural scene proved Three.js depth/parallax, Human movement and Human Vision integration. The active rebuild replaces that invented presentation with an authored, reference-driven environment.
 
 ### Current reference decision
-`Night Intersection` now uses **Hansaplatz, Berlin** as its canonical photographic/architectural reference rather than an invented generic intersection.
+`Night Intersection` uses **Hansaplatz, Hamburg-St. Georg, Germany** as its canonical reconstruction location. Any older Berlin/Hansaviertel wording is superseded and must not be used for new authoring.
 
 Primary reconstruction evidence:
-- checked-in Poly Haven `Hansaplatz` 360 HDRI / tonemapped JPG by Greg Zaal, CC0-1.0;
+- checked-in Poly Haven `hansaplatz` 360 HDRI / tonemapped JPG by Greg Zaal, CC0-1.0, used as photographic reference/environment only;
 - repeatable rectilinear reference plates generated from that panorama under `assets-src/blender/night-intersection/reference/hansaplatz/`;
-- authoritative Hansaviertel architectural records for macro-layout cues such as the mostly single-storey shopping-centre ensemble, atrium arrangement, continuous flat roofs on slender steel supports and small white ceramic-tile finish.
+- Hamburg LGV `3D-Gebäudemodell LoD2-DE Hamburg 2026` as canonical macro building geometry;
+- `.github/HANSAPLATZ_SOURCE_TRUTH` for the city/coordinate lock, official LoD3 nearfield-gap evidence and the prohibition on raw equirectangular wall projection.
 
 The working sequence is now:
 1. continue QR1–QR7 in `docs/explore-3d-quality-recovery.md`;
-2. build C0 by matching real reference composition/material/architecture rather than inventing detail from scratch;
+2. keep the official Hamburg LoD2 shell for macro truth and improve only the close-range authored layer in Blender;
 3. publish each coherent implementation increment to `main` immediately so the real site remains inspectable during development;
-4. use rendered comparison to determine the next correction;
+4. use the Day baseline plus rendered reference comparison to expose weak geometry/material work, with Night retained as the same-geometry low-light environment;
 5. resume E5 Dog observer after the scene/world recovery closes.
 
 **Important production rule:** QR quality status controls whether a milestone may be called visually complete. It does **not** block deployment of work-in-progress Explore 3D improvements. Completed implementation increments are expected to land on `main` and be visible in production while recovery continues.
@@ -170,21 +171,24 @@ The authored production path is fixed:
 Do **not** add new primary-visible detail to the procedural `nightIntersectionScene.ts` to bypass this path.
 
 ## QR2 — Visible Night Intersection rebuild
-Status: **ACTIVE / REFERENCE-DRIVEN / CONTINUOUSLY DEPLOYED**
+Status: **ACTIVE / HAMBURG REFERENCE-DRIVEN / CONTINUOUSLY DEPLOYED**
 
-C0 is now rebuilt and iterated as an authored Blender/GLB environment against the real Hansaplatz reference rather than as an invented generic street.
+C0 is iterated as an authored Blender/GLB environment aligned to Hansaplatz, Hamburg-St. Georg.
 
 Current implementation direction:
-- the checked-in Hansaplatz equirectangular photo is the canonical visual reference and runtime far environment;
+- official Hamburg LGV LoD2-DE 2026 is the macro building-geometry source for the nearfield;
+- official Hamburg LoD3 Area1 has a verified Hansaplatz nearfield coverage gap, so distant LoD3 is not substituted into the scene;
+- the checked-in Hansaplatz equirectangular photo is visual reference/environment only; raw wall projection is forbidden;
 - six fixed perspective reference plates are generated reproducibly for comparison;
-- invented brick-block macro geometry is being replaced with Hansaplatz-specific modernist low-rise pavilions, glazed storefronts, continuous canopies on slender steel supports, a plaza/atrium, transit entry and white ceramic-tile architectural language;
-- authored CC0 props/materials remain reusable when they match the reference;
-- each coherent improvement is committed to `main` and allowed to appear on the public site before the final QR2 quality bar is reached.
+- close-facade depth is currently an authored scaffold and must be replaced/refined through facade-by-facade photo registration where visible;
+- v10 restored Hansabrunnen/plaza/linden-ring composition, but the fountain and vegetation still contained visible proxy geometry;
+- **v12 nearfield art pass** on `feat/hansaplatz-v12-nearfield-artpass-20260911` replaces the primitive cylinder/ico-sphere linden-ring vegetation with 12 linked CC0 PBR broadleaf mesh instances, explicitly without claiming exact species or surveyed tree positions;
+- after v12 vegetation, the next QR2 work is facade-by-facade registration, remaining landmark/street-proxy replacement, material/contact refinement and rendered desktop/mobile review.
 
 Acceptance for declaring QR2 visually complete remains:
 - representative desktop and mobile screenshots no longer read as placeholder/debug/cheap low-poly work;
 - primary architecture/storefronts, vehicles, street furniture and vegetation survive close walking distance;
-- rendered composition materially matches the Hansaplatz photographic reference rather than merely being internally detailed;
+- rendered composition materially matches the real Hamburg reference rather than merely being internally detailed;
 - Normal mode is credible before any Vision effect;
 - Human movement remains usable.
 
@@ -336,16 +340,16 @@ Keep Hansaplatz as a clearly labeled photographic reference scene.
 Do not present it as the full Explore 3D experience.
 
 ## Permanent rules
-- The active QR2 source candidate adds the missing Hansaplatz tall perimeter facade
-  layer in Blender; regeneration and fresh rendered comparison are still required,
-  so this source increment is not a QR2 quality-closeout claim.
+- Hansaplatz means **Hamburg-St. Georg** for the current reconstruction. Berlin/Hansaviertel source assumptions are invalid and must not return.
+- The official Hamburg LoD2-DE 2026 shell controls nearfield macro geometry; authored close detail may improve it without inventing a different building footprint/massing.
+- Raw equirectangular panorama wall projection is forbidden. The panorama is photographic reference/environment evidence only.
 - **Work-in-progress visual quality does not block deployment.** Completed Explore 3D implementation increments go to `main` so the public site can be inspected continuously.
 - Quality labels still matter: do not call a weak render QR2/QR7 complete merely because it was deployed.
-- Hansaplatz is the canonical current Night Intersection reconstruction reference; new macro architecture must be justified against the real reference instead of invented generic city-block styling.
 - Reference -> authored assets -> Blender assembly -> browser render -> rendered critique -> correction is the normal art-production loop.
 - Blender is the canonical authoring/assembly layer for new primary-visible Explore 3D world content; Three.js remains the runtime.
 - Do not treat a primitive/procedural scene as accepted merely because Three.js, movement, shaders and smoke checks work.
 - Do not extend the old procedural scene with new primary-visible art to evade the authored asset path.
+- Day is the standard geometry/material baseline; Night is a same-geometry low-light environment and must not hide weak art.
 - The old 150 m scene size is not an architectural ceiling; larger district-scale space must use chunking/LOD/streaming rather than all-resident geometry.
 - Observer and Vision remain independent concepts.
 - Bird movement uses the air/vertical space; species vision is a separate evidence problem.
