@@ -1,5 +1,5 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof trigger after forward-guaranteed 64-face C0 regeneration.
+# Visual proof trigger after v6 C0 regeneration: forward guarantee, narrow relief, procedural substrate.
 
 on:
   push:
