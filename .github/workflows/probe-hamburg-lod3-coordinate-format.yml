@@ -1,0 +1,102 @@
+name: Probe Hamburg LoD3 coordinate format
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/workflows/probe-hamburg-lod3-coordinate-format.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official untextured Area1
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 \
+            --user-agent 'AsSeenBy-LoD3-coordinate-probe/1.0' \
+            'https://daten-hamburg.de/opendata/3d_stadtmodell_lod3/LoD3-HH_Area1_noTexture_2025_03_13.zip' \
+            -o /tmp/lod3.zip
+          python3 - <<'PY'
+          import zipfile
+          z=zipfile.ZipFile('/tmp/lod3.zip')
+          names=[n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml'))]
+          print('GML_COUNT',len(names))
+          print('FIRST_NAMES',names[:8])
+          PY
+      - name: Probe XML coordinate encoding
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re, zipfile, xml.etree.ElementTree as ET
+          z=zipfile.ZipFile('/tmp/lod3.zip')
+          names=[n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml'))]
+          wanted=[]
+          for candidate in ('Area 1 neu/6431.gml','Area 1 neu/6531.gml','Area 1 neu/6628.gml'):
+              if candidate in names: wanted.append(candidate)
+          wanted += [n for n in names[:3] if n not in wanted]
+          for name in wanted[:6]:
+              raw=z.read(name)
+              print('\n===',name,'bytes',len(raw),'===')
+              print('BOM/HEAD',repr(raw[:160]))
+              text=raw[:200000].decode('utf-8','replace')
+              print('SRS_NAMES',sorted(set(re.findall(r'srsName=[\"\']([^\"\']+)',text)))[:12])
+              try:
+                  root=ET.fromstring(raw)
+                  leaf=[]
+                  for el in root.iter():
+                      local=el.tag.rsplit('}',1)[-1]
+                      if local.lower() in {'pos','poslist','coordinates','coord','x','y','lowercorner','uppercorner'} and el.text and el.text.strip():
+                          leaf.append((local,' '.join(el.text.split())[:240],dict(el.attrib)))
+                          if len(leaf)>=12: break
+                  print('ET_COORD_LEAVES',leaf)
+              except Exception as exc:
+                  print('ET_PARSE_ERROR',type(exc).__name__,str(exc))
+          PY
+      - name: Prove Area1 spatial coverage against Hansaplatz
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import math, zipfile, xml.etree.ElementTree as ET
+          target=(567045.147,5934427.864)
+          z=zipfile.ZipFile('/tmp/lod3.zip')
+          names=[n for n in z.namelist() if n.lower().endswith(('.gml','.xml','.citygml'))]
+          rows=[]
+          global_box=[float('inf'),float('inf'),float('-inf'),float('-inf')]
+          def vals(text):
+              return [float(x) for x in (text or '').split()]
+          for name in names:
+              root=ET.fromstring(z.read(name))
+              lo=hi=None
+              for el in root.iter():
+                  local=el.tag.rsplit('}',1)[-1]
+                  if local=='lowerCorner' and el.text:
+                      lo=vals(el.text)
+                  elif local=='upperCorner' and el.text:
+                      hi=vals(el.text)
+                  if lo and hi: break
+              if not lo or not hi or len(lo)<2 or len(hi)<2: continue
+              minx,maxx=sorted((lo[0],hi[0])); miny,maxy=sorted((lo[1],hi[1]))
+              global_box[0]=min(global_box[0],minx); global_box[1]=min(global_box[1],miny)
+              global_box[2]=max(global_box[2],maxx); global_box[3]=max(global_box[3],maxy)
+              dx=0 if minx<=target[0]<=maxx else min(abs(target[0]-minx),abs(target[0]-maxx))
+              dy=0 if miny<=target[1]<=maxy else min(abs(target[1]-miny),abs(target[1]-maxy))
+              d=math.hypot(dx,dy)
+              rows.append((d,name,(minx,miny,maxx,maxy)))
+          rows.sort()
+          print('TARGET',target)
+          print('AREA1_GLOBAL_BBOX',global_box)
+          inside=(global_box[0]<=target[0]<=global_box[2] and global_box[1]<=target[1]<=global_box[3])
+          print('TARGET_INSIDE_GLOBAL_BBOX',inside)
+          print('NEAREST_15')
+          for row in rows[:15]: print(row)
+          containing=[row for row in rows if row[0]==0]
+          print('CONTAINING',containing)
+          PY

@@ -1,20 +1,15 @@
-"""Replace C0 macro geometry with the real Hamburg Hansaplatz LoD2 subset.
+"""Replace C0 macro shell with official Hamburg Hansaplatz LoD3.0-HH geometry.
 
-The Poly Haven Hansaplatz HDRI GPS is 53.554451, 10.012056 in Hamburg-St. Georg.
-This pass consumes the local OBJ extracted from Hamburg LGV LoD2-DE 2026 and uses
-that official cadastral geometry as the building-envelope source of truth.
-
-Important quality rule: the equirectangular Poly Haven panorama is NOT projected
-onto building walls.  It remains a photographic/environment reference only.
-Close-range facade depth is authored separately in Blender by
-``author_hamburg_lod2_facades.py``.
+This pass deliberately does NOT project the equirectangular panorama onto building
+walls. The panorama remains reconstruction evidence and a far environment. Close
+facades must be authored separately in Blender so transient photo content is not
+baked into permanent walls.
 """
 
 from __future__ import annotations
 
 import argparse
 from collections import defaultdict
-import hashlib
 from pathlib import Path
 import sys
 
@@ -28,9 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--collection", default="C0")
     parser.add_argument("--obj", required=True)
-    # Kept as a backwards-compatible build argument.  The image is reference-only.
-    parser.add_argument("--panorama", default="")
-    parser.add_argument("--panorama-yaw-deg", type=float, default=0.0)
+    parser.add_argument("--source-url", required=True)
     return parser.parse_args(argv)
 
 
@@ -56,7 +49,7 @@ def remove_previous_macro_geometry() -> int:
         "hansaplatz_north_perimeter",
         "hansaplatz_northwest_perimeter",
         "lod2_",
-        "hamburg_facade_authored_",
+        "lod3_",
     )
     doomed = [obj for obj in list(bpy.data.objects) if obj.name.startswith(prefixes)]
     for obj in doomed:
@@ -64,7 +57,7 @@ def remove_previous_macro_geometry() -> int:
     return len(doomed)
 
 
-def flat_material(
+def fallback_material(
     name: str,
     color: tuple[float, float, float, float],
     roughness: float,
@@ -83,51 +76,29 @@ def flat_material(
     return material
 
 
-def masonry_material(name: str, color: tuple[float, float, float, float]) -> bpy.types.Material:
+def glass_material() -> bpy.types.Material:
+    name = "hamburg_lod3_opening_glass_reference"
     existing = bpy.data.materials.get(name)
     if existing is not None:
         return existing
     material = bpy.data.materials.new(name)
     material.use_nodes = True
-    nodes = material.node_tree.nodes
-    links = material.node_tree.links
-    bsdf = nodes.get("Principled BSDF")
-    bsdf.inputs["Base Color"].default_value = color
-    bsdf.inputs["Roughness"].default_value = 0.74
-    noise = nodes.new("ShaderNodeTexNoise")
-    noise.name = f"{name}_micro_surface"
-    noise.inputs["Scale"].default_value = 18.0
-    noise.inputs["Detail"].default_value = 2.0
-    noise.inputs["Roughness"].default_value = 0.62
-    bump = nodes.new("ShaderNodeBump")
-    bump.name = f"{name}_micro_bump"
-    bump.inputs["Strength"].default_value = 0.10
-    bump.inputs["Distance"].default_value = 0.035
-    links.new(noise.outputs["Fac"], bump.inputs["Height"])
-    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
-    material["texture_basis"] = "procedural micro-relief; no panorama projection"
+    bsdf = material.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (0.035, 0.055, 0.065, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.16
+    metallic = bsdf.inputs.get("Metallic")
+    if metallic is not None:
+        metallic.default_value = 0.0
+    transmission = bsdf.inputs.get("Transmission Weight") or bsdf.inputs.get("Transmission")
+    if transmission is not None:
+        transmission.default_value = 0.35
     return material
-
-
-def facade_palette() -> list[bpy.types.Material]:
-    return [
-        masonry_material("hamburg_facade_masonry_warm_stone", (0.43, 0.36, 0.28, 1.0)),
-        masonry_material("hamburg_facade_masonry_cream", (0.55, 0.50, 0.42, 1.0)),
-        masonry_material("hamburg_facade_masonry_muted_ochre", (0.46, 0.34, 0.22, 1.0)),
-        masonry_material("hamburg_facade_masonry_grey_stone", (0.34, 0.33, 0.31, 1.0)),
-        masonry_material("hamburg_facade_masonry_brown", (0.31, 0.24, 0.19, 1.0)),
-    ]
-
-
-def stable_material_index(name: str, count: int) -> int:
-    value = int(hashlib.sha256(name.encode("utf-8")).hexdigest()[:8], 16)
-    return value % count
 
 
 def load_obj(path: Path):
     vertices: list[tuple[float, float, float]] = []
     objects: dict[str, list[list[int]]] = defaultdict(list)
-    current = "lod2_unknown_wall"
+    current = "lod3_unknown_wall"
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
@@ -164,18 +135,36 @@ def triangulate_mesh(mesh: bpy.types.Mesh) -> None:
         bm.free()
 
 
-def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
+def semantic_from_name(name: str) -> str:
+    for semantic in ("window", "door", "roof", "ground", "ceiling", "floor", "closure", "wall"):
+        if name.endswith(f"_{semantic}"):
+            return semantic
+    return "wall"
+
+
+def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> tuple[int, dict[str, int]]:
     vertices, objects = load_obj(path)
     if not vertices or not objects:
-        raise RuntimeError(f"Hamburg LoD2 OBJ has no usable geometry: {path}")
+        raise RuntimeError(f"Hamburg LoD3 OBJ has no usable geometry: {path}")
 
-    walls = facade_palette()
-    roof = flat_material("hamburg_lod2_roof_reference", (0.085, 0.090, 0.095, 1.0), 0.72)
-    ground = flat_material("hamburg_lod2_ground_reference", (0.25, 0.24, 0.225, 1.0), 0.84)
+    materials = {
+        "wall": bpy.data.materials.get("hansaplatz_facade_stone")
+        or fallback_material("hamburg_lod3_wall_shell", (0.32, 0.30, 0.27, 1.0), 0.72),
+        "roof": bpy.data.materials.get("hansaplatz_roof_dark")
+        or fallback_material("hamburg_lod3_roof_shell", (0.08, 0.09, 0.10, 1.0), 0.70),
+        "ground": fallback_material("hamburg_lod3_ground_shell", (0.27, 0.27, 0.25, 1.0), 0.86),
+        "floor": fallback_material("hamburg_lod3_floor_shell", (0.24, 0.24, 0.23, 1.0), 0.82),
+        "ceiling": fallback_material("hamburg_lod3_ceiling_shell", (0.28, 0.28, 0.27, 1.0), 0.80),
+        "closure": fallback_material("hamburg_lod3_closure_shell", (0.30, 0.29, 0.27, 1.0), 0.76),
+        "window": glass_material(),
+        "door": fallback_material("hamburg_lod3_door_reference", (0.12, 0.10, 0.09, 1.0), 0.42),
+    }
 
     created = 0
+    counts: dict[str, int] = defaultdict(int)
     min_runtime = [float("inf"), float("inf"), float("inf")]
     max_runtime = [float("-inf"), float("-inf"), float("-inf")]
+
     for name, global_faces in objects.items():
         used = sorted({index for face in global_faces for index in face})
         remap = {old: new for new, old in enumerate(used)}
@@ -192,37 +181,31 @@ def create_semantic_objects(path: Path, visual: bpy.types.Collection) -> int:
         mesh.update(calc_edges=True)
         triangulate_mesh(mesh)
         if any(len(poly.vertices) != 3 for poly in mesh.polygons):
-            raise RuntimeError(f"Hamburg LoD2 mesh remained non-triangular: {name}")
+            raise RuntimeError(f"Hamburg LoD3 mesh remained non-triangular: {name}")
 
-        semantic = "roof" if name.endswith("_roof") else "ground" if name.endswith("_ground") else "wall"
+        semantic = semantic_from_name(name)
         obj = bpy.data.objects.new(name, mesh)
         visual.objects.link(obj)
-        if semantic == "wall":
-            wall_material = walls[stable_material_index(name, len(walls))]
-            obj.data.materials.append(wall_material)
-        else:
-            obj.data.materials.append({"roof": roof, "ground": ground}[semantic])
+        obj.data.materials.append(materials[semantic])
         obj["source_provider"] = "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)"
-        obj["source_dataset"] = "3D-Gebäudemodell LoD2-DE Hamburg 2026"
+        obj["source_dataset"] = "3D-Gebäudemodell LoD3.0-HH Hamburg untexturiert, Area1, 2025"
         obj["source_license"] = "dl-de-by-2.0"
-        obj["source_attribution"] = "Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)"
         obj["source_semantic"] = semantic
-        if semantic == "wall":
-            obj["facade_photo_reference"] = "Poly Haven hansaplatz panorama, CC0-1.0; reference only"
-            obj["facade_panorama_projection"] = False
-            obj["facade_depth_layer"] = "scripts/blender/author_hamburg_lod2_facades.py"
+        obj["quality_role"] = "macro-shell"
+        counts[semantic] += 1
         created += 1
 
     width = max_runtime[0] - min_runtime[0]
     height = max_runtime[1] - min_runtime[1]
     depth = max_runtime[2] - min_runtime[2]
-    if not (20.0 <= width <= 380.0 and 3.0 <= height <= 140.0 and 20.0 <= depth <= 380.0):
+    if not (20.0 <= width <= 400.0 and 3.0 <= height <= 160.0 and 20.0 <= depth <= 400.0):
         raise RuntimeError(
-            "Hamburg LoD2 local bounds are implausible for Hansaplatz: "
+            "Hamburg LoD3 local bounds are implausible for Hansaplatz: "
             f"width={width:.2f}m height={height:.2f}m depth={depth:.2f}m"
         )
-    print(f"Hamburg LoD2 runtime bounds: width={width:.2f}m height={height:.2f}m depth={depth:.2f}m")
-    return created
+    print(f"Hamburg LoD3 runtime bounds: width={width:.2f}m height={height:.2f}m depth={depth:.2f}m")
+    print(f"Hamburg LoD3 semantic objects: {dict(sorted(counts.items()))}")
+    return created, dict(counts)
 
 
 def main() -> None:
@@ -232,26 +215,24 @@ def main() -> None:
         raise RuntimeError(f"Missing collection: {args.collection}")
     visual = find_visual(root)
     removed = remove_previous_macro_geometry()
-    created = create_semantic_objects(Path(args.obj), visual)
+    created, counts = create_semantic_objects(Path(args.obj), visual)
 
-    root["official_lod2_source"] = "https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/LoD2-DE_HH_2026-04-28.zip"
-    root["official_lod2_provider"] = "Freie und Hansestadt Hamburg, LGV"
-    root["official_lod2_license"] = "dl-de-by-2.0"
-    root["official_lod2_reference_location"] = "Hansaplatz, Hamburg-St. Georg, Germany"
-    root["official_lod2_reference_gps"] = "53.554451,10.012056"
-    root["official_lod2_removed_previous_objects"] = removed
-    root["official_lod2_created_semantic_objects"] = created
-    root["macro_geometry_basis"] = "Hamburg official cadastral LoD2-DE 2026"
-    root["facade_detail_basis"] = "Blender-authored geometry; Poly Haven panorama is reference/background only"
-    root["facade_panorama_projection"] = False
-    root["facade_projection_emissive"] = False
-    if args.panorama:
-        root["facade_photo_reference_path"] = args.panorama
-        root["facade_photo_reference_yaw_deg"] = args.panorama_yaw_deg
+    root["official_geometry_level"] = "LoD3.0-HH"
+    root["official_lod3_source"] = args.source_url
+    root["official_lod3_provider"] = "Freie und Hansestadt Hamburg, LGV"
+    root["official_lod3_license"] = "dl-de-by-2.0"
+    root["official_lod3_reference_location"] = "Hansaplatz, Hamburg-St. Georg, Germany"
+    root["official_lod3_reference_gps"] = "53.554451,10.012056"
+    root["official_lod3_removed_previous_objects"] = removed
+    root["official_lod3_created_semantic_objects"] = created
+    root["official_lod3_semantic_counts"] = str(dict(sorted(counts.items())))
+    root["macro_geometry_basis"] = "Hamburg official LoD3.0-HH untextured Area1 2025"
+    root["facade_detail_basis"] = "Blender-authored facade overlay required; Poly Haven panorama is reference only"
+    root["raw_panorama_wall_projection"] = False
 
     bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
     print(
-        "Hamburg Hansaplatz LoD2 applied without facade panorama projection: "
+        "Hamburg Hansaplatz LoD3 applied: "
         f"removed previous={removed}, created semantic objects={created}"
     )
 

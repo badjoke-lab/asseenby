@@ -1,0 +1,123 @@
+name: Probe Hansaplatz Hamburg LoD3 Area5
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/workflows/probe-hansaplatz-lod3-area5.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install archive tooling
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends p7zip-full
+      - name: Download official Hamburg LoD3 Area5
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 3 \
+            --user-agent 'AsSeenBy-LoD3-area5-probe/1.0' \
+            'https://archiv.transparenz.hamburg.de/hmbtgarchive/HMDK/lod3-hh_area5_notexture_2024_07_18_205381_snap_1.zip' \
+            -o /tmp/lod3-area5.zip
+          test -s /tmp/lod3-area5.zip
+          du -h /tmp/lod3-area5.zip
+          rm -rf /tmp/lod3-area5
+          mkdir -p /tmp/lod3-area5
+          7z x -y -o/tmp/lod3-area5 /tmp/lod3-area5.zip >/tmp/area5-7z.log
+          find /tmp/lod3-area5 -type f | head -20
+      - name: Find Hansaplatz tiles and nearest buildings
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import math
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          TARGET_E=567045.146949287
+          TARGET_N=5934427.863514651
+          GML_ID='{http://www.opengis.net/gml}id'
+          def local(tag): return tag.rsplit('}',1)[-1]
+          def nums(text):
+              try: return [float(v) for v in (text or '').replace(',',' ').split()]
+              except ValueError: return []
+          def norm(a,b):
+              if 100000<=a<=900000 and 5000000<=b<=7000000: return a,b
+              if 5000000<=a<=7000000 and 100000<=b<=900000: return b,a
+              return None
+          def env(root):
+              lo=hi=None
+              for e in root.iter():
+                  n=local(e.tag)
+                  if n=='lowerCorner' and e.text: lo=nums(e.text)
+                  elif n=='upperCorner' and e.text: hi=nums(e.text)
+                  if lo and hi: break
+              if not lo or not hi or len(lo)<2 or len(hi)<2: return None
+              a=norm(lo[0],lo[1]); b=norm(hi[0],hi[1])
+              if not a or not b: return None
+              return min(a[0],b[0]),min(a[1],b[1]),max(a[0],b[0]),max(a[1],b[1])
+          def dist(box):
+              minx,miny,maxx,maxy=box
+              dx=0 if minx<=TARGET_E<=maxx else min(abs(TARGET_E-minx),abs(TARGET_E-maxx))
+              dy=0 if miny<=TARGET_N<=maxy else min(abs(TARGET_N-miny),abs(TARGET_N-maxy))
+              return math.hypot(dx,dy)
+          def building_points(b):
+              pts=[]
+              for e in b.iter():
+                  if local(e.tag) not in {'posList','pos'} or not e.text: continue
+                  v=nums(e.text)
+                  if len(v)<2: continue
+                  if local(e.tag)=='pos': dim=len(v)
+                  else:
+                      raw=e.attrib.get('srsDimension') or e.attrib.get('dimension')
+                      dim=int(raw) if raw and raw.isdigit() and int(raw) in (2,3,4) else (3 if len(v)%3==0 else 2 if len(v)%2==0 else 0)
+                  if not dim: continue
+                  for i in range(0,len(v)-1,dim):
+                      p=norm(v[i],v[i+1])
+                      if p: pts.append(p)
+              return pts
+          def pbox(pts):
+              xs=[p[0] for p in pts]; ys=[p[1] for p in pts]
+              return min(xs),min(ys),max(xs),max(ys)
+
+          names=sorted(p for p in Path('/tmp/lod3-area5').rglob('*') if p.is_file() and p.suffix.lower() in {'.gml','.xml','.citygml'})
+          sheets=[]
+          candidates=[]
+          for path in names:
+              root=ET.parse(path).getroot()
+              box=env(root)
+              if not box: continue
+              d=dist(box)
+              sheets.append((d,path,box))
+              if d<=300.0: candidates.append((d,path,box,root))
+          sheets.sort(key=lambda r:r[0])
+          print('GML_COUNT',len(names))
+          print('NEAREST_15_TILE_ENVELOPES')
+          for row in sheets[:15]: print(f'{row[0]:.3f}m\t{row[1].relative_to(Path("/tmp/lod3-area5"))}\tbbox={row[2]}')
+          print('CANDIDATE_TILES_WITHIN_300M',len(candidates))
+          buildings=[]
+          for _,path,_,root in candidates:
+              rel=str(path.relative_to(Path('/tmp/lod3-area5')))
+              for idx,b in enumerate(root.iter()):
+                  if local(b.tag) not in {'Building','BuildingPart'}: continue
+                  pts=building_points(b)
+                  if not pts: continue
+                  box=pbox(pts); d=dist(box)
+                  bid=b.attrib.get(GML_ID) or f'{rel}#{idx}'
+                  buildings.append((d,rel,bid,box,len(pts)))
+          buildings.sort(key=lambda r:r[0])
+          print('NEAREST_30_BUILDINGS')
+          for row in buildings[:30]: print(f'{row[0]:.3f}m\t{row[1]}\t{row[2]}\tbbox={row[3]}\tpoints={row[4]}')
+          print('COUNT_BUILDINGS_WITHIN_170M',sum(1 for r in buildings if r[0]<=170.0))
+          if buildings:
+              print('NEAREST_BUILDING_DISTANCE_M',f'{buildings[0][0]:.3f}')
+              print('NEAREST_BUILDING_SHEET',buildings[0][1])
+              print('NEAREST_BUILDING_ID',buildings[0][2])
+          PY

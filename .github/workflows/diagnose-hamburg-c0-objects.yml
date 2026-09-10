@@ -1,0 +1,33 @@
+name: Diagnose Hamburg C0 objects
+
+on:
+  push:
+    branches:
+      - feat/c0-hamburg-lod3-quality-20260909
+    paths:
+      - .github/diagnose_hamburg_c0_objects.py
+      - .github/workflows/diagnose-hamburg-c0-objects.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Install Blender
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
+      - name: Print nearfield non-LoD2 meshes
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python .github/diagnose_hamburg_c0_objects.py
