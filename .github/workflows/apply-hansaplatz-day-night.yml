@@ -28,7 +28,18 @@ jobs:
           fetch-depth: 0
 
       - name: Apply Day Night migration
-        run: python3 .github/apply_hansaplatz_day_night.py
+        run: |
+          set -euo pipefail
+          python3 .github/apply_hansaplatz_day_night.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/SpatialPage.tsx')
+          s = p.read_text()
+          redundant = '      activeSceneRuntime?.setLightingMode(currentLightingMode);\n'
+          if s.count(redundant) != 1:
+              raise SystemExit(f'expected one redundant lighting call, got {s.count(redundant)}')
+          p.write_text(s.replace(redundant, '', 1))
+          PY
 
       - name: Validate architecture markers
         run: |
