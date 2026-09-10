@@ -6,11 +6,13 @@ Macro geometry license: dl-de-by-2.0
 LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
 Wall substrate: deterministic per-building material palette; no photographic facade claim
 Close facade v8: per-building deterministic grammar on actual Hamburg LoD2 wall planes, with varied floor/bay/window proportions, recessed portal cues, mixed ground-floor rhythms, grouping pilasters, cornices and bounded projecting bays
-Close facade selection: balanced multi-view priority for yaw=0 and +/-1.05 rad; initial forward cone first; per-building face cap
+Close facade selection: balanced multi-view priority for yaw=0 and +/-1.05 rad; per-building face cap
+Blank-wall v9: camera-aware selection around runtime start [0,-34], vertical pilasters, shadow joints, horizontal string courses and low plinth; no invented windows
 Narrow articulated walls: each official narrow wall plane retains its own direction; no face merging
-Large undetailed walls: base/cap/string-course relief plus shallow vertical party-wall articulation; no invented windows
+Large undetailed walls: base/cap/string-course relief plus v9 party-wall articulation
 Ground continuity: coarse triangulated visual underlay interpolated from official LoD2 building-ground elevations and near-plaza observer anchors; not authoritative surveyed terrain
 Photographic reference: Poly Haven hansaplatz, CC0-1.0
-Photographic reference use: evidence and environment lighting only for Night Intersection; raw equirectangular wall projection forbidden
+Photographic reference use: evidence and low-intensity environment lighting only for Night Intersection; raw equirectangular wall projection forbidden
+Runtime v9: closer street-level initial observer and high-contrast local night lighting; Photo Reference remains independent
 Current close-facade status: structural authored pass; facade-by-facade photographic registration remains open
 Runtime: Blender-authored C0 exported to GLB for Three.js
