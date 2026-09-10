@@ -230,3 +230,12 @@ For future implementation agents:
 - Preserve Night as a same-geometry low-light environment for glare/contrast stress testing.
 - Keep Time of day separate from Vision so environmental darkness is not conflated with the Night / Low Light perception model.
 - Continue geometry/material/facade quality work once the Day/Night switch is production-proven.
+
+## Hansaplatz v12 nearfield art-pass update (2026-09-11)
+
+- Canonical reconstruction location is **Hansaplatz, Hamburg-St. Georg**. The former Berlin/Hansaviertel interpretation is invalid.
+- Preserve Hamburg LGV `3D-Gebäudemodell LoD2-DE Hamburg 2026` as macro geometry; official LoD3 has a verified nearfield coverage gap and must not be substituted from a distant area.
+- Keep Blender as the canonical primary-visible authoring/assembly layer and Three.js as runtime. The quality problem is now treated as an art-production problem, not as a reason to add more procedural runtime boxes.
+- v12 replaces the visible cylinder/ico-sphere linden-ring vegetation proxies around Hansabrunnen with linked authored CC0 PBR broadleaf geometry, with explicit web geometry budgets and without claiming exact species or surveyed individual positions.
+- After that replacement, QR2 remains open. Immediate order is facade-by-facade photographic registration, remaining landmark/street-proxy replacement, pavement/material/contact refinement, then rendered desktop/mobile comparison against the fixed Hansaplatz reference plates.
+- Do not advance to E5 merely because technical build/export checks pass; the close-range Day render must stop reading as placeholder/cheap low-poly work first.
