@@ -105,6 +105,28 @@ if (desktopBox.width > 0 && desktopBox.height > 0) {
   await captureViewport(desktop, `${OUT}/desktop-moved.png`);
 }
 
+// Diagnostic ring from the exact HDRI/LoD2 registration origin. Each 15-key
+// increment is 1.05 rad (~60.16 degrees), close enough to pair silhouettes with
+// the checked-in 60-degree photographic reference plates. This is diagnostic
+// evidence only; the relative panorama seam is not claimed as geographic north.
+const registration = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+collectErrors(registration, "registration");
+await registration.goto(`${BASE}/?view=spatial&hamburg_registration=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+await waitForC0(registration);
+const { canvas: registrationCanvas } = await frameCanvas(registration);
+await registrationCanvas.focus();
+const registrationStates = [];
+for (let index = 0; index < 6; index += 1) {
+  if (index > 0) {
+    for (let step = 0; step < 15; step += 1) await registration.keyboard.press("ArrowLeft");
+    await registration.waitForTimeout(250);
+  }
+  const state = await readCanvas(registration);
+  registrationStates.push(state);
+  const degrees = String(index * 60).padStart(3, "0");
+  await captureViewport(registration, `${OUT}/registration-yaw-${degrees}.png`);
+}
+
 const mobileContext = await browser.newContext({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 1,
@@ -122,25 +144,31 @@ await captureViewport(mobile, `${OUT}/mobile-forward.png`);
 const yawDelta = initial?.yaw != null && turned?.yaw != null
   ? Math.abs(Number(turned.yaw) - Number(initial.yaw))
   : 0;
+const registrationOriginOk = registrationStates.every((state) => state?.position === "0.000,0.000,0.000");
 const result = {
   ok: errors.length === 0
     && initial?.roots === "1"
     && initial?.chunks?.split(",").includes("c0")
     && initial?.movement === "bounded-ground"
+    && initial?.position === "0.000,0.000,0.000"
     && Number.isFinite(yawDelta)
     && yawDelta >= 0.25
     && moved?.position !== turned?.position
-    && mobileState?.roots === "1",
+    && mobileState?.roots === "1"
+    && registrationOriginOk,
   errors,
   yawDelta,
   initial,
   turned,
   moved,
   mobile: mobileState,
+  registrationOriginOk,
+  registrationStates,
 };
 await fs.writeFile(`${OUT}/result.json`, JSON.stringify(result, null, 2));
 
 await mobileContext.close();
+await registration.close();
 await desktop.close();
 await browser.close();
 
