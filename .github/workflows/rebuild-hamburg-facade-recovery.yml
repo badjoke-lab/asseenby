@@ -9,6 +9,7 @@ on:
       - scripts/blender/author_hamburg_hansaplatz_facade_depth.py
       - scripts/blender/author_hamburg_lod2_facades.py
       - scripts/blender/author_hamburg_lod2_narrow_relief.py
+      - scripts/blender/author_hamburg_lod2_large_wall_relief.py
       - .github/hamburg-priority-facade.py
       - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/workflows/rebuild-hamburg-facade-recovery.yml
@@ -51,8 +52,9 @@ jobs:
           test -s assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj
           test -s .github/hamburg-priority-facade.py
           test -s scripts/blender/author_hamburg_lod2_narrow_relief.py
+          test -s scripts/blender/author_hamburg_lod2_large_wall_relief.py
 
-      - name: Remove panorama projection and rebuild wall substrate
+      - name: Remove panorama projection and rebuild varied wall substrates
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
@@ -88,12 +90,23 @@ jobs:
             --radius-m 95 \
             --max-faces 48
 
+      - name: Author large undetailed wall relief
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python scripts/blender/author_hamburg_lod2_large_wall_relief.py -- \
+            --collection C0 \
+            --obj assets-src/blender/night-intersection/hamburg-lod2/hansaplatz-lod2.obj \
+            --radius-m 95 \
+            --max-faces 28
+
       - name: Validate Blender scene contract
         run: |
           set -euo pipefail
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
             --python-exit-code 1 \
-            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad,bad; legacy=[o.name for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert not legacy,legacy; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_authored_')]; narrow=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_narrow_')]; assert len(authored)>=5,len(authored); assert len(narrow)>=2,len(narrow); assert root.get('raw_panorama_wall_projection') is False; assert root.get('hamburg_facade_panorama_projection') is False; assert root.get('hamburg_facade_narrow_panorama_projection') is False; assert int(root.get('hamburg_facade_selection_priority_version',0))==6; assert root.get('hamburg_facade_selection_fragment_merging') is False; assert int(root.get('hamburg_wall_substrate_quality_version',0))==2; assert int(root.get('hamburg_facade_quality_version',0))==6; assert int(root.get('hamburg_facade_narrow_face_count',0))>=5; assert int(root.get('hamburg_facade_narrow_edge_count',0))>=10; assert int(root.get('hamburg_facade_authored_face_count',0))>=64; assert int(root.get('hamburg_facade_authored_window_count',0))>=40; assert int(root.get('hamburg_facade_authored_shopfront_count',0))>=10; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('NARROW_OBJECTS',len(narrow)); print('SELECTION_BASIS',root.get('hamburg_facade_selection_basis')); print('SUBSTRATE_BASIS',root.get('hamburg_wall_substrate_basis')); print('NARROW_BASIS',root.get('hamburg_facade_narrow_basis')); print('NARROW_FACES',root.get('hamburg_facade_narrow_face_count')); print('NARROW_BANDS',root.get('hamburg_facade_narrow_band_count')); print('NARROW_EDGES',root.get('hamburg_facade_narrow_edge_count')); print('AUTHORED_FACES',root.get('hamburg_facade_authored_face_count')); print('AUTHORED_WINDOWS',root.get('hamburg_facade_authored_window_count')); print('AUTHORED_SHOPFRONTS',root.get('hamburg_facade_authored_shopfront_count')); print('AUTHORED_BAYS',root.get('hamburg_facade_authored_bay_count'))"
+            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; walls=[o for o in bpy.data.objects if o.name.startswith('lod2_') and o.type=='MESH' and (str(o.get('source_semantic',''))=='wall' or o.name.endswith('_wall'))]; assert walls; bad=[(o.name,s.material.name if s.material else '') for o in walls for s in o.material_slots if s.material and 'panorama_projected' in s.material.name]; assert not bad,bad; legacy=[o.name for o in bpy.data.objects if o.name.startswith('hamburg_authored_facade_')]; assert not legacy,legacy; authored=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_authored_')]; narrow=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_narrow_')]; large=[o for o in bpy.data.objects if o.name.startswith('hamburg_facade_largewall_')]; assert len(authored)>=5,len(authored); assert len(narrow)>=2,len(narrow); assert len(large)>=2,len(large); assert root.get('raw_panorama_wall_projection') is False; assert root.get('hamburg_facade_panorama_projection') is False; assert root.get('hamburg_facade_narrow_panorama_projection') is False; assert root.get('hamburg_facade_largewall_panorama_projection') is False; assert int(root.get('hamburg_facade_selection_priority_version',0))==6; assert root.get('hamburg_facade_selection_fragment_merging') is False; assert int(root.get('hamburg_wall_substrate_quality_version',0))==3; assert int(root.get('hamburg_wall_substrate_palette_size',0))>=4; assert int(root.get('hamburg_facade_quality_version',0))==7; assert int(root.get('hamburg_facade_narrow_face_count',0))>=5; assert int(root.get('hamburg_facade_narrow_edge_count',0))>=10; assert int(root.get('hamburg_facade_largewall_face_count',0))>=1; assert int(root.get('hamburg_facade_largewall_edge_count',0))>=2; assert int(root.get('hamburg_facade_authored_face_count',0))>=64; assert int(root.get('hamburg_facade_authored_window_count',0))>=40; assert int(root.get('hamburg_facade_authored_shopfront_count',0))>=10; print('WALLS',len(walls)); print('AUTHORED_OBJECTS',len(authored)); print('NARROW_OBJECTS',len(narrow)); print('LARGEWALL_OBJECTS',len(large)); print('SELECTION_BASIS',root.get('hamburg_facade_selection_basis')); print('SUBSTRATE_BASIS',root.get('hamburg_wall_substrate_basis')); print('SUBSTRATE_DISTRIBUTION',root.get('hamburg_wall_substrate_distribution')); print('NARROW_BASIS',root.get('hamburg_facade_narrow_basis')); print('LARGEWALL_BASIS',root.get('hamburg_facade_largewall_basis')); print('NARROW_FACES',root.get('hamburg_facade_narrow_face_count')); print('NARROW_BANDS',root.get('hamburg_facade_narrow_band_count')); print('NARROW_EDGES',root.get('hamburg_facade_narrow_edge_count')); print('LARGEWALL_FACES',root.get('hamburg_facade_largewall_face_count')); print('LARGEWALL_BANDS',root.get('hamburg_facade_largewall_band_count')); print('LARGEWALL_EDGES',root.get('hamburg_facade_largewall_edge_count')); print('AUTHORED_FACES',root.get('hamburg_facade_authored_face_count')); print('AUTHORED_WINDOWS',root.get('hamburg_facade_authored_window_count')); print('AUTHORED_SHOPFRONTS',root.get('hamburg_facade_authored_shopfront_count')); print('AUTHORED_BAYS',root.get('hamburg_facade_authored_bay_count'))"
 
       - name: Export recovered C0 GLB
         run: |
@@ -115,14 +128,15 @@ jobs:
           Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
           Macro geometry license: dl-de-by-2.0
           LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
-          Wall substrate: procedural masonry/stucco color variation, normal relief and roughness variation; no photographic facade claim
+          Wall substrate: deterministic per-building procedural masonry/stucco palette with color, normal and roughness variation; no photographic facade claim
           Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
           Close facade selection: multi-view priority for yaw=0 and +/-1.05 rad; valid wall faces inside the initial +/-22 degree forward cone are strongly guaranteed into the 64-face budget
           Narrow articulated walls: each 0.45-3.8 m official wall plane retains its own direction; no face merging; only plinth/cornice/edge/floor relief is added
+          Large undetailed walls: visible official wall planes outside the 64-face detail budget receive only plinth/cap/end/string-course relief; no invented windows
           Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
-          Nearfield authoring scope: wall faces within 95 m; 64 regular facade faces plus bounded visible narrow-wall relief
+          Nearfield authoring scope: wall faces within 95 m; 64 regular facade faces plus bounded narrow-wall and large-wall relief
           Photographic reference: Poly Haven hansaplatz, CC0-1.0
-          Photographic reference use: evidence/far environment only; raw equirectangular wall projection forbidden
+          Photographic reference use: evidence and environment lighting only for Night Intersection; raw equirectangular wall projection forbidden
           Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
           Runtime: Blender-authored C0 exported to GLB for Three.js
           EOF
@@ -154,7 +168,7 @@ jobs:
             echo 'No generated C0 changes'
             exit 0
           fi
-          git commit -m 'Rebuild Hamburg C0 with narrow relief and wall material depth'
+          git commit -m 'Rebuild Hamburg C0 with v7 wall depth recovery'
           echo 'Transient files before cleanup:'
           git status --short || true
           git reset --hard HEAD
