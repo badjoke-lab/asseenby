@@ -85,12 +85,22 @@ let initial = await readCanvas(desktop);
 await captureViewport(desktop, `${OUT}/desktop-forward.png`);
 
 await desktop.selectOption("#spatial-lighting-select", "night");
-await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night", { timeout: 90_000 });
-await desktop.waitForTimeout(350);
+await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night");
+await desktop.waitForFunction(
+  () => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingRenderState === "complete",
+  null,
+  { timeout: 120_000 },
+);
+await desktop.waitForTimeout(250);
 const nightLightingState = await readCanvas(desktop);
 await captureViewport(desktop, `${OUT}/desktop-night-forward.png`);
 await desktop.selectOption("#spatial-lighting-select", "day");
-await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day", { timeout: 90_000 });
+await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day");
+await desktop.waitForFunction(
+  () => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingRenderState === "complete",
+  null,
+  { timeout: 120_000 },
+);
 await desktop.waitForTimeout(250);
 const dayReturnState = await readCanvas(desktop);
 

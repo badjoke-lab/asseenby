@@ -275,8 +275,14 @@ function SpatialRenderer({
         setLighting: (nextLighting) => {
           currentLightingMode = nextLighting;
           canvas.dataset.sceneLightingMode = nextLighting;
+          canvas.dataset.sceneLightingRenderState = "pending";
           if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
-          activeSceneRuntime?.setLightingMode(nextLighting);
+          const runtimeAtRequest = activeSceneRuntime;
+          window.setTimeout(() => {
+            if (currentLightingMode !== nextLighting || activeSceneRuntime !== runtimeAtRequest) return;
+            runtimeAtRequest?.setLightingMode(nextLighting);
+            canvas.dataset.sceneLightingRenderState = "complete";
+          }, 100);
         },
         setVision: (nextVision) => visionRuntime?.setVision(nextVision),
         setViewpoint: (nextViewpoint) => activeObserverRuntime?.setGuidedViewpoint(nextViewpoint),
