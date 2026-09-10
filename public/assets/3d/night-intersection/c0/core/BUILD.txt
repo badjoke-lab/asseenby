@@ -1,18 +1,15 @@
 Canonical location: Hansaplatz, Hamburg-St. Georg, Germany
-Reference coordinates: 53.554451, 10.012056
+Photo reference origin: 53.554451, 10.012056 = runtime 0,0
 Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
-Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
-Macro geometry license: dl-de-by-2.0
-LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
-Wall substrate: deterministic per-building material palette; no photographic facade claim
-Close facade v8: per-building deterministic grammar on actual Hamburg LoD2 wall planes, with varied floor/bay/window proportions, recessed portal cues, mixed ground-floor rhythms, grouping pilasters, cornices and bounded projecting bays
-Close facade selection: balanced multi-view priority for yaw=0 and +/-1.05 rad; per-building face cap
-Blank-wall v9: camera-aware selection around runtime start [0,-34], vertical pilasters, shadow joints, horizontal string courses and low plinth; no invented windows
-Narrow articulated walls: each official narrow wall plane retains its own direction; no face merging
-Large undetailed walls: base/cap/string-course relief plus v9 party-wall articulation
-Ground continuity: coarse triangulated visual underlay interpolated from official LoD2 building-ground elevations and near-plaza observer anchors; not authoritative surveyed terrain
-Photographic reference: Poly Haven hansaplatz, CC0-1.0
-Photographic reference use: evidence and low-intensity environment lighting only for Night Intersection; raw equirectangular wall projection forbidden
-Runtime v9: closer street-level initial observer and high-contrast local night lighting; Photo Reference remains independent
-Current close-facade status: structural authored pass; facade-by-facade photographic registration remains open
+Macro geometry provider: Freie und Hansestadt Hamburg, LGV
+LoD3 nearfield status: verified official coverage gap; no distant LoD3 substitution
+v9 facade layer: retained
+v10 landmark: Hansabrunnen reconstruction proxy at runtime -7.377,0,-30.192
+Hansabrunnen documented height: 17 m
+Hansabrunnen source: https://www.hamburg.de/tourismus/sehenswuerdigkeiten/hansaplatz-hamburg-360882
+v10 central paving: Granitkleinpflaster visual reconstruction; exact surveyed zone dimensions not claimed
+v10 tree ring: 12 mature linden visual proxies around fountain; exact surveyed tree positions not claimed
+Plaza design source: https://www.hamburg.de/contentblob/4498572/c9f8de8272cf87cba874c4af9de5f84b
+Photo reference: Poly Haven hansaplatz, CC0-1.0; environment/reference only
+Raw equirectangular wall projection: forbidden
 Runtime: Blender-authored C0 exported to GLB for Three.js
