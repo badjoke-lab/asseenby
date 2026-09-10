@@ -223,3 +223,10 @@ For future implementation agents:
 - `docs/explore-3d-schedule.md` defines current 3D execution order;
 - `docs/explore-3d-quality-recovery.md` is the active blocking gate before E5+;
 - when a product decision changes, update those documents in the same implementation change before marking the work complete.
+
+## Explore 3D Day-first comparison update (2026-09-11)
+
+- Make Hansaplatz Day the standard Explore 3D baseline.
+- Preserve Night as a same-geometry low-light environment for glare/contrast stress testing.
+- Keep Time of day separate from Vision so environmental darkness is not conflated with the Night / Low Light perception model.
+- Continue geometry/material/facade quality work once the Day/Night switch is production-proven.

@@ -1,8 +1,8 @@
 export const SPATIAL_SCENES = [
   {
     id: "night-intersection",
-    label: "Night Intersection",
-    description: "First geometry-based Explore 3D scene: a dense authored night intersection with real depth, lighting, street detail, vehicles, pedestrians, vegetation, and vertical structure.",
+    label: "Hansaplatz 3D",
+    description: "Geometry-based Hansaplatz, Hamburg scene. Day and Night use the same authored geometry and camera state so lighting can be compared without changing place.",
     supportsTranslation: true,
     status: "Geometry scene",
   },
@@ -17,11 +17,26 @@ export const SPATIAL_SCENES = [
 
 export type SpatialSceneId = (typeof SPATIAL_SCENES)[number]["id"];
 
+export const SPATIAL_LIGHTING_MODES = [
+  {
+    id: "day",
+    label: "Day",
+    description: "Default comparison lighting. Brighter surfaces and broader color/contrast cues make Vision differences easier to inspect.",
+  },
+  {
+    id: "night",
+    label: "Night",
+    description: "Low-light environment using the same geometry and viewpoint. Use it as a stress test for glare, dark-region contrast, and visibility.",
+  },
+] as const;
+
+export type SpatialLightingMode = (typeof SPATIAL_LIGHTING_MODES)[number]["id"];
+
 export const SPATIAL_OBSERVERS = [
   {
     id: "human",
     label: "Human",
-    description: "Human reference observer. Night Intersection supports bounded ground movement with collision-aware navigation; the Photo Reference remains look-only.",
+    description: "Human reference observer. Hansaplatz 3D supports bounded ground movement with collision-aware navigation; the Photo Reference remains look-only.",
   },
 ] as const;
 
