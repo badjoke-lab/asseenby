@@ -1,16 +1,19 @@
 name: Verify Hansaplatz Hamburg visual
-# Visual proof for iterative Hansaplatz production checkpoints.
+# Visual proof for iterative Hansaplatz production checkpoints, including Day/Night lighting parity.
 
 on:
   push:
     branches:
       - feat/c0-hamburg-lod3-quality-20260909
-      - feat/hansaplatz-v10-landmark-plaza-20260911
+      - "feat/hansaplatz-*"
     paths:
       - public/assets/3d/night-intersection/c0/core/**
       - assets-src/blender/night-intersection/c0/**
       - scripts/blender/**
+      - src/SpatialPage.tsx
+      - src/spatial/catalog.ts
       - src/spatial/sceneRuntime.ts
+      - src/spatial.css
       - .github/HANSAPLATZ_SOURCE_TRUTH
       - .github/hansaplatz-lod2-visual-proof.mjs
       - .github/workflows/verify-hansaplatz-lod2-visual.yml
