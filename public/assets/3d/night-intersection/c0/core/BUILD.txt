@@ -4,14 +4,13 @@ Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
 Macro geometry provider: Freie und Hansestadt Hamburg, Landesbetrieb Geoinformation und Vermessung (LGV)
 Macro geometry license: dl-de-by-2.0
 LoD3 nearfield status: official Area1 coverage gap independently verified in 2024 and 2025 archives; do not substitute distant geometry
-Wall substrate: deterministic per-building procedural masonry/stucco palette with color, normal and roughness variation; no photographic facade claim
-Close facade: Blender-authored geometry aligned to actual Hamburg LoD2 wall planes, not axis-aligned wall bounding boxes
-Close facade selection: multi-view priority for yaw=0 and +/-1.05 rad; valid wall faces inside the initial +/-22 degree forward cone are strongly guaranteed into the 64-face budget
-Narrow articulated walls: each 0.45-3.8 m official wall plane retains its own direction; no face merging; only plinth/cornice/edge/floor relief is added
-Large undetailed walls: visible official wall planes outside the 64-face detail budget receive only plinth/cap/end/string-course relief; no invented windows
-Close facade elements: recessed glazing cues, storefronts, mullions, frames, sills, lintels, floor bands, plinths, cornices and bounded projecting bays
-Nearfield authoring scope: wall faces within 95 m; 64 regular facade faces plus bounded narrow-wall and large-wall relief
+Wall substrate: deterministic per-building material palette; no photographic facade claim
+Close facade v8: per-building deterministic grammar on actual Hamburg LoD2 wall planes, with varied floor/bay/window proportions, recessed portal cues, mixed ground-floor rhythms, grouping pilasters, cornices and bounded projecting bays
+Close facade selection: balanced multi-view priority for yaw=0 and +/-1.05 rad; initial forward cone first; per-building face cap
+Narrow articulated walls: each official narrow wall plane retains its own direction; no face merging
+Large undetailed walls: base/cap/string-course relief plus shallow vertical party-wall articulation; no invented windows
+Ground continuity: coarse triangulated visual underlay interpolated from official LoD2 building-ground elevations and near-plaza observer anchors; not authoritative surveyed terrain
 Photographic reference: Poly Haven hansaplatz, CC0-1.0
 Photographic reference use: evidence and environment lighting only for Night Intersection; raw equirectangular wall projection forbidden
-Current close-facade status: structural wall-plane pass; facade-by-facade photographic registration remains open
+Current close-facade status: structural authored pass; facade-by-facade photographic registration remains open
 Runtime: Blender-authored C0 exported to GLB for Three.js
