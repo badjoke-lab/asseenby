@@ -402,28 +402,48 @@ async function mobileImageSmoke(browser) {
   await context.close();
 }
 
+async function waitForSpatialC0(page) {
+  await page.locator("canvas.spatial-canvas").waitFor({ state: "visible", timeout: 20_000 });
+  await page.locator("#spatial-lighting-select").waitFor({ state: "visible", timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("canvas.spatial-canvas");
+    return canvas instanceof HTMLCanvasElement
+      && canvas.dataset.sceneAuthoredAssetRootCount === "1"
+      && (canvas.dataset.sceneLoadedChunks ?? "").split(",").includes("c0");
+  }, undefined, { timeout: 60_000 });
+}
+
 async function waitForExplore3DE3(page, label) {
   for (let attempt = 1; attempt <= 12; attempt += 1) {
-    await page.goto(`${BASE}/?view=spatial&e3_release_smoke=${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
-    await page.waitForTimeout(1_000);
+    await page.goto(`${BASE}/?view=spatial&e3_release_smoke=${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await waitForSpatialC0(page);
+    await page.waitForTimeout(250);
     const stable = await page.evaluate(() => {
       const scene = document.querySelector("#spatial-scene-select");
+      const lighting = document.querySelector("#spatial-lighting-select");
       const observer = document.querySelector("#spatial-observer-select");
       const canvas = document.querySelector('canvas.spatial-canvas[data-scene-id="night-intersection"][data-observer-id="human"]');
       const visionButtons = [...document.querySelectorAll('[role="group"][aria-label="Vision"] button')].map((button) => button.textContent?.trim());
       const sceneValues = scene instanceof HTMLSelectElement ? [...scene.options].map((option) => option.value) : [];
+      const lightingValues = lighting instanceof HTMLSelectElement ? [...lighting.options].map((option) => option.value) : [];
       return scene instanceof HTMLSelectElement
         && scene.value === "night-intersection"
         && JSON.stringify(sceneValues) === JSON.stringify(["night-intersection", "photo-reference"])
+        && lighting instanceof HTMLSelectElement
+        && lighting.value === "day"
+        && JSON.stringify(lightingValues) === JSON.stringify(["day", "night"])
         && observer instanceof HTMLSelectElement
         && observer.value === "human"
         && canvas instanceof HTMLCanvasElement
+        && canvas.dataset.sceneLightingMode === "day"
+        && canvas.dataset.sceneAuthoredAssetRootCount === "1"
+        && (canvas.dataset.sceneLoadedChunks ?? "").split(",").includes("c0")
         && canvas.dataset.sceneSupportsTranslation === "true"
         && canvas.dataset.observerMovement === "bounded-ground"
         && document.querySelector('.spatial-reset-button') instanceof HTMLButtonElement
         && Number(canvas.dataset.sceneObjectCount || 0) >= 220
         && Number(canvas.dataset.sceneLightCount || 0) >= 10
-        && canvas.dataset.sceneVolume === "150x150x60"
+        && canvas.dataset.sceneVolume === "500x500x80-streamed-envelope"
         && canvas.dataset.cameraViewpoint === "baseline"
         && canvas.dataset.visionMode === "normal"
         && JSON.stringify(visionButtons) === JSON.stringify(["Normal", "Tunnel Vision", "Central Loss", "Night / Low Light", "Cataract-like"])
@@ -549,10 +569,14 @@ async function desktopSpatialSmoke(browser) {
   assert((await spatialNav.getByRole("link", { name: "Explore 3D", exact: true }).count()) === 1, "desktop spatial: Explore 3D navigation is missing or duplicated");
 
   const sceneSelect = page.locator("#spatial-scene-select");
+  const lightingSelect = page.locator("#spatial-lighting-select");
   const observerSelect = page.locator("#spatial-observer-select");
-  assert((await sceneSelect.inputValue()) === "night-intersection", "desktop spatial: Night Intersection is not active");
+  assert((await sceneSelect.inputValue()) === "night-intersection", "desktop spatial: Hansaplatz 3D is not active");
+  assert((await lightingSelect.inputValue()) === "day", "desktop spatial: Day is not the default Time of day");
+  assert(JSON.stringify(await lightingSelect.locator("option").allTextContents()) === JSON.stringify(["Day", "Night"]), "desktop spatial: unexpected Time of day options");
+  assert((await canvas.getAttribute("data-scene-lighting-mode")) === "day", "desktop spatial: canvas is not on Day lighting");
   assert((await observerSelect.inputValue()) === "human", "desktop spatial: Human observer is not active");
-  assert(JSON.stringify(await sceneSelect.locator("option").allTextContents()) === JSON.stringify(["Night Intersection", "360° Photo Reference"]), "desktop spatial: unexpected Scene options");
+  assert(JSON.stringify(await sceneSelect.locator("option").allTextContents()) === JSON.stringify(["Hansaplatz 3D", "360° Photo Reference"]), "desktop spatial: unexpected Scene options");
   assert(JSON.stringify(await observerSelect.locator("option").allTextContents()) === JSON.stringify(["Human"]), "desktop spatial: unexpected Observer options");
 
   const modeGroup = page.getByRole("group", { name: "Vision" });
@@ -573,7 +597,7 @@ async function desktopSpatialSmoke(browser) {
     viewpoint: element.dataset.cameraViewpoint,
   }));
   assert(baseline.scene === "night-intersection" && baseline.supportsTranslation === "true", `desktop spatial: E2 geometry metadata regressed ${JSON.stringify(baseline)}`);
-  assert(baseline.objectCount >= 220 && baseline.lightCount >= 10 && baseline.volume === "150x150x60", `desktop spatial: E2 density/volume regressed ${JSON.stringify(baseline)}`);
+  assert(baseline.objectCount >= 220 && baseline.lightCount >= 10 && baseline.volume === "500x500x80-streamed-envelope", `desktop spatial: E2 density/volume regressed ${JSON.stringify(baseline)}`);
   assert((await canvas.getAttribute("data-observer-movement")) === "bounded-ground", "desktop spatial: bounded Human movement is unavailable");
   assert((await page.getByRole("button", { name: "Reset observer", exact: true }).count()) === 1, "desktop spatial: Reset observer control is missing");
 
@@ -651,9 +675,9 @@ async function mobileSpatialSmoke(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   const errors = collectErrors(page);
-  await page.goto(`${BASE}/?view=spatial&production_smoke=e2-mobile-${Date.now()}`, { waitUntil: "networkidle", timeout: 60_000 });
+  await page.goto(`${BASE}/?view=spatial&production_smoke=e2-mobile-${Date.now()}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await waitForSpatialC0(page);
   const canvas = page.locator("canvas.spatial-canvas");
-  await canvas.waitFor({ timeout: 30_000 });
   await noHorizontalOverflow(page, "mobile spatial");
   await assertTouchTargets(page.locator(".topbar a"), "mobile spatial header");
   const spatialNav = page.getByRole("navigation", { name: "Spatial navigation" });
@@ -661,7 +685,10 @@ async function mobileSpatialSmoke(browser) {
   assert((await page.getByRole("link", { name: "Back to image", exact: true }).count()) === 0, "mobile spatial: duplicate Back to image action is still exposed");
   assert((await spatialNav.getByRole("link", { name: "Explore 3D", exact: true }).count()) === 1, "mobile spatial: Explore 3D navigation is missing or duplicated");
   const sceneSelect = page.locator("#spatial-scene-select");
-  assert((await sceneSelect.inputValue()) === "night-intersection", "mobile spatial: Night Intersection is not active");
+  const lightingSelect = page.locator("#spatial-lighting-select");
+  assert((await sceneSelect.inputValue()) === "night-intersection", "mobile spatial: Hansaplatz 3D is not active");
+  assert((await lightingSelect.inputValue()) === "day", "mobile spatial: Day is not the default Time of day");
+  assert((await canvas.getAttribute("data-scene-lighting-mode")) === "day", "mobile spatial: canvas is not on Day lighting");
   assert((await page.locator("#spatial-observer-select").inputValue()) === "human", "mobile spatial: Human Observer is not active");
   await assertTouchTargets(page.locator(".spatial-layer-control select"), "mobile spatial Scene/Observer controls");
   const group = page.getByRole("group", { name: "Vision" });

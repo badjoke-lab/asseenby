@@ -53,9 +53,14 @@ for (let attempt = 1; attempt <= 18; attempt += 1) {
   state = await page.evaluate(() => {
     const canvas = document.querySelector("canvas.spatial-canvas");
     const sceneSelect = document.querySelector("#spatial-scene-select");
+    const lightingSelect = document.querySelector("#spatial-lighting-select");
     if (!(canvas instanceof HTMLCanvasElement)) return null;
     return {
       sceneId: canvas.dataset.sceneId ?? null,
+      lightingControlPresent: lightingSelect instanceof HTMLSelectElement,
+      lightingValue: lightingSelect instanceof HTMLSelectElement ? lightingSelect.value : null,
+      lightingOptions: lightingSelect instanceof HTMLSelectElement ? [...lightingSelect.options].map((option) => option.value) : [],
+      canvasLighting: canvas.dataset.sceneLightingMode ?? null,
       observerId: canvas.dataset.observerId ?? null,
       position: canvas.dataset.cameraPosition ?? null,
       movement: canvas.dataset.observerMovement ?? null,
@@ -73,6 +78,10 @@ for (let attempt = 1; attempt <= 18; attempt += 1) {
   if (
     deployedSha === EXPECTED_SHA
     && state?.sceneId === "night-intersection"
+    && state?.lightingControlPresent === true
+    && state?.lightingValue === "day"
+    && JSON.stringify(state?.lightingOptions) === JSON.stringify(["day", "night"])
+    && state?.canvasLighting === "day"
     && state?.observerId === "human"
     && state?.movement === "bounded-ground"
     && state?.supportsTranslation === "true"
@@ -105,6 +114,63 @@ if (!live) {
 
 await page.screenshot({ path: `${OUT}/production-c0-forward.png`, fullPage: true });
 const canvas = page.locator("canvas.spatial-canvas");
+const lightingSelect = page.locator("#spatial-lighting-select");
+const lightingBaseline = await canvas.evaluate((element) => ({
+  position: element.dataset.cameraPosition,
+  yaw: element.dataset.cameraYaw,
+  pitch: element.dataset.cameraPitch,
+  fov: element.dataset.cameraFov,
+  loadedChunks: element.dataset.sceneLoadedChunks,
+  roots: element.dataset.sceneAuthoredAssetRootCount,
+  vision: element.dataset.visionMode,
+}));
+await lightingSelect.selectOption("night");
+await page.waitForFunction(() => {
+  const element = document.querySelector("canvas.spatial-canvas");
+  return element instanceof HTMLCanvasElement
+    && element.dataset.sceneLightingMode === "night"
+    && element.dataset.sceneLightingRenderState === "complete";
+}, undefined, { timeout: 120_000 });
+const nightLighting = await canvas.evaluate((element) => ({
+  lighting: element.dataset.sceneLightingMode,
+  position: element.dataset.cameraPosition,
+  yaw: element.dataset.cameraYaw,
+  pitch: element.dataset.cameraPitch,
+  fov: element.dataset.cameraFov,
+  loadedChunks: element.dataset.sceneLoadedChunks,
+  roots: element.dataset.sceneAuthoredAssetRootCount,
+  vision: element.dataset.visionMode,
+}));
+await page.screenshot({ path: `${OUT}/production-c0-night.png`, fullPage: true });
+await lightingSelect.selectOption("day");
+await page.waitForFunction(() => {
+  const element = document.querySelector("canvas.spatial-canvas");
+  return element instanceof HTMLCanvasElement
+    && element.dataset.sceneLightingMode === "day"
+    && element.dataset.sceneLightingRenderState === "complete";
+}, undefined, { timeout: 120_000 });
+const returnedDayLighting = await canvas.evaluate((element) => ({
+  lighting: element.dataset.sceneLightingMode,
+  position: element.dataset.cameraPosition,
+  yaw: element.dataset.cameraYaw,
+  pitch: element.dataset.cameraPitch,
+  fov: element.dataset.cameraFov,
+  loadedChunks: element.dataset.sceneLoadedChunks,
+  roots: element.dataset.sceneAuthoredAssetRootCount,
+  vision: element.dataset.visionMode,
+}));
+const sameLightingState = (state) => state
+  && state.position === lightingBaseline.position
+  && state.yaw === lightingBaseline.yaw
+  && state.pitch === lightingBaseline.pitch
+  && state.fov === lightingBaseline.fov
+  && state.loadedChunks === lightingBaseline.loadedChunks
+  && state.roots === lightingBaseline.roots
+  && state.vision === lightingBaseline.vision;
+const lightingParity = nightLighting?.lighting === "night"
+  && returnedDayLighting?.lighting === "day"
+  && sameLightingState(nightLighting)
+  && sameLightingState(returnedDayLighting);
 const before = await canvas.evaluate((element) => element.dataset.cameraPosition);
 await canvas.focus();
 await page.keyboard.down("w");
@@ -129,11 +195,11 @@ const transientChunkFetchErrors = errors.filter((error) =>
   error.includes("Explore 3D chunk failed to load: c0 TypeError: Failed to fetch"),
 );
 const fatalErrors = errors.filter((error) => !transientChunkFetchErrors.includes(error));
-const ok = live && moved && fatalErrors.length === 0;
+const ok = live && lightingParity && moved && fatalErrors.length === 0;
 await fs.writeFile(
   `${OUT}/result.json`,
   JSON.stringify(
-    { ok, live, state, expectedSha: EXPECTED_SHA, deployedSha, before, after, moved, fatalErrors, transientChunkFetchErrors },
+    { ok, live, state, expectedSha: EXPECTED_SHA, deployedSha, lightingBaseline, nightLighting, returnedDayLighting, lightingParity, before, after, moved, fatalErrors, transientChunkFetchErrors },
     null,
     2,
   ),
@@ -142,7 +208,7 @@ await browser.close();
 if (!ok) throw new Error(`Production C0 verification failed: ${JSON.stringify({ state, before, after, moved, fatalErrors })}`);
 console.log(
   JSON.stringify(
-    { ok, live, state, expectedSha: EXPECTED_SHA, deployedSha, before, after, moved, transientChunkFetchErrors },
+    { ok, live, state, expectedSha: EXPECTED_SHA, deployedSha, lightingBaseline, nightLighting, returnedDayLighting, lightingParity, before, after, moved, transientChunkFetchErrors },
     null,
     2,
   ),
