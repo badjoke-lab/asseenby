@@ -38,12 +38,21 @@ const snapshot = async () => page.evaluate(() => {
   };
 });
 
+const waitForC0 = async () => {
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("canvas.spatial-canvas");
+    return canvas instanceof HTMLCanvasElement
+      && canvas.dataset.sceneAuthoredAssetRootCount === "1"
+      && (canvas.dataset.sceneLoadedChunks ?? "").split(",").includes("c0");
+  }, { timeout: 60_000 });
+};
+
 let initial = null;
 let night = null;
 let returned = null;
 let lastError = null;
 
-for (let attempt = 1; attempt <= 18; attempt += 1) {
+for (let attempt = 1; attempt <= 8; attempt += 1) {
   try {
     await page.goto(`${BASE}/?view=spatial&production_day_night=${Date.now()}`, {
       waitUntil: "domcontentloaded",
@@ -52,6 +61,7 @@ for (let attempt = 1; attempt <= 18; attempt += 1) {
     await page.locator("canvas.spatial-canvas").waitFor({ state: "visible", timeout: 20_000 });
     const lighting = page.locator("#spatial-lighting-select");
     await lighting.waitFor({ state: "visible", timeout: 8_000 });
+    await waitForC0();
     initial = await snapshot();
     if (
       initial?.lightingControlPresent
@@ -73,14 +83,20 @@ for (let attempt = 1; attempt <= 18; attempt += 1) {
   } catch (error) {
     lastError = error instanceof Error ? error.message : String(error);
   }
-  if (attempt < 18) await page.waitForTimeout(7_500);
+  if (attempt < 8) await page.waitForTimeout(5_000);
 }
 
-if (!initial?.lightingControlPresent || initial?.lightingValue !== "day" || initial?.canvasLighting !== "day") {
+if (
+  !initial?.lightingControlPresent
+  || initial?.lightingValue !== "day"
+  || initial?.canvasLighting !== "day"
+  || initial?.roots !== "1"
+  || !initial?.loadedChunks?.split(",").includes("c0")
+) {
   await page.screenshot({ path: `${OUT}/production-not-day-current.png`, fullPage: true }).catch(() => {});
   await fs.writeFile(`${OUT}/result.json`, JSON.stringify({ ok: false, phase: "initial", initial, lastError, errors }, null, 2));
   await browser.close();
-  throw new Error(`Day-first production UI not detected: ${lastError}`);
+  throw new Error(`Day-first production UI not detected with loaded C0: ${lastError}`);
 }
 
 await page.screenshot({ path: `${OUT}/production-day.png`, fullPage: true });
