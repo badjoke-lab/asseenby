@@ -490,3 +490,11 @@ Acceptance requires actual rendered behavior showing:
 - public production verification.
 
 During the active recovery, E5+ must not resume until QR7 closes the scene/world quality gate.
+
+## Hansaplatz Day / Night baseline policy (2026-09-11)
+
+- Hansaplatz 3D uses one shared geometry/chunk set for both Day and Night.
+- Day is the default reference environment for Vision comparisons.
+- Night is an environment stress test and is independent from the `Night / Low Light` Vision simulation.
+- Switching Time of day must preserve Scene geometry, observer position, look direction, FOV, and Vision.
+- The Poly Haven Hansaplatz panorama may be used as Night IBL/reference evidence, but raw equirectangular wall projection remains forbidden.

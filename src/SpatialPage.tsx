@@ -6,10 +6,12 @@ import { ModeEvidencePanel } from "./components/ModeEvidencePanel";
 import { MODES, type ModeDef } from "./modes";
 import { getSpatialModeEvidence } from "./spatialEvidence";
 import {
+  SPATIAL_LIGHTING_MODES,
   SPATIAL_OBSERVERS,
   SPATIAL_SCENES,
   SPATIAL_VISIONS,
   type SpatialGuidedViewpoint,
+  type SpatialLightingMode,
   type SpatialObserverId,
   type SpatialSceneId,
   type SpatialVisionMode,
@@ -22,6 +24,7 @@ import { createSpatialVisionRuntime, type SpatialVisionRuntime } from "./spatial
 type SpatialController = {
   setScene: (sceneId: SpatialSceneId) => void;
   setObserver: (observerId: SpatialObserverId) => void;
+  setLighting: (lighting: SpatialLightingMode) => void;
   setVision: (vision: SpatialVisionMode) => void;
   setViewpoint: (viewpoint: SpatialGuidedViewpoint) => void;
   setMovementInput: (direction: SpatialMoveDirection, active: boolean) => void;
@@ -53,6 +56,7 @@ const VISION_DESCRIPTIONS: Record<SpatialVisionMode, string> = {
 export default function SpatialPage() {
   const [sceneId, setSceneId] = useState<SpatialSceneId>("night-intersection");
   const [observerId, setObserverId] = useState<SpatialObserverId>("human");
+  const [lighting, setLighting] = useState<SpatialLightingMode>("day");
   const [vision, setVision] = useState<SpatialVisionMode>("normal");
   const evidenceModeKey = vision === "normal" ? null : vision;
   const evidenceMode = evidenceModeKey
@@ -77,23 +81,25 @@ export default function SpatialPage() {
             <p className="spatial-kicker">Explore 3D</p>
             <h1 className="spatial-title">Separate the scene, the observer, and the way of seeing.</h1>
             <p className="spatial-lead">
-              Night Intersection is the first geometry-based Explore 3D scene, built to make depth, occlusion, authored lighting, and camera translation visible. Hansaplatz remains available as the 360° Photo Reference for photographic same-view Vision comparisons.
+              Hansaplatz 3D now uses one authored geometry for both Day and Night. Day is the default comparison baseline so color, contrast, depth, and detail differences remain easier to inspect; Night is a separate low-light stress test. The 360° Photo Reference remains available for photographic same-view Vision comparisons.
             </p>
           </section>
 
           <SpatialRenderer
             sceneId={sceneId}
             observerId={observerId}
+            lighting={lighting}
             vision={vision}
             setSceneId={setSceneId}
             setObserverId={setObserverId}
+            setLighting={setLighting}
             setVision={setVision}
           />
 
           <section className="spatial-note" aria-label="Explore 3D comparison limitation">
             {isGeometryScene ? (
               <>
-                <strong>Human geometry comparison:</strong> the 1.6 m Human observer keeps the same bounded ground position, look direction, and FOV while Vision switches among Normal, Tunnel Vision, Central Loss, Night / Low Light, and Cataract-like. The modes remain generic research simulations rather than patient-specific reconstructions.
+                <strong>Human geometry comparison:</strong> Day / Night changes only the environment lighting while preserving the same Hansaplatz geometry, observer position, look direction, and FOV. Vision is a separate layer, so Normal + Day is the standard baseline and Night / Low Light remains a perception simulation rather than a time-of-day switch.
               </>
             ) : (
               <>
@@ -131,16 +137,20 @@ export default function SpatialPage() {
 function SpatialRenderer({
   sceneId,
   observerId,
+  lighting,
   vision,
   setSceneId,
   setObserverId,
+  setLighting,
   setVision,
 }: {
   sceneId: SpatialSceneId;
   observerId: SpatialObserverId;
+  lighting: SpatialLightingMode;
   vision: SpatialVisionMode;
   setSceneId: (sceneId: SpatialSceneId) => void;
   setObserverId: (observerId: SpatialObserverId) => void;
+  setLighting: (lighting: SpatialLightingMode) => void;
   setVision: (vision: SpatialVisionMode) => void;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -155,6 +165,10 @@ function SpatialRenderer({
   useEffect(() => {
     controllerRef.current?.setObserver(observerId);
   }, [observerId]);
+
+  useEffect(() => {
+    controllerRef.current?.setLighting(lighting);
+  }, [lighting]);
 
   useEffect(() => {
     controllerRef.current?.setVision(vision);
@@ -175,6 +189,7 @@ function SpatialRenderer({
     let activeObserverRuntime: SpatialObserverRuntime | null = null;
     let visionRuntime: SpatialVisionRuntime | null = null;
     let scene: THREE.Scene | null = null;
+    let currentLightingMode: SpatialLightingMode = lighting;
 
     const cleanup = () => {
       controllerRef.current = null;
@@ -228,11 +243,13 @@ function SpatialRenderer({
         if (!scene || activeSceneRuntime?.id === nextSceneId) return;
         activeSceneRuntime?.dispose();
         activeSceneRuntime = createSpatialSceneRuntime(nextSceneId, scene, renderScene);
+        activeSceneRuntime.setLightingMode(currentLightingMode);
         activeObserverRuntime?.setNavigation(activeSceneRuntime.navigation);
         canvas.dataset.sceneId = nextSceneId;
         canvas.dataset.sceneSupportsTranslation = String(activeSceneRuntime.supportsTranslation);
         canvas.dataset.sceneObjectCount = String(activeSceneRuntime.objectCount);
         canvas.dataset.sceneLightCount = String(activeSceneRuntime.lightCount);
+        canvas.dataset.sceneLightingMode = currentLightingMode;
         canvas.dataset.sceneVolume = nextSceneId === "night-intersection" ? "500x500x80-streamed-envelope" : "photographic-reference";
         renderScene();
       };
@@ -255,6 +272,18 @@ function SpatialRenderer({
       controllerRef.current = {
         setScene: applyScene,
         setObserver: applyObserver,
+        setLighting: (nextLighting) => {
+          currentLightingMode = nextLighting;
+          canvas.dataset.sceneLightingMode = nextLighting;
+          canvas.dataset.sceneLightingRenderState = "pending";
+          if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
+          const runtimeAtRequest = activeSceneRuntime;
+          window.setTimeout(() => {
+            if (currentLightingMode !== nextLighting || activeSceneRuntime !== runtimeAtRequest) return;
+            runtimeAtRequest?.setLightingMode(nextLighting);
+            canvas.dataset.sceneLightingRenderState = "complete";
+          }, 100);
+        },
         setVision: (nextVision) => visionRuntime?.setVision(nextVision),
         setViewpoint: (nextViewpoint) => activeObserverRuntime?.setGuidedViewpoint(nextViewpoint),
         setMovementInput: (direction, active) => activeObserverRuntime?.setMovementInput(direction, active),
@@ -279,6 +308,8 @@ function SpatialRenderer({
       resize();
       applyScene(sceneId);
       applyObserver(observerId);
+      if (renderer) renderer.toneMappingExposure = currentLightingMode === "day" ? 1.08 : 1.3;
+      canvas.dataset.sceneLightingMode = currentLightingMode;
       visionRuntime.setVision(vision);
       return cleanup;
     } catch (cause) {
@@ -305,7 +336,7 @@ function SpatialRenderer({
   }
 
   return (
-    <section className="spatial-card" aria-label="Explore 3D" data-scene-id={sceneId} data-observer-id={observerId} data-vision-mode={vision}>
+    <section className="spatial-card" aria-label="Explore 3D" data-scene-id={sceneId} data-observer-id={observerId} data-lighting-mode={lighting} data-vision-mode={vision}>
       <div className="spatial-card__header">
         <div>
           <div className="control-label">Current Scene</div>
@@ -331,6 +362,20 @@ function SpatialRenderer({
           </select>
           <small>{sceneDefinition.description}</small>
         </label>
+
+        {isGeometryScene ? (
+          <label className="spatial-layer-control" htmlFor="spatial-lighting-select">
+            <span className="control-label">Time of day</span>
+            <select
+              id="spatial-lighting-select"
+              value={lighting}
+              onChange={(event) => setLighting(event.target.value as SpatialLightingMode)}
+            >
+              {SPATIAL_LIGHTING_MODES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+            <small>{SPATIAL_LIGHTING_MODES.find((item) => item.id === lighting)?.description}</small>
+          </label>
+        ) : null}
 
         <label className="spatial-layer-control" htmlFor="spatial-observer-select">
           <span className="control-label">Observer</span>
@@ -361,7 +406,7 @@ function SpatialRenderer({
           ))}
         </div>
         {isGeometryScene ? (
-          <p className="spatial-mode-availability">Human geometry Vision uses the same live rendered scene and preserves the current observer/camera state. Dog-like remains a separate Photo Reference Vision proxy until the Dog observer phases.</p>
+          <p className="spatial-mode-availability">Vision uses the same live rendered geometry and preserves observer/camera state. Time of day is independent: switch Day / Night without changing Vision. Dog-like remains a separate Photo Reference Vision proxy until the Dog observer phases.</p>
         ) : null}
       </div>
 
@@ -439,7 +484,7 @@ function SpatialRenderer({
 
       <div className="spatial-caption">
         {isGeometryScene
-          ? "Night Intersection supports bounded Human ground movement plus same-state Human Vision switching. Walk with W/A/S/D on desktop or the compact mobile controls, use Shift for faster desktop movement, drag to look around, and use Reset observer or R to return to the canonical 1.6 m Human start without changing Vision."
+          ? "Hansaplatz 3D supports bounded Human ground movement, Day / Night lighting on identical geometry, and same-state Human Vision switching. Day is the default baseline. Walk with W/A/S/D on desktop or the compact mobile controls, drag to look around, and reset without changing Time of day or Vision."
           : "This Photo Reference supports look-around only. Drag or use arrow keys to look around; press R to reset. Changing Vision keeps the exact same Scene, Human observer, viewpoint, direction, and FOV."}
       </div>
     </section>
