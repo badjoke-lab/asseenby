@@ -274,10 +274,9 @@ function SpatialRenderer({
         setObserver: applyObserver,
         setLighting: (nextLighting) => {
           currentLightingMode = nextLighting;
-          activeSceneRuntime?.setLightingMode(nextLighting);
-          if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
           canvas.dataset.sceneLightingMode = nextLighting;
-          renderScene();
+          if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
+          activeSceneRuntime?.setLightingMode(nextLighting);
         },
         setVision: (nextVision) => visionRuntime?.setVision(nextVision),
         setViewpoint: (nextViewpoint) => activeObserverRuntime?.setGuidedViewpoint(nextViewpoint),

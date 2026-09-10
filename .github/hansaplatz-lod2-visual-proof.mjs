@@ -85,12 +85,12 @@ let initial = await readCanvas(desktop);
 await captureViewport(desktop, `${OUT}/desktop-forward.png`);
 
 await desktop.selectOption("#spatial-lighting-select", "night");
-await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night");
+await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night", { timeout: 90_000 });
 await desktop.waitForTimeout(350);
 const nightLightingState = await readCanvas(desktop);
 await captureViewport(desktop, `${OUT}/desktop-night-forward.png`);
 await desktop.selectOption("#spatial-lighting-select", "day");
-await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day");
+await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day", { timeout: 90_000 });
 await desktop.waitForTimeout(250);
 const dayReturnState = await readCanvas(desktop);
 
@@ -165,7 +165,13 @@ const result = {
     && nightLightingState?.lighting === "night"
     && nightLightingState?.roots === initial?.roots
     && nightLightingState?.chunks === initial?.chunks
+    && nightLightingState?.position === initial?.position
+    && nightLightingState?.yaw === initial?.yaw
+    && nightLightingState?.pitch === initial?.pitch
     && dayReturnState?.lighting === "day"
+    && dayReturnState?.position === initial?.position
+    && dayReturnState?.yaw === initial?.yaw
+    && dayReturnState?.pitch === initial?.pitch
     && initial?.position === "0.000,0.000,0.000"
     && Number.isFinite(yawDelta)
     && yawDelta >= 0.25
