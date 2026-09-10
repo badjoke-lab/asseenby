@@ -1,0 +1,159 @@
+name: Rebuild Hansaplatz v12 nearfield art pass
+
+on:
+  push:
+    branches:
+      - feat/hansaplatz-v12-nearfield-artpass-20260911
+    paths:
+      - scripts/blender/author_hamburg_hansaplatz_v12_artpass.py
+      - scripts/polyhaven/fetch_model_bundle.py
+      - .github/workflows/rebuild-hansaplatz-v12-artpass.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hansaplatz-v12-artpass-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out v12 branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Install Blender
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
+          blender --version
+
+      - name: Verify Hamburg source lock and current authored base
+        run: |
+          set -euo pipefail
+          test -s assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          test -s public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          grep -q '^canonical_city_lock=Hamburg$' .github/HANSAPLATZ_SOURCE_TRUTH
+          grep -q '^raw_equirectangular_wall_projection=forbidden$' .github/HANSAPLATZ_SOURCE_TRUTH
+          grep -q '^current_geometry_dataset=3D-Gebäudemodell LoD2-DE Hamburg 2026$' .github/HANSAPLATZ_SOURCE_TRUTH
+
+      - name: Fetch CC0 broadleaf PBR source asset
+        run: |
+          set -euo pipefail
+          python3 scripts/polyhaven/fetch_model_bundle.py \
+            --asset tree_small_02 \
+            --out /tmp/tree-small-02 \
+            --resolution 1k
+          test -s /tmp/tree-small-02/manifest.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('/tmp/tree-small-02/manifest.json').read_text())
+          assert manifest['asset_id'] == 'tree_small_02'
+          assert manifest['license'] == 'CC0-1.0'
+          primary = Path('/tmp/tree-small-02') / manifest['primary_gltf']
+          assert primary.is_file() and primary.stat().st_size > 0
+          print('TREE_ASSET', primary, manifest.get('authors', {}))
+          PY
+
+      - name: Replace primitive linden proxies with authored PBR tree instances
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python scripts/blender/author_hamburg_hansaplatz_v12_artpass.py -- \
+            --asset-dir /tmp/tree-small-02
+
+      - name: Validate v12 art-pass contract
+        run: |
+          set -euo pipefail
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            --python-exit-code 1 \
+            --python-expr "import bpy; root=bpy.data.collections.get('C0'); assert root is not None; assert int(root.get('hamburg_hansaplatz_quality_version',0))==12; assert root.get('hamburg_hansaplatz_v12_artpass') is True; assert root.get('hamburg_v12_tree_asset_id')=='tree_small_02'; assert root.get('hamburg_v12_tree_asset_license')=='CC0-1.0'; assert int(root.get('hamburg_v12_tree_instance_count',0))==12; assert root.get('hamburg_v12_tree_species_claim') is False; assert root.get('hamburg_v12_tree_positions_surveyed') is False; assert root.get('hamburg_v12_facade_photo_registration_required') is True; assert root.get('raw_panorama_wall_projection') is False; new=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v12_linden_ring_')]; old=[o for o in bpy.data.objects if o.name.startswith('hamburg_hansaplatz_v10_linden_')]; assert len(new)==12,len(new); assert not old,old[:5]; assert all(o.type=='MESH' for o in new); assert len({o.data.as_pointer() for o in new})==1; poly=len(new[0].data.polygons); assert 25000 <= poly <= 97200, poly; assert int(root.get('hamburg_v12_tree_runtime_polygons',0))==poly; assert int(root.get('hamburg_v12_tree_source_polygons',0))>poly; print('V12_TREE_INSTANCES',len(new),'SHARED_POLYGONS',poly,'VERTICES',len(new[0].data.vertices),'SOURCE_POLYGONS',root.get('hamburg_v12_tree_source_polygons'))"
+
+      - name: Export v12 C0 GLB
+        run: |
+          set -euo pipefail
+          out=public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          blend=assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+          blender --background "$blend" \
+            --python-exit-code 1 \
+            --python scripts/blender/export_night_intersection.py -- \
+            --collection C0 \
+            --out "$out"
+          test -s "$out"
+          sha256sum "$out" > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          cat > public/assets/3d/night-intersection/c0/core/BUILD.txt <<'EOF'
+          Canonical location: Hansaplatz, Hamburg-St. Georg, Germany
+          Photo reference origin: 53.554451, 10.012056 = runtime 0,0
+          Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
+          Macro geometry provider: Freie und Hansestadt Hamburg, LGV
+          LoD3 nearfield status: verified official coverage gap; no distant LoD3 substitution
+          Close facade structural-depth layer: retained; facade-by-facade photo registration remains required
+          Hansabrunnen v10 reconstruction proxy: retained pending dedicated landmark art pass
+          v12 vegetation art pass: primitive linden cylinder/ico proxies removed from VISUAL_LOD0
+          v12 tree source asset: Poly Haven tree_small_02, CC0-1.0
+          v12 tree use: 12 linked broadleaf PBR visual proxies for the documented linden ring
+          v12 tree runtime geometry: source mesh reduced to <= 90,000 polygons before linked placement
+          Species claim: false; the imported broadleaf mesh is not asserted to be Tilia
+          Survey-position claim: false; individual tree coordinates remain bounded visual reconstruction
+          Photo reference: Poly Haven hansaplatz, CC0-1.0; environment/reference only
+          Raw equirectangular wall projection: forbidden
+          Runtime: Blender-authored C0 exported to GLB for Three.js
+          EOF
+
+          blend_bytes=$(stat -c%s "$blend")
+          glb_bytes=$(stat -c%s "$out")
+          echo "BLEND_BYTES=$blend_bytes"
+          echo "GLB_BYTES=$glb_bytes"
+          # Keep each committed artifact below GitHub's 100 MiB hard file ceiling and set a
+          # much tighter browser runtime ceiling on the GLB so art quality cannot hide a size regression.
+          test "$blend_bytes" -lt 94371840
+          test "$glb_bytes" -lt 50331648
+          du -h "$blend" "$out"
+          cat public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+
+      - name: Validate repository build
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+
+      - name: Upload v12 proof asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: hansaplatz-v12-artpass-${{ github.sha }}
+          path: |
+            assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+            public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+            public/assets/3d/night-intersection/c0/core/BUILD.txt
+            public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          retention-days: 7
+
+      - name: Commit regenerated v12 C0
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            assets-src/blender/night-intersection/c0/night-intersection-c0.blend \
+            public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb \
+            public/assets/3d/night-intersection/c0/core/BUILD.txt \
+            public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+          if git diff --cached --quiet; then
+            echo 'No generated v12 C0 changes'
+            exit 0
+          fi
+          git commit -m 'Rebuild Hamburg C0 with v12 nearfield art pass'
+          git reset --hard HEAD
+          git clean -fd
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
