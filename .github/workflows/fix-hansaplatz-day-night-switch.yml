@@ -1,0 +1,75 @@
+name: Fix Hansaplatz Day Night switch
+
+on:
+  push:
+    branches:
+      - feat/hansaplatz-v11-paving-canopy-20260911
+    paths:
+      - .github/workflows/fix-hansaplatz-day-night-switch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Remove duplicate lighting render and harden proof wait
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          page = Path('src/SpatialPage.tsx')
+          s = page.read_text()
+          old = '''        setLighting: (nextLighting) => {
+          currentLightingMode = nextLighting;
+          activeSceneRuntime?.setLightingMode(nextLighting);
+          if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
+          canvas.dataset.sceneLightingMode = nextLighting;
+          renderScene();
+        },'''
+          new = '''        setLighting: (nextLighting) => {
+          currentLightingMode = nextLighting;
+          canvas.dataset.sceneLightingMode = nextLighting;
+          if (renderer) renderer.toneMappingExposure = nextLighting === "day" ? 1.08 : 1.3;
+          activeSceneRuntime?.setLightingMode(nextLighting);
+        },'''
+          if old not in s:
+              raise SystemExit('lighting controller block not found')
+          page.write_text(s.replace(old, new, 1))
+
+          proof = Path('.github/hansaplatz-lod2-visual-proof.mjs')
+          p = proof.read_text()
+          old_night = 'await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night");'
+          new_night = 'await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "night", { timeout: 90_000 });'
+          old_day = 'await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day");'
+          new_day = 'await desktop.waitForFunction(() => document.querySelector("canvas.spatial-canvas")?.dataset.sceneLightingMode === "day", { timeout: 90_000 });'
+          if old_night not in p or old_day not in p:
+              raise SystemExit('lighting proof wait block not found')
+          p = p.replace(old_night, new_night, 1).replace(old_day, new_day, 1)
+          proof.write_text(p)
+          PY
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit runtime fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/SpatialPage.tsx .github/hansaplatz-lod2-visual-proof.mjs
+          git commit -m 'Fix Hansaplatz Day Night switch rendering'
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
