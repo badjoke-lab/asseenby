@@ -1,0 +1,61 @@
+name: Validate production spatial smoke Day Night
+
+on:
+  push:
+    branches:
+      - fix/production-spatial-smoke-day-night-20260911
+    paths:
+      - .github/workflows/validate-production-spatial-smoke-day-night.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Run repaired production smoke
+        env:
+          ASSEENBY_PRODUCTION_URL: https://asseenby.pages.dev
+        run: node .github/production-smoke.mjs
+      - name: Upload smoke proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repaired-production-smoke
+          path: production-smoke/
+          if-no-files-found: warn
+
+  production-c0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Run strengthened production C0 check
+        env:
+          ASSEENBY_PRODUCTION_URL: https://asseenby.pages.dev
+        run: node .github/production-spatial-c0-check.mjs
+      - name: Upload C0 proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strengthened-production-c0
+          path: production-spatial-c0/
+          if-no-files-found: warn
