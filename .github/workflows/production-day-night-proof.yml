@@ -1,0 +1,45 @@
+name: production Day Night proof
+
+on:
+  push:
+    branches:
+      - verify/production-day-night-20260911
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out proof branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify production Day Night behavior
+        env:
+          ASSEENBY_PRODUCTION_URL: https://asseenby.pages.dev
+        run: node .github/production-day-night-proof.mjs
+
+      - name: Upload proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-day-night-proof
+          path: production-day-night-proof/
+          if-no-files-found: error
