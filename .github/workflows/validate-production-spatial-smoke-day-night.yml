@@ -1,4 +1,5 @@
 name: Validate production spatial smoke Day Night
+# Re-run after resilient live-DOM lighting snapshots.
 
 on:
   push:
