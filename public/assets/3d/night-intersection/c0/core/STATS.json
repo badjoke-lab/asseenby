@@ -1,10 +1,10 @@
 {
-  "glb_bytes": 20881012,
-  "triangles": 264410,
-  "vertices": 584565,
-  "meshes": 386,
-  "primitives": 386,
-  "materials": 37,
+  "glb_bytes": 22345656,
+  "triangles": 297348,
+  "vertices": 639423,
+  "meshes": 379,
+  "primitives": 379,
+  "materials": 25,
   "textures": [
     {
       "name": "rectangular_paving_nor_gl_1k",
