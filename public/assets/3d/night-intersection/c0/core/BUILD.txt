@@ -1,4 +1,4 @@
-Astra experimental Hansaplatz C0 iteration 2
+Astra experimental Hansaplatz C0 iteration 3
 Canonical Hamburg LoD2-DE 2026: 53.554451,10.012056
 No panorama wall projection. Shared Day/Night geometry.
 Preserved PBR paving and branched lindens; actual wall apertures, deep reveals, sash joinery, recessed shops and profiled cornices.

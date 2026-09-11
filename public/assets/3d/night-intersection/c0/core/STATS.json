@@ -1,11 +1,35 @@
 {
-  "glb_bytes": 22345656,
-  "triangles": 297348,
-  "vertices": 639423,
-  "meshes": 379,
-  "primitives": 379,
-  "materials": 25,
+  "glb_bytes": 31366728,
+  "triangles": 309338,
+  "vertices": 666711,
+  "meshes": 381,
+  "primitives": 381,
+  "materials": 28,
   "textures": [
+    {
+      "name": "astra_plaster_normal",
+      "size": [
+        256,
+        256
+      ],
+      "bytes": 71010
+    },
+    {
+      "name": "astra_fired_brick_normal",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 320727
+    },
+    {
+      "name": "astra_fired_brick_albedo_512",
+      "size": [
+        512,
+        512
+      ],
+      "bytes": 270908
+    },
     {
       "name": "rectangular_paving_nor_gl_1k",
       "size": [
