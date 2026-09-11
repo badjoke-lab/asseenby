@@ -354,3 +354,11 @@ Do not present it as the full Explore 3D experience.
 - Third-party assets require explicit provenance/license tracking.
 - Every completed visual/spatial recovery step requires rendered review where visual behavior matters.
 - If the user changes an accepted product behavior, update `docs/explore-3d-spec.md`, this schedule, and the active quality-recovery document in the same implementation change before declaring the step complete.
+
+## Isolated Astra experiment — 2026-09-11
+
+`exp/astra-hansaplatz-c0-20260911` uses GitHub-hosted Blender and application browser
+checks. This experiment does not merge, deploy, or modify the other quality branch.
+Hamburg source lock / LoD2 / shared Day-Night geometry govern this experiment and
+supersede the historical Berlin/pavilion wording above. Status and visual evidence:
+`docs/experiments/hansaplatz-astra/README.md`. QR2 remains open pending visual review.

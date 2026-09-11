@@ -1,0 +1,80 @@
+name: Astra Hansaplatz authored iteration
+on:
+  push:
+    branches: [exp/astra-hansaplatz-c0-20260911]
+    paths:
+      - 'scripts/blender/astra/**'
+      - '.github/workflows/astra-hansaplatz.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: astra-hansaplatz-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  author-and-verify:
+    if: github.ref == 'refs/heads/exp/astra-hansaplatz-c0-20260911'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install production tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy python3-pil
+          npm ci
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Author Hamburg scene and export through canonical exporter
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = exp/astra-hansaplatz-c0-20260911
+          grep -q '^canonical_city_lock=Hamburg$' .github/HANSAPLATZ_SOURCE_TRUTH
+          grep -q '^raw_equirectangular_wall_projection=forbidden$' .github/HANSAPLATZ_SOURCE_TRUTH
+          mkdir -p astra-proof
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 --python scripts/blender/astra/author.py
+          blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 --python scripts/blender/export_night_intersection.py -- --collection C0 --out public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          python3 scripts/blender/astra/glb_stats.py
+          sha256sum public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
+      - name: Build real application
+        run: npm run build
+      - name: Verify actual application and capture views
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/astra-vite.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node .github/spatial-browser-check.mjs
+          node .github/hansaplatz-lod2-visual-proof.mjs
+      - name: Upload authored source and rendered evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-hansaplatz-${{ github.run_id }}
+          retention-days: 30
+          path: |
+            assets-src/blender/night-intersection/c0/night-intersection-c0.blend
+            public/assets/3d/night-intersection/c0/core/
+            astra-proof/
+            browser-check/
+            lod2-visual-proof/
+      - name: Commit verified generated assets to experiment only
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = exp/astra-hansaplatz-c0-20260911
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets-src/blender/night-intersection/c0/night-intersection-c0.blend public/assets/3d/night-intersection/c0/core/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Generate and browser-verify Astra Hansaplatz C0'
+          git push origin HEAD:refs/heads/exp/astra-hansaplatz-c0-20260911
