@@ -78,3 +78,53 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Generate and browser-verify Astra Hansaplatz C0'
           git push origin HEAD:refs/heads/exp/astra-hansaplatz-c0-20260911
+
+  public-production-proof:
+    needs: author-and-verify
+    if: github.ref == 'refs/heads/exp/astra-hansaplatz-c0-20260911'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: exp/astra-hansaplatz-c0-20260911
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install browser verification tools
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Wait for the generated GLB to reach disposable Cloudflare Production
+        run: |
+          set -euo pipefail
+          mkdir -p public-visual-proof
+          git rev-parse HEAD > public-visual-proof/generated-head.txt
+          ASTRA_EXPECTED=$(cut -d ' ' -f 1 public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt)
+          for attempt in $(seq 1 40); do
+            ASTRA_SERVED=$(curl --fail --silent --max-time 20 "https://asseenby.pages.dev/assets/3d/night-intersection/c0/core/SHA256SUMS.txt?astra=$GITHUB_RUN_ID-$attempt" | cut -d ' ' -f 1 || true)
+            if [ "$ASTRA_SERVED" = "$ASTRA_EXPECTED" ]; then
+              echo "ASTRA_EXPECTED_GLB_SHA256=$ASTRA_EXPECTED" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "Waiting for generated asset deployment, attempt $attempt"
+            sleep 15
+          done
+          echo 'Public deployment has not served this generated GLB yet.'
+          exit 1
+      - name: Inspect real public application with Chromium
+        env:
+          ASSEENBY_PREVIEW_URL: https://asseenby.pages.dev
+          ASSEENBY_PROOF_OUT: public-visual-proof
+        run: |
+          node .github/hansaplatz-lod2-visual-proof.mjs
+          git rev-parse HEAD > public-visual-proof/generated-head.txt
+      - name: Upload public application evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-public-${{ github.run_id }}
+          retention-days: 30
+          path: public-visual-proof/

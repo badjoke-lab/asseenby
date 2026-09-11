@@ -4,7 +4,7 @@ Reconstruct selected wall polygons with apertures, not an applied window skin.
 Profiles are restrained interpretations of the checked-in photographic plates,
 not surveyed window locations. Original uncut source remains outside export C0.
 """
-import json, math
+import json, math, importlib.util
 from collections import defaultdict
 import bpy, bmesh
 
@@ -70,6 +70,23 @@ def run(base, visual, archive, mat, palette, src):
   'backing':mat('shop_interior',(.13,.12,.105),.93),
  }
  for i,m in enumerate(palette):mats['wall'+str(i)]=m
+ mats['dress']=mat('dressed_ground_floor',(.36,.335,.29),.88)
+ mats['curtain']=mat('linen_blind',(.44,.405,.33),.94)
+ # Only a minority of interiors are illuminated, with no daylight white plates.
+ mats['lit']=mat('interior_lamp',(.38,.29,.16),.7)
+ lamp=mats['lit'].node_tree.nodes.get('Principled BSDF')
+ lamp.inputs['Emission Color'].default_value=(1,.64,.29,1)
+ lamp.inputs['Emission Strength'].default_value=.32
+ spec=importlib.util.spec_from_file_location('astra_surfaces',src.parents[2]/'scripts/blender/astra/surfaces.py')
+ surf=importlib.util.module_from_spec(spec);spec.loader.exec_module(surf)
+ surf.add_maps(mats['wall2'],'astra_fired_brick',brick=True)
+ # Share one subtle plaster normal image across stucco materials.
+ surf.add_maps(mats['wall1'],'astra_plaster')
+ normal_image=bpy.data.images['astra_plaster_normal']
+ for key in ['wall0','wall3','wall4','wall5','trim','dress']:
+  m=mats[key];t=m.node_tree.nodes.new('ShaderNodeTexImage');t.image=normal_image
+  nm=m.node_tree.nodes.new('ShaderNodeNormalMap');nm.inputs['Strength'].default_value=.35
+  m.node_tree.links.new(t.outputs['Color'],nm.inputs['Color']);m.node_tree.links.new(nm.outputs['Normal'],m.node_tree.nodes.get('Principled BSDF').inputs['Normal'])
  buckets={};records=[];replaced=defaultdict(set)
  def polygon(key,ps):
   if len(ps)<3:return
@@ -83,7 +100,7 @@ def run(base, visual, archive, mat, palette, src):
   if eave-lo<8:eave=hi
   floor_h=(eave-lo-.65)/floors
   columns=max(2,round((length-1.0)/target_pitch));pitch=(length-1.0)/columns
-  wallkey='wall'+str(2 if style=='brick' else (1 if style=='ornate' else base.stable_int(name)%len(palette)))
+  wallkey='wall'+str(2 if style=='brick' else ([1,5,4][base.stable_int(name)%3] if style=='ornate' else 1))
   def point(x,y,d):return (a[0]+u[0]*x+n[0]*d,-(a[1]+u[1]*x+n[1]*d),y)
   def face(key,ps):polygon(key,[point(*p) for p in ps])
   def box(key,x,y,w,h,depth,offset=0):
@@ -106,7 +123,7 @@ def run(base, visual, archive, mat, palette, src):
     if any(h[0]<(x0+x1)/2<h[1] and h[2]<(y0+y1)/2<h[3] for h in holes):continue
     q=poly
     for axis,bound,pos in [(0,x0,True),(0,x1,False),(1,y0,True),(1,y1,False)]:q=clip(q,axis,bound,pos) if q else []
-    face(wallkey,[(x,y,.012) for x,y in q])
+    face('dress' if (y0+y1)/2<lo+floor_h-.28 else wallkey,[(x,y,.012) for x,y in q])
   for x0,x1,y0,y1,floor,col in holes:
    x=(x0+x1)/2;y=(y0+y1)/2;w=x1-x0;h=y1-y0;back=-.32 if floor else -.68
    reveal='stone' if floor==0 else wallkey
@@ -116,7 +133,12 @@ def run(base, visual, archive, mat, palette, src):
               [(x0,y1,.013),(x1,y1,.013),(x1,y1,back),(x0,y1,back)],
               [(x1,y0,.013),(x0,y0,.013),(x0,y0,back),(x1,y0,back)]]:face(reveal,q)
    glass=['glass','glass_alt','glass','glass_warm'][(base.stable_int(name)+col+floor*3)%4]
+   seed=base.stable_int(f'{name}/{floor}/{col}')
+   if seed%11==0:glass='lit'
    box(glass,x,y,w-.06,h-.06,.025,back)
+   if floor and seed%5==0:
+    # Half-drawn interior roller blind sits within the recessed opening.
+    box('curtain',x,y1-h*.16,w-.16,h*.28,.016,back+.027)
    frame='frame' if floor else 'metal'
    for xx in [x0+.045,x1-.045]:box(frame,xx,y,.09,h,.10,back+.065)
    for yy in [y0+.045,y1-.045]:box(frame,x,yy,w,.09,.10,back+.065)
@@ -131,6 +153,11 @@ def run(base, visual, archive, mat, palette, src):
      box('trim',x,y1+.22,w+.46,.075,.34,.14)
      if floor<=2:
       box('stone',x,y1+.33,.20,.20,.21,.095)
+      if floor==1 and col%2==0:
+       # Restrained raised triangular lintel, seen on ornate perimeter references.
+       face('trim',[(x-w*.62,y1+.28,.16),(x+w*.62,y1+.28,.16),(x,y1+.56,.16)])
+       face('stone',[(x-w*.62,y1+.28,.07),(x-w*.62,y1+.28,.16),(x,y1+.56,.16),(x,y1+.56,.07)])
+       face('stone',[(x,y1+.56,.07),(x,y1+.56,.16),(x+w*.62,y1+.28,.16),(x+w*.62,y1+.28,.07)])
       box('trim',x,y0-.39,w*.70,.28,.095,.032)
     elif style=='brick':
      box('stone',x,y1+.10,w+.22,.20,.13,.04)
@@ -138,9 +165,15 @@ def run(base, visual, archive, mat, palette, src):
     # Deep portal/retail joinery: threshold, transom, separate signage fascia.
     box('stone',x,y0-.04,w+.1,.10,.83,-.20)
     box('metal',x,y1+.21,w+.18,.30,.16,.035)
+    box('stone',x,y0+.20,w*.43,.36,.085,back+.05)
     if col==columns//2:
      box('metal',x+.15,y0+.95,.035,.35,.07,back+.14)
      box('base',x,y0+.30,w-.12,.50,.05,back+.07)
+  # Shallow corner quoins terminate each ornate facade instead of a blank edge.
+  if style=='ornate':
+   for x in [.18,length-.18]:
+    for k in range(int((eave-lo)/.44)):
+     box('trim',x,lo+.22+k*.44,.36 if k%2 else .48,.405,.12,.04)
   # Ground-floor piers and rustication have a different scale from upper sash.
   for col in range(columns+1):
    x=.5+col*pitch
@@ -174,6 +207,14 @@ def run(base, visual, archive, mat, palette, src):
   bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.00001)
   bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bmesh.ops.triangulate(bm,faces=list(bm.faces))
   bm.to_mesh(me);bm.free()
+  uv=me.uv_layers.new(name='UVMap')
+  # Box projection in world metres: 1.024 m tile = 4 bricks x 16 courses.
+  for poly in me.polygons:
+   normal=poly.normal
+   axis=0 if abs(normal.y)>abs(normal.x) else 1
+   for li in poly.loop_indices:
+    co=me.vertices[me.loops[li].vertex_index].co
+    uv.data[li].uv=(co[axis]/1.024,co.z/1.024)
   o=bpy.data.objects.new('astra_facades_'+key,me);visual.objects.link(o);me.materials.append(mats[key])
   o['canonical_city_lock']='Hamburg';o['authored_geometry']='LoD2 polygon apertures, reveals and architectural joinery'
  (src.parents[2]/'astra-proof').mkdir(exist_ok=True)

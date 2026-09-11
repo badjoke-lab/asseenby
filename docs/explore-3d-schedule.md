@@ -364,3 +364,5 @@ supersede the historical Berlin/pavilion wording above. Status and visual eviden
 `docs/experiments/hansaplatz-astra/README.md`. QR2 remains open pending visual review.
 
 Astra iteration 2: replacing applied facade panels with cut wall apertures and building-specific architectural joinery. Baseline a55cb0d / workflow 34551409891 inspected; facades remain below acceptance. Generated browser and public-site review pending.
+
+Astra second facade pass: first generated opening geometry visually reviewed (run 34569778332); refine surface differentiation, shadow readability and Night interior accents. Public verification uses GitHub-hosted Chromium with matching GLB hash. QR2 remains open.

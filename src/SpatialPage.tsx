@@ -219,6 +219,7 @@ function SpatialRenderer({
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.3;
       renderer.shadowMap.enabled = true;
+      renderer.info.autoReset = false;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.domElement.className = "spatial-canvas";
       renderer.domElement.tabIndex = 0;
@@ -234,7 +235,12 @@ function SpatialRenderer({
         canvas.dataset.sceneAuthoredAssetRootCount = String(diagnostics?.authoredAssetRootCount ?? 0);
       };
       const renderScene = () => {
+        renderer?.info.reset();
+        const started = performance.now();
         composer?.render();
+        canvas.dataset.renderSubmitMs = (performance.now() - started).toFixed(2);
+        canvas.dataset.renderDrawCalls = String(renderer?.info.render.calls ?? 0);
+        canvas.dataset.renderTriangles = String(renderer?.info.render.triangles ?? 0);
         syncStreamingDiagnostics();
       };
       visionRuntime = createSpatialVisionRuntime(composer, canvas, renderScene);

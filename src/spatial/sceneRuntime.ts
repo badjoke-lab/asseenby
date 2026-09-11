@@ -55,16 +55,21 @@ const countAuthoredAssetRoots = (scene: THREE.Scene) => {
 const tuneHansaplatzLights = (root: THREE.Object3D, mode: SpatialLightingMode) => {
   root.traverse((object) => {
     if (object.name === "night-sky-fill" && object instanceof THREE.HemisphereLight) {
-      object.intensity = mode === "day" ? 1.65 : 0.24;
+      object.intensity = mode === "day" ? 1.05 : 0.24;
       object.color.set(mode === "day" ? 0xdcecff : 0x7990aa);
       object.groundColor.set(mode === "day" ? 0x8f866f : 0x17120f);
     } else if (object.name === "street-ambient-fill" && object instanceof THREE.AmbientLight) {
-      object.intensity = mode === "day" ? 0.34 : 0.05;
+      object.intensity = mode === "day" ? 0.12 : 0.05;
       object.color.set(mode === "day" ? 0xfff8e9 : 0x8aa0b5);
     } else if (object.name === "moon-key" && object instanceof THREE.DirectionalLight) {
       object.intensity = mode === "day" ? 2.35 : 0.42;
       object.color.set(mode === "day" ? 0xffefd1 : 0xa8b7d3);
-      if (mode === "day") object.position.set(-34, 72, 26);
+      if (mode === "day") object.position.set(-34, 52, 26);
+      else object.position.set(-38, 58, 30);
+      // Resolve reveals/cornices without striping from the old broad 1K map.
+      object.shadow.mapSize.set(2048, 2048);
+      object.shadow.bias = -0.00012;
+      object.shadow.normalBias = 0.045;
     } else if (object.name === "intersection-fill" && object instanceof THREE.PointLight) {
       object.intensity = mode === "day" ? 0 : 7.5;
       object.distance = 42;
@@ -171,6 +176,27 @@ const loadHansaplatzTexture = (
   };
 };
 
+// Neutral daylight reflection source. No city image or visible sky geometry.
+const createHansaplatzDayEnvironment = () => {
+  const width = 64, height = 32;
+  const data = new Uint8Array(width * height * 4);
+  const ground = new THREE.Color(0x817869);
+  const horizon = new THREE.Color(0xdce5e9);
+  const sky = new THREE.Color(0x8cb9df);
+  for (let y = 0; y < height; y += 1) {
+    const t = y / (height - 1);
+    const color = t < 0.5 ? ground.clone().lerp(horizon, t * 2) : horizon.clone().lerp(sky, (t - 0.5) * 2);
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      data[i] = Math.round(color.r * 255); data[i + 1] = Math.round(color.g * 255); data[i + 2] = Math.round(color.b * 255); data[i + 3] = 255;
+    }
+  }
+  const texture = new THREE.DataTexture(data, width, height);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.needsUpdate = true;
+  return texture;
+};
+
 const mountHansaplatzLightingController = (
   scene: THREE.Scene,
   root: THREE.Object3D,
@@ -179,6 +205,8 @@ const mountHansaplatzLightingController = (
   let disposed = false;
   let mode: SpatialLightingMode = "day";
   let nightEnvironment: THREE.Texture | null = null;
+  const dayEnvironment = createHansaplatzDayEnvironment();
+  const previousFog = scene.fog;
   const previousBackground = scene.background;
   const previousEnvironment = scene.environment;
   const previousBackgroundIntensity = scene.backgroundIntensity;
@@ -191,10 +219,12 @@ const mountHansaplatzLightingController = (
     if (mode === "day") {
       scene.background = DAY_BACKGROUND;
       scene.backgroundIntensity = 1;
-      scene.environment = previousEnvironment;
-      scene.environmentIntensity = 1;
+      scene.environment = dayEnvironment;
+      scene.environmentIntensity = 0.55;
+      scene.fog = new THREE.FogExp2(DAY_BACKGROUND, 0.0012);
     } else {
       scene.background = NIGHT_BACKGROUND;
+      scene.fog = previousFog;
       scene.backgroundIntensity = 1;
       scene.environment = nightEnvironment ?? previousEnvironment;
       scene.environmentIntensity = nightEnvironment ? 0.14 : previousEnvironmentIntensity;
@@ -232,7 +262,9 @@ const mountHansaplatzLightingController = (
     dispose: () => {
       disposed = true;
       if (scene.background === DAY_BACKGROUND || scene.background === NIGHT_BACKGROUND) scene.background = previousBackground;
-      if (scene.environment === nightEnvironment) scene.environment = previousEnvironment;
+      if (scene.environment === nightEnvironment || scene.environment === dayEnvironment) scene.environment = previousEnvironment;
+      scene.fog = previousFog;
+      dayEnvironment.dispose();
       scene.backgroundIntensity = previousBackgroundIntensity;
       scene.environmentIntensity = previousEnvironmentIntensity;
       nightEnvironment?.dispose();

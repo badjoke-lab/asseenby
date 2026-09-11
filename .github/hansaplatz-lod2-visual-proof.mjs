@@ -1,8 +1,9 @@
 import fs from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 
 const BASE = process.env.ASSEENBY_PREVIEW_URL || "http://127.0.0.1:4173";
-const OUT = "lod2-visual-proof";
+const OUT = process.env.ASSEENBY_PROOF_OUT || "lod2-visual-proof";
 await fs.rm(OUT, { recursive: true, force: true });
 await fs.mkdir(OUT, { recursive: true });
 
@@ -11,8 +12,18 @@ const browser = await chromium.launch({
   args: ["--use-gl=swiftshader", "--disable-gpu-sandbox"],
 });
 const errors = [];
+const assetLoads = [];
+const expectedHash = process.env.ASTRA_EXPECTED_GLB_SHA256;
 
 function collectErrors(page, label) {
+  if (label === "desktop") page.on("response", async (response) => {
+    if (new URL(response.url()).pathname.endsWith("/night-intersection-c0.glb")) {
+      try {
+        const bytes = await response.body();
+        assetLoads.push({ url: response.url(), status: response.status(), bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
+      } catch (error) { errors.push(`GLB response verification: ${error.message}`); }
+    }
+  });
   page.on("pageerror", (error) => errors.push(`${label} pageerror: ${error.message}`));
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(`${label} console: ${message.text()}`);
@@ -26,6 +37,10 @@ async function readCanvas(page) {
     const rect = canvas.getBoundingClientRect();
     return {
       position: canvas.dataset.cameraPosition ?? null,
+      fov: canvas.dataset.cameraFov ?? null,
+      renderDrawCalls: canvas.dataset.renderDrawCalls ?? null,
+      renderTriangles: canvas.dataset.renderTriangles ?? null,
+      renderSubmitMs: canvas.dataset.renderSubmitMs ?? null,
       yaw: canvas.dataset.cameraYaw ?? null,
       pitch: canvas.dataset.cameraPitch ?? null,
       scene: canvas.dataset.sceneId ?? null,
@@ -47,6 +62,7 @@ async function waitForC0(page, timeout = 120_000) {
         && canvas.dataset.sceneAuthoredAssetRootCount === "1"
         && (canvas.dataset.sceneLoadedChunks || "").split(",").includes("c0");
     },
+    null,
     { timeout, polling: 250 },
   );
   await page.waitForTimeout(1200);
@@ -168,6 +184,7 @@ const yawDelta = initial?.yaw != null && turned?.yaw != null
 const registrationOriginOk = registrationStates.every((state) => state?.position === "0.000,0.000,0.000");
 const result = {
   ok: errors.length === 0
+    && (!expectedHash || assetLoads.some((asset) => asset.sha256 === expectedHash))
     && initial?.roots === "1"
     && initial?.chunks?.split(",").includes("c0")
     && initial?.movement === "bounded-ground"
@@ -189,6 +206,9 @@ const result = {
     && mobileState?.roots === "1"
     && registrationOriginOk,
   errors,
+  baseUrl: BASE,
+  expectedHash,
+  assetLoads,
   yawDelta,
   initial,
   nightLightingState,

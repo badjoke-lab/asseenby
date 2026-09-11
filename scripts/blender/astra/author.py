@@ -140,9 +140,9 @@ for o in visual.all_objects:
 spec2=importlib.util.spec_from_file_location('astra_facades',ROOT/'scripts/blender/astra/facades.py')
 facades=importlib.util.module_from_spec(spec2);spec2.loader.exec_module(facades)
 facades.run(base,visual,archive,mat,palette,SRC)
-c0['astra_iteration']=2;c0['canonical_city_lock']='Hamburg';c0['raw_panorama_wall_projection']=False
+c0['astra_iteration']=3;c0['canonical_city_lock']='Hamburg';c0['raw_panorama_wall_projection']=False
 c0['astra_material_rule']='glTF-compatible BSDF or packed PBR maps; no unbaked procedural albedo'
 c0['astra_terrain_claim']='visual foundation-edge interpolation; photo origin and fountain at ground 0; not surveyed DTM'
 bpy.ops.wm.save_as_mainfile(filepath=str(SRC/'c0/night-intersection-c0.blend'))
-(ROOT/'public/assets/3d/night-intersection/c0/core/BUILD.txt').write_text('Astra experimental Hansaplatz C0 iteration 2\nCanonical Hamburg LoD2-DE 2026: 53.554451,10.012056\nNo panorama wall projection. Shared Day/Night geometry.\nPreserved PBR paving and branched lindens; actual wall apertures, deep reveals, sash joinery, recessed shops and profiled cornices.\nSource objects archived outside C0, not deleted.\n')
+(ROOT/'public/assets/3d/night-intersection/c0/core/BUILD.txt').write_text('Astra experimental Hansaplatz C0 iteration 3\nCanonical Hamburg LoD2-DE 2026: 53.554451,10.012056\nNo panorama wall projection. Shared Day/Night geometry.\nPreserved PBR paving and branched lindens; actual wall apertures, deep reveals, sash joinery, recessed shops and profiled cornices.\nSource objects archived outside C0, not deleted.\n')
 print('ASTRA_AUTHOR_COMPLETE',len(visual.all_objects))
