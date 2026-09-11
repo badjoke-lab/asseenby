@@ -1,0 +1,37 @@
+{
+  "glb_bytes": 20881012,
+  "triangles": 264410,
+  "vertices": 584565,
+  "meshes": 386,
+  "primitives": 386,
+  "materials": 37,
+  "textures": [
+    {
+      "name": "rectangular_paving_nor_gl_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "bytes": 637525
+    },
+    {
+      "name": "rectangular_paving_diff_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "bytes": 649580
+    },
+    {
+      "name": "rectangular_paving_rough_1k",
+      "size": [
+        1024,
+        1024
+      ],
+      "bytes": 823653
+    }
+  ],
+  "location": "Hansaplatz, Hamburg-St. Georg",
+  "lat": 53.554451,
+  "lon": 10.012056
+}

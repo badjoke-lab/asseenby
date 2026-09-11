@@ -1,15 +1,5 @@
-Canonical location: Hansaplatz, Hamburg-St. Georg, Germany
-Photo reference origin: 53.554451, 10.012056 = runtime 0,0
-Macro geometry: Hamburg official 3D-Gebäudemodell LoD2-DE 2026
-Macro geometry provider: Freie und Hansestadt Hamburg, LGV
-LoD3 nearfield status: verified official coverage gap; no distant LoD3 substitution
-v9 facade layer: retained
-v10 landmark: Hansabrunnen reconstruction proxy at runtime -7.377,0,-30.192
-Hansabrunnen documented height: 17 m
-Hansabrunnen source: https://www.hamburg.de/tourismus/sehenswuerdigkeiten/hansaplatz-hamburg-360882
-v10 central paving: Granitkleinpflaster visual reconstruction; exact surveyed zone dimensions not claimed
-v10 tree ring: 12 mature linden visual proxies around fountain; exact surveyed tree positions not claimed
-Plaza design source: https://www.hamburg.de/contentblob/4498572/c9f8de8272cf87cba874c4af9de5f84b
-Photo reference: Poly Haven hansaplatz, CC0-1.0; environment/reference only
-Raw equirectangular wall projection: forbidden
-Runtime: Blender-authored C0 exported to GLB for Three.js
+Astra experimental Hansaplatz C0 iteration 1
+Canonical Hamburg LoD2-DE 2026: 53.554451,10.012056
+No panorama wall projection. Shared Day/Night geometry.
+PBR paving, foundation-edge ground continuity, branched lindens, exportable facade materials.
+Source objects archived outside C0, not deleted.
