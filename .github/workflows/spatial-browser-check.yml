@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - exp/astra-hansaplatz-c0-20260911
     paths:
       - 'src/spatial/**'
       - 'src/SpatialPage.tsx'
@@ -29,6 +30,7 @@ on:
       - '.github/spatial-browser-check.mjs'
       - '.github/spatial-turn-check.mjs'
       - '.github/workflows/spatial-browser-check.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
