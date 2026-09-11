@@ -358,7 +358,9 @@ Do not present it as the full Explore 3D experience.
 ## Isolated Astra experiment — 2026-09-11
 
 `exp/astra-hansaplatz-c0-20260911` uses GitHub-hosted Blender and application browser
-checks. This experiment does not merge, deploy, or modify the other quality branch.
+checks. This experiment does not merge or modify the other quality branch. The user has selected this experiment as disposable Cloudflare Production and authorized branch pushes to update the public URL; leave that configuration unchanged.
 Hamburg source lock / LoD2 / shared Day-Night geometry govern this experiment and
 supersede the historical Berlin/pavilion wording above. Status and visual evidence:
 `docs/experiments/hansaplatz-astra/README.md`. QR2 remains open pending visual review.
+
+Astra iteration 2: replacing applied facade panels with cut wall apertures and building-specific architectural joinery. Baseline a55cb0d / workflow 34551409891 inspected; facades remain below acceptance. Generated browser and public-site review pending.
