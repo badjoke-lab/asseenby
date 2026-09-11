@@ -36,3 +36,7 @@ interior emission. Day reflection/shadow correction is limited to this scene.
 The direct public browser failed to create WebGL; the existing GitHub-hosted
 Chromium path additionally tests the public deployment and verifies the actual
 loaded GLB response hash against the generated asset. No local Blender rebuild.
+
+Verifier-only correction c12ee4a removes large binary body reads through Chrome DevTools. The b6ff303 geometry is unchanged. A separate verified Cloudflare Pages 25 MiB per-file limit requires removing unused export attributes before production delivery. `pack_glb.py` verifies retained buffers byte-for-byte and retains all triangles and visible materials. Reference: https://developers.cloudflare.com/pages/platform/limits/ .
+
+Run 34594140321 author-and-verify passed with the corrected verifier and generated commit 048eebd25ba95b97acc8f6872913422932797bdf. The authoring result is now committed. The public-delivery stage additionally needs the byte-preserving packing step for the Pages per-file cap; branch configuration is unchanged. Authoring commits are serialized independently of read-only public deployment waiting.

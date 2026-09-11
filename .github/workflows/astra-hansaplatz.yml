@@ -9,11 +9,11 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-concurrency:
-  group: astra-hansaplatz-${{ github.ref }}
-  cancel-in-progress: false
 jobs:
   author-and-verify:
+    concurrency:
+      group: astra-hansaplatz-author-${{ github.ref }}
+      cancel-in-progress: false
     if: github.ref == 'refs/heads/exp/astra-hansaplatz-c0-20260911'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -42,6 +42,7 @@ jobs:
           mkdir -p astra-proof
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 --python scripts/blender/astra/author.py
           blender --background assets-src/blender/night-intersection/c0/night-intersection-c0.blend --python-exit-code 1 --python scripts/blender/export_night_intersection.py -- --collection C0 --out public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb
+          python3 scripts/blender/astra/pack_glb.py
           python3 scripts/blender/astra/glb_stats.py
           sha256sum public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb > public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt
       - name: Build real application
@@ -81,6 +82,9 @@ jobs:
           git push origin HEAD:refs/heads/exp/astra-hansaplatz-c0-20260911
 
   public-production-proof:
+    concurrency:
+      group: astra-hansaplatz-public-${{ github.ref }}
+      cancel-in-progress: true
     needs: author-and-verify
     if: github.ref == 'refs/heads/exp/astra-hansaplatz-c0-20260911'
     runs-on: ubuntu-24.04
