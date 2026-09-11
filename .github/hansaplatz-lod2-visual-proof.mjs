@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE = process.env.ASSEENBY_PREVIEW_URL || "http://127.0.0.1:4173";
@@ -16,12 +17,11 @@ const assetLoads = [];
 const expectedHash = process.env.ASTRA_EXPECTED_GLB_SHA256;
 
 function collectErrors(page, label) {
-  if (label === "desktop") page.on("response", async (response) => {
-    if (new URL(response.url()).pathname.endsWith("/night-intersection-c0.glb")) {
-      try {
-        const bytes = await response.body();
-        assetLoads.push({ url: response.url(), status: response.status(), bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
-      } catch (error) { errors.push(`GLB response verification: ${error.message}`); }
+  if (label === "desktop") page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/assets/3d/night-intersection/c0/core/night-intersection-c0.glb") {
+      // Metadata only: Chromium can evict large response bodies from its inspector.
+      const headers = response.headers();
+      assetLoads.push({ url: response.url(), status: response.status(), contentType: headers["content-type"], contentLength: headers["content-length"] });
     }
   });
   page.on("pageerror", (error) => errors.push(`${label} pageerror: ${error.message}`));
@@ -178,13 +178,44 @@ await frameCanvas(mobile);
 const mobileState = await readCanvas(mobile);
 await captureViewport(mobile, `${OUT}/mobile-forward.png`);
 
+// Validate binary bytes outside DevTools. This never uses response.body() or
+// Network.getResponseBody; the browser proves rendering and HTTP metadata.
+async function fingerprint(stream) {
+  const hash = createHash("sha256");
+  let bytes = 0;
+  for await (const chunk of stream) { bytes += chunk.length; hash.update(chunk); }
+  return { bytes, sha256: hash.digest("hex") };
+}
+const localGlbPath = "public/assets/3d/night-intersection/c0/core/night-intersection-c0.glb";
+const localFile = await fs.open(localGlbPath, "r");
+const header = Buffer.alloc(12);
+try { await localFile.read(header, 0, 12, 0); } finally { await localFile.close(); }
+const localAsset = await fingerprint(createReadStream(localGlbPath));
+const declaredBytes = header.readUInt32LE(8);
+const localStats = JSON.parse(await fs.readFile("public/assets/3d/night-intersection/c0/core/STATS.json", "utf8"));
+const localSha = (await fs.readFile("public/assets/3d/night-intersection/c0/core/SHA256SUMS.txt", "utf8")).split(/\s+/)[0];
+const localBinaryValid = header.toString("ascii", 0, 4) === "glTF"
+  && header.readUInt32LE(4) === 2 && localAsset.bytes > 1024
+  && declaredBytes === localAsset.bytes && localStats.glb_bytes === localAsset.bytes
+  && localAsset.sha256 === localSha;
+let networkAsset = null;
+if (expectedHash && assetLoads.length) {
+  // Node's HTTP stream has no Chrome inspector-cache limit. Hash the exact URL
+  // observed loading in the public app and compare with the generated local file.
+  const response = await fetch(assetLoads[0].url, { cache: "no-store", signal: AbortSignal.timeout(120_000) });
+  if (!response.ok || !response.body) throw new Error(`Public GLB HTTP ${response.status}`);
+  networkAsset = { url: response.url, status: response.status, ...await fingerprint(response.body) };
+}
+
 const yawDelta = initial?.yaw != null && turned?.yaw != null
   ? Math.abs(Number(turned.yaw) - Number(initial.yaw))
   : 0;
 const registrationOriginOk = registrationStates.every((state) => state?.position === "0.000,0.000,0.000");
 const result = {
   ok: errors.length === 0
-    && (!expectedHash || assetLoads.some((asset) => asset.sha256 === expectedHash))
+    && localBinaryValid
+    && assetLoads.some((asset) => asset.status >= 200 && asset.status < 300)
+    && (!expectedHash || (networkAsset?.sha256 === expectedHash && localAsset.sha256 === expectedHash))
     && initial?.roots === "1"
     && initial?.chunks?.split(",").includes("c0")
     && initial?.movement === "bounded-ground"
@@ -209,6 +240,9 @@ const result = {
   baseUrl: BASE,
   expectedHash,
   assetLoads,
+  localBinaryValid,
+  localAsset,
+  networkAsset,
   yawDelta,
   initial,
   nightLightingState,

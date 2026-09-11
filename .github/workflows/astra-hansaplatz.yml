@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/blender/astra/**'
       - '.github/workflows/astra-hansaplatz.yml'
+      - '.github/hansaplatz-lod2-visual-proof.mjs'
   workflow_dispatch:
 permissions:
   contents: write

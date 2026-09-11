@@ -366,3 +366,5 @@ supersede the historical Berlin/pavilion wording above. Status and visual eviden
 Astra iteration 2: replacing applied facade panels with cut wall apertures and building-specific architectural joinery. Baseline a55cb0d / workflow 34551409891 inspected; facades remain below acceptance. Generated browser and public-site review pending.
 
 Astra second facade pass: first generated opening geometry visually reviewed (run 34569778332); refine surface differentiation, shadow readability and Night interior accents. Public verification uses GitHub-hosted Chromium with matching GLB hash. QR2 remains open.
+
+Astra verification correction: run 34573128738 successfully authored/exported and rendered the b6ff303 candidate, but its extra verifier incorrectly required the 31 MB response body to remain in Chrome inspector cache. Replace this with browser HTTP metadata, local GLB header/length/stats/hash checks, and Node streaming hash verification for public delivery. Keep all b6ff303 authoring unchanged until its generated output is committed.
